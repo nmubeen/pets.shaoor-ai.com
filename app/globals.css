@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+:root {
+  --paper: #F3F4EC;
+  --surface: #FFFFFF;
+  --surface-2: #EAEBDF;
+  --ink: #1E332B;
+  --muted: #5B6459;
+  --line: #D9DCCC;
+  --primary: #1F4B3F;
+  --primary-ink: #F3F4EC;
+  --accent: #DB8F2C;
+  --accent-ink: #20180A;
+  --coral: #C85A3B;
+  --good: #3E7D53;
+  --trial: #4E7EA8;
+  --org: #6E4A82;
+  --shadow: 0 1px 2px rgba(30, 51, 43, .06), 0 8px 24px -12px rgba(30, 51, 43, .18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #141F19;
+    --surface: #1B2A22;
+    --surface-2: #22342A;
+    --ink: #E9ECE1;
+    --muted: #9AA695;
+    --line: #2E4137;
+    --primary: #6FAF8E;
+    --primary-ink: #0F1A14;
+    --accent: #E8A23F;
+    --accent-ink: #20180A;
+    --coral: #E28468;
+    --good: #7CC79A;
+    --trial: #7EA9D1;
+    --org: #B08FC7;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 12px 28px -14px rgba(0, 0, 0, .55);
+  }
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-primary: var(--primary);
+  --color-primary-ink: var(--primary-ink);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-coral: var(--coral);
+  --color-good: var(--good);
+  --color-trial: var(--trial);
+  --color-org: var(--org);
+  --font-serif: "Fraunces", Georgia, "Iowan Old Style", serif;
+  --font-sans: "Public Sans", -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    text-wrap: balance;
+    margin: 0 0 .4em;
+    color: var(--ink);
+  }
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.card-shadow {
+  box-shadow: var(--shadow);
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}

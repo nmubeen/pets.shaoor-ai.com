@@ -1,0 +1,935 @@
+<title>pets.shaoor-ai.com</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root{
+    --paper:#F3F4EC;
+    --surface:#FFFFFF;
+    --surface-2:#EAEBDF;
+    --ink:#1E332B;
+    --muted:#5B6459;
+    --line:#D9DCCC;
+    --primary:#1F4B3F;
+    --primary-ink:#F3F4EC;
+    --accent:#DB8F2C;
+    --accent-ink:#20180A;
+    --coral:#C85A3B;
+    --good:#3E7D53;
+    --trial:#4E7EA8;
+    --org:#6E4A82;
+    --shadow: 0 1px 2px rgba(30,51,43,.06), 0 8px 24px -12px rgba(30,51,43,.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#141F19;
+      --surface:#1B2A22;
+      --surface-2:#22342A;
+      --ink:#E9ECE1;
+      --muted:#9AA695;
+      --line:#2E4137;
+      --primary:#6FAF8E;
+      --primary-ink:#0F1A14;
+      --accent:#E8A23F;
+      --accent-ink:#20180A;
+      --coral:#E28468;
+      --good:#7CC79A;
+      --trial:#7EA9D1;
+      --org:#B08FC7;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#141F19;
+    --surface:#1B2A22;
+    --surface-2:#22342A;
+    --ink:#E9ECE1;
+    --muted:#9AA695;
+    --line:#2E4137;
+    --primary:#6FAF8E;
+    --primary-ink:#0F1A14;
+    --accent:#E8A23F;
+    --accent-ink:#20180A;
+    --coral:#E28468;
+    --good:#7CC79A;
+    --trial:#7EA9D1;
+    --org:#B08FC7;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.55);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Public Sans", -apple-system, "Segoe UI", sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4{
+    font-family:"Fraunces", Georgia, "Iowan Old Style", serif;
+    font-weight:600;
+    text-wrap:balance;
+    margin:0 0 .4em;
+    color:var(--ink);
+  }
+  code, .mono, .num{ font-family:"IBM Plex Mono", ui-monospace, Menlo, monospace; font-variant-numeric:tabular-nums; }
+  a{ color:var(--primary); }
+  p{ margin:0 0 1em; max-width:68ch; color:var(--ink); }
+  .muted{ color:var(--muted); }
+  svg.icon{ width:1em; height:1em; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; vertical-align:-0.15em; }
+
+  /* ---------- shell ---------- */
+  .page{ display:grid; grid-template-columns:240px minmax(0,1fr); gap:0; max-width:1320px; margin:0 auto; }
+  @media (max-width:900px){ .page{ grid-template-columns:1fr; } .toc{ display:none; } }
+
+  header.masthead{
+    padding:56px 48px 40px;
+    border-bottom:1px solid var(--line);
+    background: linear-gradient(180deg, var(--surface-2), transparent 70%);
+  }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:.5em;
+    font-family:"IBM Plex Mono", monospace;
+    font-size:.72rem; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--primary);
+    background:var(--surface);
+    border:1px solid var(--line);
+    padding:.35em .8em;
+    border-radius:99px;
+    margin-bottom:1.2em;
+  }
+  .eyebrow .dot{ width:6px;height:6px;border-radius:50%;background:var(--accent); }
+  header.masthead h1{ font-size:clamp(2.1rem, 4vw, 3.1rem); letter-spacing:-.01em; }
+  header.masthead .tagline{ font-size:1.15rem; color:var(--muted); max-width:56ch; margin-top:.2em;}
+  .meta-row{ display:flex; flex-wrap:wrap; gap:28px; margin-top:28px; font-size:.85rem; }
+  .meta-row div{ display:flex; flex-direction:column; gap:2px; }
+  .meta-row .k{ text-transform:uppercase; letter-spacing:.08em; font-size:.68rem; color:var(--muted); }
+  .meta-row .v{ font-family:"IBM Plex Mono", monospace; }
+
+  nav.toc{
+    position:sticky; top:0; align-self:start; height:100vh; overflow-y:auto;
+    padding:32px 20px 40px 48px; border-right:1px solid var(--line);
+  }
+  nav.toc .toc-label{ font-size:.68rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:10px; }
+  nav.toc a{
+    display:block; text-decoration:none; color:var(--ink); font-size:.88rem;
+    padding:6px 0; border-left:2px solid transparent; padding-left:12px; margin-left:-13px;
+    opacity:.82;
+  }
+  nav.toc a:hover{ opacity:1; border-left-color:var(--accent); color:var(--primary); }
+  nav.toc .sub a{ font-size:.8rem; padding-left:26px; opacity:.65; }
+  nav.toc .group{ margin-bottom:18px; }
+
+  main{ padding:8px 48px 120px; min-width:0; }
+  section{ padding:56px 0; border-bottom:1px solid var(--line); scroll-margin-top:24px; }
+  section:last-child{ border-bottom:none; }
+  .section-head{ display:flex; align-items:baseline; gap:14px; margin-bottom:8px; }
+  .section-num{ font-family:"IBM Plex Mono",monospace; color:var(--accent); font-size:.85rem; }
+  section h2{ font-size:1.7rem; }
+  .section-intro{ color:var(--muted); font-size:1.02rem; max-width:70ch; margin-bottom:2em; }
+
+  /* ---------- generic bits ---------- */
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); }
+  .pill{
+    display:inline-flex; align-items:center; gap:.4em;
+    font-size:.72rem; font-family:"IBM Plex Mono",monospace; letter-spacing:.02em;
+    padding:.28em .7em; border-radius:99px; border:1px solid var(--line); color:var(--muted);
+  }
+  .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .grid-3{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  .grid-4{ display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
+  @media (max-width:900px){ .grid-4{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:760px){ .grid-2,.grid-3,.grid-4{ grid-template-columns:1fr; } }
+
+  .principle{ display:grid; grid-template-columns:34px 1fr; gap:14px; padding:18px 0; border-top:1px solid var(--line); }
+  .principle:first-of-type{ border-top:none; }
+  .principle .ic{ width:34px; height:34px; border-radius:8px; background:var(--surface-2); display:flex; align-items:center; justify-content:center; color:var(--primary); flex:none; }
+  .principle h4{ font-size:1rem; margin-bottom:.2em; }
+  .principle p{ margin:0; font-size:.94rem; color:var(--muted); }
+
+  .diagram-wrap{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:24px; overflow-x:auto; box-shadow:var(--shadow); }
+  .diagram-caption{ font-size:.82rem; color:var(--muted); margin-top:10px; }
+
+  /* entity dictionary */
+  .entity{ margin-bottom:34px; }
+  .entity-head{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .entity-head .ic{ width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--primary-ink); flex:none; }
+  .entity-head h4{ font-size:1.02rem; margin:0; font-family:"IBM Plex Mono",monospace; letter-spacing:-.01em; }
+  .entity-head .desc{ font-size:.85rem; color:var(--muted); }
+  table.fields{ width:100%; border-collapse:collapse; font-size:.86rem; }
+  table.fields th{ text-align:left; font-size:.68rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-weight:600; padding:6px 10px; border-bottom:1px solid var(--line); }
+  table.fields td{ padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:top; overflow-wrap:break-word; }
+  table.fields tr:last-child td{ border-bottom:none; }
+  table.fields .fname{ font-family:"IBM Plex Mono",monospace; }
+  table.fields .ftype{ font-family:"IBM Plex Mono",monospace; color:var(--primary); white-space:normal; }
+  .entity-table-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface); box-shadow:var(--shadow); }
+  .feature-group{ margin:44px 0 20px; display:flex; align-items:center; gap:12px; }
+  .feature-group .num{ font-family:"IBM Plex Mono",monospace; color:var(--accent); font-size:.8rem; border:1px solid var(--line); border-radius:99px; padding:.2em .7em; }
+  .feature-group h3{ font-size:1.1rem; margin:0; }
+
+  /* ---------- browser mockup screens ---------- */
+  .screens-grid{ display:grid; grid-template-columns:1fr 1fr; gap:28px; }
+  @media (max-width:1050px){ .screens-grid{ grid-template-columns:1fr; } }
+  .screen-card{ background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
+  .screen-chrome{ display:flex; align-items:center; gap:8px; padding:10px 14px; border-bottom:1px solid var(--line); background:var(--surface-2); }
+  .screen-chrome .dots{ display:flex; gap:5px; }
+  .screen-chrome .dots span{ width:8px;height:8px;border-radius:50%; background:var(--line); }
+  .screen-chrome .url{ font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--muted); background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:3px 10px; flex:1; }
+  .screen-body{ display:flex; min-height:360px; font-size:.78rem; }
+  .app-nav{ width:130px; flex:none; background:var(--primary); color:var(--primary-ink); padding:14px 10px; display:flex; flex-direction:column; gap:2px; }
+  .app-nav .brand{ display:flex; align-items:center; gap:6px; font-family:"Fraunces",serif; font-weight:600; font-size:.86rem; padding:0 4px 10px; opacity:.95; }
+  .app-nav .ws-switch{ display:flex; align-items:center; justify-content:space-between; gap:4px; background:rgba(255,255,255,.12); border-radius:7px; padding:6px 8px; font-size:.62rem; margin-bottom:12px; }
+  .app-nav a{ display:flex; align-items:center; gap:7px; padding:6px 7px; border-radius:6px; color:var(--primary-ink); opacity:.72; font-size:.72rem; }
+  .app-nav a.active{ background:rgba(255,255,255,.14); opacity:1; }
+  .app-nav svg.icon{ width:13px;height:13px; }
+  .screen-main{ flex:1; padding:16px 18px; overflow:auto; background:var(--paper); min-width:0; }
+  .screen-main h5{ font-family:"Public Sans",sans-serif; font-weight:700; font-size:.92rem; margin:0 0 2px; color:var(--ink); }
+  .screen-main .sub{ font-size:.72rem; color:var(--muted); margin-bottom:14px; }
+  .caption-block{ padding:16px 18px 20px; border-top:1px solid var(--line); }
+  .caption-block .name{ font-weight:600; font-size:.95rem; display:flex; align-items:center; gap:8px; margin-bottom:4px;}
+  .caption-block .name .ic{ width:20px;height:20px;border-radius:6px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;color:var(--primary);}
+  .caption-block p{ font-size:.82rem; color:var(--muted); margin:0; }
+
+  .mini-card{ background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:9px 10px; }
+  .stat-tile{ background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:9px 10px; }
+  .stat-tile .num{ font-size:1.05rem; font-weight:600; }
+  .stat-tile .lbl{ font-size:.66rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
+  .row3{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+  .pet-chip{ display:flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:8px 9px; margin-bottom:8px; }
+  .pet-chip .avatar{ width:26px;height:26px;border-radius:50%; flex:none; display:flex;align-items:center;justify-content:center; font-size:.62rem; font-weight:700; color:#fff; }
+  .pet-chip .info .n{ font-weight:600; font-size:.76rem; }
+  .pet-chip .info .s{ font-size:.66rem; color:var(--muted); }
+  .badge{ font-size:.62rem; font-family:"IBM Plex Mono",monospace; padding:.15em .5em; border-radius:99px; }
+  .badge.ok{ background:color-mix(in srgb, var(--good) 18%, transparent); color:var(--good); }
+  .badge.warn{ background:color-mix(in srgb, var(--accent) 20%, transparent); color:var(--accent); }
+  .badge.due{ background:color-mix(in srgb, var(--coral) 20%, transparent); color:var(--coral); }
+  .badge.trial{ background:color-mix(in srgb, var(--trial) 20%, transparent); color:var(--trial); }
+  .mini-table{ width:100%; border-collapse:collapse; font-size:.7rem; }
+  .mini-table th{ text-align:left; color:var(--muted); font-weight:600; padding:4px 6px; border-bottom:1px solid var(--line); font-size:.62rem; text-transform:uppercase; letter-spacing:.04em; }
+  .mini-table td{ padding:5px 6px; border-bottom:1px solid var(--line); }
+  .tab-row{ display:flex; gap:4px; margin-bottom:12px; flex-wrap:wrap; }
+  .tab-row .tab{ font-size:.68rem; padding:5px 11px; border-radius:7px; color:var(--muted); }
+  .tab-row .tab.on{ background:var(--surface); border:1px solid var(--line); color:var(--ink); font-weight:600; }
+  .btn{ display:inline-flex; align-items:center; gap:5px; font-size:.68rem; font-weight:600; padding:6px 12px; border-radius:7px; background:var(--accent); color:var(--accent-ink); }
+  .btn.ghost{ background:transparent; border:1px solid var(--line); color:var(--ink); }
+  .btn.primary{ background:var(--primary); color:var(--primary-ink); }
+  .scope-toggle{ display:flex; gap:4px; margin:8px 0 10px; }
+  .scope-toggle span{ font-size:.64rem; padding:4px 9px; border-radius:6px; border:1px solid var(--line); color:var(--muted); }
+  .scope-toggle span.on{ background:var(--primary); color:var(--primary-ink); border-color:var(--primary); }
+  .field-row{ display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px dashed var(--line); font-size:.72rem; }
+  .field-row .k{ color:var(--muted); }
+  .input-mock{ display:flex; align-items:center; justify-content:space-between; background:var(--surface); border:1px solid var(--line); border-radius:7px; padding:8px 10px; font-size:.7rem; margin-bottom:8px; }
+  .input-mock .k{ color:var(--muted); font-size:.62rem; text-transform:uppercase; letter-spacing:.04em; }
+
+  footer{ padding:40px 48px 60px; color:var(--muted); font-size:.82rem; }
+  .footnote{ font-size:.78rem; color:var(--muted); margin-top:10px; }
+
+  .kv-list{ display:flex; flex-direction:column; gap:8px; margin:16px 0; }
+  .kv-list .row{ display:grid; grid-template-columns:190px 1fr; gap:14px; font-size:.88rem; padding:10px 0; border-top:1px solid var(--line); }
+  .kv-list .row:first-child{ border-top:none; }
+  .kv-list .k{ color:var(--muted); font-size:.78rem; }
+
+  /* ---------- build-plan / roadmap tables ---------- */
+  table.plan{ width:100%; border-collapse:collapse; font-size:.85rem; }
+  table.plan th{ text-align:left; font-size:.68rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-weight:600; padding:9px 12px; border-bottom:1px solid var(--line); background:var(--surface-2); }
+  table.plan td{ padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+  table.plan tr:last-child td{ border-bottom:none; }
+  table.plan .lead{ font-weight:600; white-space:nowrap; }
+  table.plan .tag{ font-family:"IBM Plex Mono",monospace; font-size:.76rem; color:var(--primary); white-space:nowrap; }
+  .plan-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface); box-shadow:var(--shadow); margin-bottom:24px; }
+  .subhead{ font-size:1.02rem; margin:36px 0 12px; display:flex; align-items:center; gap:9px; }
+  .subhead .ic{ width:26px;height:26px;border-radius:7px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;color:var(--primary); flex:none; }
+  .phase-num{ display:inline-flex; align-items:center; justify-content:center; width:20px;height:20px;border-radius:50%; background:var(--primary); color:var(--primary-ink); font-family:"IBM Plex Mono",monospace; font-size:.66rem; flex:none; }
+
+  /* ---------- pricing tiers ---------- */
+  .tiers{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; align-items:stretch; }
+  @media (max-width:1000px){ .tiers{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:600px){ .tiers{ grid-template-columns:1fr; } }
+  .tier-card{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:22px 20px; box-shadow:var(--shadow); display:flex; flex-direction:column; position:relative; }
+  .tier-card.featured{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent), var(--shadow); }
+  .tier-card .featured-tag{ position:absolute; top:-11px; left:20px; background:var(--accent); color:var(--accent-ink); font-size:.62rem; font-family:"IBM Plex Mono",monospace; letter-spacing:.05em; padding:.3em .7em; border-radius:99px; text-transform:uppercase; }
+  .tier-name{ font-family:"Fraunces",serif; font-size:1.15rem; font-weight:600; margin-bottom:2px; }
+  .tier-for{ font-size:.72rem; color:var(--muted); margin-bottom:14px; }
+  .tier-price{ font-family:"IBM Plex Mono",monospace; font-size:1.7rem; font-weight:600; margin-bottom:2px; }
+  .tier-price .per{ font-size:.68rem; color:var(--muted); font-weight:400; }
+  .tier-note{ font-size:.7rem; color:var(--muted); margin-bottom:16px; }
+  .tier-list{ list-style:none; margin:0 0 20px; padding:0; font-size:.82rem; display:flex; flex-direction:column; gap:8px; flex:1; }
+  .tier-list li{ display:flex; gap:8px; align-items:flex-start; }
+  .tier-list svg.icon{ color:var(--good); flex:none; margin-top:.2em; width:.95em; height:.95em; }
+  .tier-dot{ width:9px;height:9px;border-radius:50%; display:inline-block; margin-right:6px; }
+
+  /* ---------- ERD domain map ---------- */
+  .domain-map{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  @media (max-width:1000px){ .domain-map{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:600px){ .domain-map{ grid-template-columns:1fr; } }
+  .domain{ border:1px solid var(--line); border-radius:12px; background:var(--surface); box-shadow:var(--shadow); overflow:hidden; }
+  .domain .dhead{ padding:12px 14px; font-size:.78rem; font-weight:600; display:flex; align-items:center; gap:8px; color:#fff; }
+  .domain .dbody{ padding:10px 14px 14px; display:flex; flex-direction:column; gap:6px; }
+  .domain .tbl{ font-family:"IBM Plex Mono",monospace; font-size:.74rem; background:var(--surface-2); border-radius:6px; padding:5px 8px; }
+  .domain .tbl .k{ color:var(--muted); font-size:.64rem; display:block; }
+  .flow-arrow{ display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:.7rem; margin:10px 0; gap:6px; }
+</style>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-paw" viewBox="0 0 24 24"><circle cx="7" cy="8" r="2.1"/><circle cx="12" cy="6" r="2.1"/><circle cx="17" cy="8" r="2.1"/><circle cx="19" cy="13" r="2.1"/><path d="M12 12c-3.5 0-6.5 2.6-6.5 5.6 0 1.8 1.5 2.9 3.3 2.4.9-.2 2.1-.5 3.2-.5s2.3.3 3.2.5c1.8.5 3.3-.6 3.3-2.4 0-3-3-5.6-6.5-5.6Z"/></symbol>
+    <symbol id="i-stetho" viewBox="0 0 24 24"><path d="M5 3v6a4 4 0 0 0 8 0V3"/><circle cx="18.5" cy="16.5" r="2.5"/><path d="M9 13v1a5 5 0 0 0 10 0v-2"/><path d="M5 3H3M13 3h-2"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.4 7-12a7 7 0 1 0-14 0c0 5.6 7 12 7 12Z"/><circle cx="12" cy="9" r="2.4"/></symbol>
+    <symbol id="i-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><path d="m20 4-12.5 12.5M7.6 7.6 20 20M9.5 12 8.2 13.3"/></symbol>
+    <symbol id="i-vial" viewBox="0 0 24 24"><path d="M9 2h6M10 2v7.2L4.8 18a2 2 0 0 0 1.7 3h11a2 2 0 0 0 1.7-3L14 9.2V2"/><path d="M7.5 15h9"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-9.7-9.3C.6 6.9 3 3.5 6.6 3.5c2 0 3.6 1.1 5.4 3.1 1.8-2 3.4-3.1 5.4-3.1 3.6 0 6 3.4 4.3 7.2C19.5 15.4 12 20 12 20Z"/><path d="M8 11h2l1.3-2.3L13 13l1.3-2h1.7"/></symbol>
+    <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2.5 3h2.4l2 12.2a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 7.5H6.2"/></symbol>
+    <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6.5 7 6.5 11.5A6.5 6.5 0 0 1 5.5 14.5C5.5 10 12 3 12 3Z"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m4 18 5.5-5.5a1.6 1.6 0 0 1 2.2 0L18 18"/></symbol>
+    <symbol id="i-bowl" viewBox="0 0 24 24"><path d="M3 12h18a7 7 0 0 1-7 7h-4a7 7 0 0 1-7-7Z"/><path d="M8 8v0M12 6v0M16 8v0"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M11 20V4M18 20v-7"/><path d="M2 20h20"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9.5h12V10"/></symbol>
+    <symbol id="i-fish" viewBox="0 0 24 24"><path d="M3 12s3.5-5 10-5 8 5 8 5-1.5 5-8 5-10-5-10-5Z"/><circle cx="16.5" cy="10.5" r=".8" fill="currentColor" stroke="none"/><path d="M3 12 1 9m2 3-2 3"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M11 3H4v7l10 10 7-7L11 3Z"/><circle cx="8" cy="8" r="1.3"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 10a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.2 6.5-6.2s6.5 2.6 6.5 6.2"/><circle cx="17" cy="8.6" r="2.6"/><path d="M16 13.9c2.7.4 4.5 2.6 4.5 5.6"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4.5 6v6c0 4.8 3.2 8.2 7.5 9 4.3-.8 7.5-4.2 7.5-9V6L12 3Z"/><path d="m8.5 12 2.4 2.4 4.6-4.8"/></symbol>
+    <symbol id="i-server" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><circle cx="7" cy="7" r=".6" fill="currentColor" stroke="none"/><circle cx="7" cy="17" r=".6" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="14.5" r="4"/><path d="M11 11.5 20 2.5M17 6l2.5 2.5M14 9l2 2"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18h11a4 4 0 0 0 .5-7.97A6 6 0 0 0 6.6 8.1 4.5 4.5 0 0 0 7 18Z"/></symbol>
+    <symbol id="i-invoice" viewBox="0 0 24 24"><path d="M6 2h9l3 3v17H6V2Z"/><path d="M9 8h6M9 12h6M9 16h4"/></symbol>
+    <symbol id="i-rocket" viewBox="0 0 24 24"><path d="M12 2c3 2 5 6 5 10 0 2-1 4-2 5l-3 3-3-3c-1-1-2-3-2-5 0-4 2-8 5-10Z"/><circle cx="12" cy="10" r="1.6"/><path d="M9 17c-2 1-2.5 3-2.5 5 2 0 4-.5 5-2.5M15 17c2 1 2.5 3 2.5 5-2 0-4-.5-5-2.5"/></symbol>
+  </defs>
+</svg>
+
+<div class="page">
+
+<nav class="toc">
+  <div class="group">
+    <div class="toc-label">pets.shaoor-ai.com</div>
+    <a href="#overview">Overview</a>
+    <a href="#gap">The market gap</a>
+    <a href="#genericity">Modeling for any species</a>
+  </div>
+  <div class="group">
+    <div class="toc-label">SaaS foundation</div>
+    <a href="#tenancy">Multi-tenant architecture</a>
+    <a href="#billing">Subscription &amp; billing</a>
+    <a href="#stack">Stack &amp; deployment</a>
+  </div>
+  <div class="group">
+    <div class="toc-label">Data model</div>
+    <a href="#erd">Tenancy-first ERD</a>
+    <a href="#dictionary">New table dictionary</a>
+  </div>
+  <div class="group">
+    <div class="toc-label">Web mockups</div>
+    <a href="#m-landing">Marketing &amp; pricing</a>
+    <a href="#m-onboard">Sign-up &amp; onboarding</a>
+    <a href="#m-app">The workspace</a>
+    <a href="#m-billing">Billing &amp; team</a>
+  </div>
+  <div class="group">
+    <div class="toc-label">Delivery</div>
+    <a href="#roadmap">Build roadmap</a>
+  </div>
+</nav>
+
+<div>
+<header class="masthead">
+  <span class="eyebrow"><span class="dot"></span> Design document · v2 · SaaS rebuild</span>
+  <h1>pets.shaoor-ai.com</h1>
+  <p class="tagline">Menagerie, rebuilt from day one as a subscription, multi-tenant product on the shaoor-ai.com
+    platform — one record for every pet and habitat a household keeps, sold as software instead of shipped as
+    an app.</p>
+  <div class="meta-row">
+    <div><span class="k">Domain</span><span class="v">pets.shaoor-ai.com</span></div>
+    <div><span class="k">Sibling project</span><span class="v">construct.shaoor-ai.com</span></div>
+    <div><span class="k">Hosting</span><span class="v">Vercel</span></div>
+    <div><span class="k">Database</span><span class="v">Supabase (shared project, own schema)</span></div>
+    <div><span class="k">Billing</span><span class="v">Stripe · trial + 4 tiers</span></div>
+    <div><span class="k">Tenant unit</span><span class="v">Workspace (was: Household)</span></div>
+  </div>
+</header>
+
+<main>
+
+<section id="overview">
+  <div class="section-head"><span class="section-num">01</span><h2>Overview</h2></div>
+  <p class="section-intro">Menagerie stops being an app you install and becomes a workspace you sign into —
+    <code>pets.shaoor-ai.com</code>, deployed and billed the same way as its sibling
+    <code>construct.shaoor-ai.com</code>, on the same Vercel account and the same Supabase project. The product
+    idea is unchanged: one longitudinal record for every animal and habitat a household keeps, with costs and
+    visits scoped to an individual, a group, or the whole home. What changes is that the household is now a
+    <strong>tenant</strong> — a billable workspace with a plan, a trial clock, and seats for the people who
+    care for its animals.</p>
+
+  <div class="grid-3">
+    <div class="principle" style="border-top:none;padding-top:0">
+      <div class="ic"><svg class="icon"><use href="#i-layers"/></svg></div>
+      <div><h4>Species-agnostic core</h4><p>Cats, dogs, birds, reptiles, and aquarium habitats share one schema
+        of pets, groups, habitats, vets, and expenses — no per-species tables to maintain.</p></div>
+    </div>
+    <div class="principle" style="border-top:none;padding-top:0">
+      <div class="ic"><svg class="icon"><use href="#i-users"/></svg></div>
+      <div><h4>Multi-tenant from the start</h4><p>Every table carries a <code>tenant_id</code> and Row Level
+        Security policy on day one — not retrofitted after the first paying workspace signs up.</p></div>
+    </div>
+    <div class="principle" style="border-top:none;padding-top:0">
+      <div class="ic"><svg class="icon"><use href="#i-rocket"/></svg></div>
+      <div><h4>Trial-led growth</h4><p>Every workspace starts on a 14-day trial of the top consumer tier — no
+        card required — and downgrades gracefully to Litter (free) rather than locking anyone out.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="gap">
+  <div class="section-head"><span class="section-num">02</span><h2>The market gap</h2></div>
+  <p class="section-intro">Pet-care software today is built around one species and one animal at a time.
+    Menagerie's gap is unchanged by the SaaS pivot — it's now sharper, because a subscription product can
+    price and package around it directly.</p>
+
+  <div class="grid-2">
+    <div class="card" style="padding:20px">
+      <h4 style="font-size:.95rem">What exists</h4>
+      <p style="font-size:.88rem">Single-pet trackers (one dog, one profile), vet-practice portals tied to one
+        clinic, and spreadsheet habits for anyone with a mixed household — a cat, a reef tank, and a foster
+        litter tracked in three different places, none of them sharing a cost ledger.</p>
+    </div>
+    <div class="card" style="padding:20px;border-color:var(--accent)">
+      <h4 style="font-size:.95rem">What pets.shaoor-ai.com sells</h4>
+      <p style="font-size:.88rem">One workspace, unlimited species, with costs and care events scoped to a pet,
+        a group ("The Persians"), a habitat ("The Reef Tank"), or the whole household — and, unique to a SaaS
+        packaging, a workspace type built for <strong>rescues and shelters</strong>, who today have no
+        equivalent of Menagerie at any price.</p>
+    </div>
+  </div>
+
+  <div class="subhead"><div class="ic"><svg class="icon"><use href="#i-tag"/></svg></div>Differentiators that
+    only exist because this is a subscription product</div>
+  <ul style="font-size:.92rem;color:var(--ink);padding-left:1.2em">
+    <li style="margin-bottom:.5em"><strong>Org-tier workspaces.</strong> A shelter or breeder tenant gets the
+      same core record per animal, plus adoption-ready public profiles and multi-seat staff access —
+      impossible to sustain as a free app, viable as a priced tier.</li>
+    <li style="margin-bottom:.5em"><strong>Multi-household tenants.</strong> A Sanctuary-tier workspace can hold
+      more than one physical home (a family that splits pets between two houses, a foster network) under one
+      billing relationship and one shared cost ledger.</li>
+    <li style="margin-bottom:.5em"><strong>Shared infrastructure economics.</strong> Riding shaoor-ai.com's
+      existing Supabase and Vercel accounts means the product breaks even at a fraction of the subscriber count
+      a standalone SaaS would need.</li>
+  </ul>
+</section>
+
+<section id="genericity">
+  <div class="section-head"><span class="section-num">03</span><h2>Modeling for any species</h2></div>
+  <p class="section-intro">Unchanged from the original design: <code>species</code> is a free-text field on
+    <code>pets</code>, not an enum or a table-per-species split. A habitat (aquarium, terrarium, coop) is a
+    first-class sibling of a pet, not a bolted-on aquarium feature — so a tank's water changes and a cat's baths
+    both write to the same <code>care_tasks</code> table with a polymorphic scope.</p>
+  <div class="principle">
+    <div class="ic"><svg class="icon"><use href="#i-fish"/></svg></div>
+    <div><h4>Habitats are peers of pets</h4><p>Vet visits, expenses, gallery media, and comments all attach to
+      either a <code>pet_id</code> or a <code>habitat_id</code> — the app layer never assumes an event is about
+      an individual animal.</p></div>
+  </div>
+  <div class="principle">
+    <div class="ic"><svg class="icon"><use href="#i-cart"/></svg></div>
+    <div><h4>Three-level scoping, everywhere</h4><p>Shopping line items, expenses, and care tasks each carry a
+      <code>scope_type</code> of <code>pet</code>, <code>group</code>, or <code>household</code> (now:
+      <code>tenant</code>) — a joint vet trip for two kittens costs once, scoped to the group, never split
+      awkwardly across two pet ledgers.</p></div>
+  </div>
+</section>
+
+<section id="tenancy">
+  <div class="section-head"><span class="section-num">04</span><h2>Multi-tenant architecture</h2></div>
+  <p class="section-intro">One Supabase project, one Postgres database, shared with construct.shaoor-ai.com and
+    whatever else lives on shaoor-ai.com — Menagerie gets its own <strong>schema</strong>
+    (<code>menagerie</code>), not its own database and not a schema-per-tenant split. Isolation between
+    workspaces is enforced by Postgres Row Level Security, not by infrastructure boundaries.</p>
+
+  <div class="grid-3">
+    <div class="principle" style="border-top:none;padding-top:0">
+      <div class="ic"><svg class="icon"><use href="#i-server"/></svg></div>
+      <div><h4>Dedicated schema, shared database</h4><p>All product tables live under <code>menagerie.*</code>
+        in the same Postgres instance that backs shaoor-ai.com. <code>auth.users</code> and Supabase Auth are
+        shared platform-wide — a person can hold one login across every shaoor-ai.com product.</p></div>
+    </div>
+    <div class="principle" style="border-top:none;padding-top:0">
+      <div class="ic"><svg class="icon"><use href="#i-shield"/></svg></div>
+      <div><h4>Row Level Security, not app-layer filtering</h4><p>Every tenant-scoped table has
+        <code>ENABLE ROW LEVEL SECURITY</code> and a policy resolving <code>tenant_id</code> against the
+        caller's memberships — a bug in a Next.js route can never leak another workspace's rows.</p></div>
+    </div>
+    <div class="principle" style="border-top:none;padding-top:0">
+      <div class="ic"><svg class="icon"><use href="#i-key"/></svg></div>
+      <div><h4>Workspace = tenant = household</h4><p>The old "Household" entity becomes <code>tenants</code>
+        directly — it already was the natural unit of billing and sharing; the SaaS rebuild formalizes it
+        rather than adding a parallel concept above it.</p></div>
+    </div>
+  </div>
+
+  <div class="subhead"><div class="ic"><svg class="icon"><use href="#i-users"/></svg></div>Membership &amp; roles</div>
+  <p>A tenant can hold several people (a couple, a shelter's staff). <code>memberships</code> joins
+    <code>auth.users</code> to <code>tenants</code> with a role:</p>
+  <div class="kv-list">
+    <div class="row"><div class="k">owner</div><div>Created the workspace, manages billing, can remove any
+      member, one per tenant minimum.</div></div>
+    <div class="row"><div class="k">caregiver</div><div>Full read/write on pets, health, shopping, tasks, and
+      gallery. Cannot touch billing or remove other members.</div></div>
+    <div class="row"><div class="k">viewer</div><div>Read-only — for a pet-sitter, a co-parent who just wants
+      visibility, or a vet given temporary access to one workspace's health history.</div></div>
+  </div>
+
+  <div class="subhead"><div class="ic"><svg class="icon"><use href="#i-shield"/></svg></div>The RLS pattern, concretely</div>
+  <div class="diagram-wrap">
+    <pre style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:.8rem;line-height:1.7;white-space:pre-wrap">-- one helper, reused by every policy in the schema
+create function menagerie.my_tenant_ids()
+returns setof uuid language sql stable security definer as $$
+  select tenant_id from menagerie.memberships where user_id = auth.uid()
+$$;
+
+alter table menagerie.pets enable row level security;
+
+create policy "tenant isolation - select"
+  on menagerie.pets for select
+  using (tenant_id in (select menagerie.my_tenant_ids()));
+
+create policy "tenant isolation - write"
+  on menagerie.pets for insert with check (tenant_id in (select menagerie.my_tenant_ids()))
+  ;
+-- repeated verbatim (swap the table name) for every tenant-scoped table:
+-- pets, pet_groups, habitats, vets, vet_visits, illnesses, vaccinations,
+-- grooming_visits, products, shopping_orders, care_tasks, feeding_logs,
+-- media, comments, expenses</pre>
+  </div>
+  <p class="diagram-caption">One <code>security definer</code> function keeps every policy a one-liner and
+    means a new tenant-scoped table is three lines of migration, not a bespoke policy design each time.</p>
+</section>
+
+<section id="billing">
+  <div class="section-head"><span class="section-num">05</span><h2>Subscription &amp; billing</h2></div>
+  <p class="section-intro">Every workspace starts the same way — a 14-day trial of Sanctuary, the top consumer
+    tier, no card required — then either converts, downgrades to the free Litter tier automatically, or (for
+    organizations) talks to sales for the Rescue &amp; Shelter tier.</p>
+
+  <div class="tiers">
+    <div class="tier-card">
+      <div class="tier-name">Litter</div>
+      <div class="tier-for">Free, forever · one pet parent</div>
+      <div class="tier-price">₹0<span class="per">/mo</span></div>
+      <div class="tier-note">Where every trial lands after 14 days if it doesn't convert</div>
+      <ul class="tier-list">
+        <li><svg class="icon"><use href="#i-check"/></svg>Up to 3 pets or habitats</li>
+        <li><svg class="icon"><use href="#i-check"/></svg>Health, vaccination &amp; grooming history</li>
+        <li><svg class="icon"><use href="#i-check"/></svg>1 caregiver seat</li>
+        <li><svg class="icon"><use href="#i-check"/></svg>90-day gallery retention</li>
+      </ul>
+      <div class="pill" style="align-self:flex-start"><span class="tier-dot" style="background:var(--muted)"></span>Community support</div>
+    </div>
+
+    <div class="tier-card">
+      <div class="tier-name">Household</div>
+      <div class="tier-for">One home, every pet in it</div>
+      <div class="tier-price">₹349<span class="per">/mo</span></div>
+      <div class="tier-note">₹3,490/yr — two months free</div>
+      <ul class="tier-list">
+        <li><svg class="icon"><use href="#i-check"/></svg>Unlimited pets &amp; habitats, one workspace</li>
+        <li><svg class="icon"><use href="#i-check"/></svg>Shopping orders &amp; expense reporting</li>
+        <li><svg class="icon"><use href="#i-check"/></svg>Vet directory with hours &amp; map</li>
+        <li><svg class="icon"><use href="#i-check"/></svg>3 caregiver seats</li>
+        <li><svg class="icon"><use href="#i-check"/></svg>Unlimited gallery</li>
+      </ul>
+      <div class="pill" style="align-self:flex-start"><span class="tier-dot" style="background:var(--primary)"></span>Email support</div>
+    </div>
+
+    <div class="tier-card featured">
+      <div class="featured-tag">14-day trial default</div>
+      <div class="tier-name">Sanctuary</div>
+      <div class="tier-for">Multi-species, multi-home, or multi-carer</div>
+      <div class="tier-price">₹799<span class="per">/mo</span></div>
+      <div class="tier-note">₹7,990/yr — two months free</div>
+      <ul class="tier-list">
+        <li><svg class="icon"><use href="#i-check"/></svg>Everything in Household</li>
+        <li><svg class="icon"><use href="#i-check"/></svg>Up to 3 locations under one workspace</li>
+        <li><svg class="icon"><use href="#i-check"/></svg>Unlimited caregiver seats</li>
+        <li><svg class="icon"><use href="#i-check"/></svg>Vaccination &amp; reminder automations</li>
+        <li><svg class="icon"><use href="#i-check"/></svg>CSV / PDF data export</li>
+      </ul>
+      <div class="pill" style="align-self:flex-start"><span class="tier-dot" style="background:var(--accent)"></span>Priority support</div>
+    </div>
+
+    <div class="tier-card">
+      <div class="tier-name">Rescue &amp; Shelter</div>
+      <div class="tier-for">Organizations, not households</div>
+      <div class="tier-price" style="font-size:1.1rem">Talk to us</div>
+      <div class="tier-note">Seat-based pricing, annual contract</div>
+      <ul class="tier-list">
+        <li><svg class="icon"><use href="#i-check"/></svg>Everything in Sanctuary</li>
+        <li><svg class="icon"><use href="#i-check"/></svg>Public adoption-ready pet profiles</li>
+        <li><svg class="icon"><use href="#i-check"/></svg>Staff roles &amp; audit log</li>
+        <li><svg class="icon"><use href="#i-check"/></svg>API access</li>
+      </ul>
+      <div class="pill" style="align-self:flex-start"><span class="tier-dot" style="background:var(--org)"></span>Dedicated support</div>
+    </div>
+  </div>
+
+  <div class="subhead"><div class="ic"><svg class="icon"><use href="#i-invoice"/></svg></div>The Stripe flow</div>
+  <div class="diagram-wrap">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.82rem">
+      <span class="pill">Sign up → trialing</span>
+      <span class="muted">→</span>
+      <span class="pill">Stripe Checkout (add card)</span>
+      <span class="muted">→</span>
+      <span class="pill">webhook: customer.subscription.updated</span>
+      <span class="muted">→</span>
+      <span class="pill">subscriptions row upserted</span>
+      <span class="muted">→</span>
+      <span class="pill">Customer Portal for changes/cancel</span>
+    </div>
+    <p class="diagram-caption">A Vercel Route Handler at <code>/api/stripe/webhook</code> is the only writer of
+      <code>menagerie.subscriptions</code> — the app never trusts client-side plan state, only what Stripe
+      confirms. Trial expiry is a Vercel Cron job that flips any <code>trialing</code> row past
+      <code>trial_ends_at</code> with no payment method to <code>tenants.plan_code = 'litter'</code>.</p>
+  </div>
+</section>
+
+<section id="stack">
+  <div class="section-head"><span class="section-num">06</span><h2>Stack &amp; deployment</h2></div>
+  <p class="section-intro">Deliberately unoriginal: reuse every default construct.shaoor-ai.com already made, so
+    the only new infrastructure decision is the Supabase schema and the Stripe product catalog.</p>
+  <div class="kv-list">
+    <div class="row"><div class="k">Frontend</div><div>Next.js (App Router) on Vercel — a separate Vercel
+      project ("pets"), sibling to the "construct" project, both under the shaoor-ai.com team/account.</div></div>
+    <div class="row"><div class="k">Domain</div><div><code>pets.shaoor-ai.com</code> as a CNAME in the same DNS
+      zone that already routes <code>construct.shaoor-ai.com</code> — added as a Vercel domain on the new
+      project, no zone changes needed.</div></div>
+    <div class="row"><div class="k">Database</div><div>The existing shaoor-ai.com Supabase project, new
+      <code>menagerie</code> schema, RLS on every tenant-scoped table (see §04).</div></div>
+    <div class="row"><div class="k">Auth</div><div>Supabase Auth, shared <code>auth.users</code> — a person who
+      already has a shaoor-ai.com login can accept a workspace invite without creating a second account.</div></div>
+    <div class="row"><div class="k">Billing</div><div>Stripe Checkout + Customer Portal; a `plans` table mirrors
+      Stripe Price IDs so pricing changes are a database update, not a redeploy.</div></div>
+    <div class="row"><div class="k">Media</div><div>Supabase Storage, one bucket per tenant prefix
+      (<code>media/{tenant_id}/...</code>), signed URLs — gallery photos and vet-visit attachments never sit on
+      a public path.</div></div>
+    <div class="row"><div class="k">Jobs</div><div>Vercel Cron: nightly vaccination/reminder digest, trial-expiry
+      downgrade sweep, weekly expense-summary email.</div></div>
+  </div>
+</section>
+
+<section id="erd">
+  <div class="section-head"><span class="section-num">07</span><h2>Tenancy-first ERD</h2></div>
+  <p class="section-intro">Four new tables sit above the existing pet-care schema and gate every row below them
+    with a <code>tenant_id</code>. Everything from §03 of the original design — pets, groups, habitats, vets,
+    health, shopping, care tasks, gallery — is unchanged in shape; only <code>household_id</code> is renamed
+    <code>tenant_id</code> and gains its RLS policy.</p>
+
+  <div class="domain-map">
+    <div class="domain">
+      <div class="dhead" style="background:var(--trial)"><svg class="icon"><use href="#i-invoice"/></svg>Tenancy &amp; billing</div>
+      <div class="dbody">
+        <div class="tbl"><span class="k">new</span>tenants</div>
+        <div class="tbl"><span class="k">new</span>memberships</div>
+        <div class="tbl"><span class="k">new</span>plans</div>
+        <div class="tbl"><span class="k">new</span>subscriptions</div>
+      </div>
+    </div>
+    <div class="domain">
+      <div class="dhead" style="background:var(--primary)"><svg class="icon"><use href="#i-paw"/></svg>Pets &amp; habitats</div>
+      <div class="dbody">
+        <div class="tbl">pets</div>
+        <div class="tbl">pet_groups</div>
+        <div class="tbl">habitats</div>
+        <div class="tbl">stat_entries</div>
+      </div>
+    </div>
+    <div class="domain">
+      <div class="dhead" style="background:var(--coral)"><svg class="icon"><use href="#i-heart"/></svg>Health &amp; care</div>
+      <div class="dbody">
+        <div class="tbl">vets · vet_visits</div>
+        <div class="tbl">illnesses</div>
+        <div class="tbl">vaccinations</div>
+        <div class="tbl">grooming_visits</div>
+        <div class="tbl">care_tasks · feeding_logs</div>
+      </div>
+    </div>
+    <div class="domain">
+      <div class="dhead" style="background:var(--accent)"><svg class="icon"><use href="#i-cart"/></svg>Commerce &amp; memories</div>
+      <div class="dbody">
+        <div class="tbl">products · shopping_orders</div>
+        <div class="tbl">expenses</div>
+        <div class="tbl">media · comments</div>
+      </div>
+    </div>
+  </div>
+  <div class="flow-arrow"><svg class="icon" style="width:1.1em;height:1.1em"><use href="#i-key"/></svg>
+    every table in the three right-hand domains carries <code>tenant_id → tenants.id</code> and an RLS policy against <code>my_tenant_ids()</code></div>
+</section>
+
+<section id="dictionary">
+  <div class="section-head"><span class="section-num">08</span><h2>New table dictionary</h2></div>
+  <p class="section-intro">The four tables that make Menagerie a SaaS product rather than a single-tenant app.
+    Every other table from the original data model keeps its fields — only its scope column is renamed.</p>
+
+  <div class="entity">
+    <div class="entity-head"><div class="ic" style="background:var(--trial)"><svg class="icon"><use href="#i-invoice"/></svg></div><h4>tenants</h4><span class="desc">the billable workspace — replaces "households"</span></div>
+    <div class="entity-table-wrap"><table class="fields">
+      <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+      <tr><td class="fname">id</td><td class="ftype">uuid pk</td><td>—</td></tr>
+      <tr><td class="fname">name</td><td class="ftype">text</td><td>"The Home", "Riverside Rescue"</td></tr>
+      <tr><td class="fname">workspace_type</td><td class="ftype">enum</td><td>household · organization</td></tr>
+      <tr><td class="fname">plan_code</td><td class="ftype">text fk → plans.code</td><td>current effective plan</td></tr>
+      <tr><td class="fname">trial_ends_at</td><td class="ftype">timestamptz null</td><td>null once converted or expired</td></tr>
+      <tr><td class="fname">created_at</td><td class="ftype">timestamptz</td><td>—</td></tr>
+    </table></div>
+  </div>
+
+  <div class="entity">
+    <div class="entity-head"><div class="ic" style="background:var(--trial)"><svg class="icon"><use href="#i-users"/></svg></div><h4>memberships</h4><span class="desc">who can act inside a tenant, and how</span></div>
+    <div class="entity-table-wrap"><table class="fields">
+      <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+      <tr><td class="fname">id</td><td class="ftype">uuid pk</td><td>—</td></tr>
+      <tr><td class="fname">tenant_id</td><td class="ftype">uuid fk → tenants.id</td><td>—</td></tr>
+      <tr><td class="fname">user_id</td><td class="ftype">uuid fk → auth.users.id</td><td>null while an email invite is pending</td></tr>
+      <tr><td class="fname">invited_email</td><td class="ftype">text null</td><td>set until the invite is accepted</td></tr>
+      <tr><td class="fname">role</td><td class="ftype">enum</td><td>owner · caregiver · viewer</td></tr>
+      <tr><td class="fname">status</td><td class="ftype">enum</td><td>invited · active · removed</td></tr>
+    </table></div>
+  </div>
+
+  <div class="entity">
+    <div class="entity-head"><div class="ic" style="background:var(--trial)"><svg class="icon"><use href="#i-tag"/></svg></div><h4>plans</h4><span class="desc">the priced catalog, mirrored from Stripe</span></div>
+    <div class="entity-table-wrap"><table class="fields">
+      <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+      <tr><td class="fname">code</td><td class="ftype">text pk</td><td>litter · household · sanctuary · rescue</td></tr>
+      <tr><td class="fname">stripe_price_id_monthly</td><td class="ftype">text null</td><td>null for Litter (free) and Rescue (custom)</td></tr>
+      <tr><td class="fname">stripe_price_id_annual</td><td class="ftype">text null</td><td>—</td></tr>
+      <tr><td class="fname">pet_limit</td><td class="ftype">int null</td><td>null = unlimited</td></tr>
+      <tr><td class="fname">seat_limit</td><td class="ftype">int null</td><td>null = unlimited</td></tr>
+      <tr><td class="fname">location_limit</td><td class="ftype">int</td><td>1 for consumer tiers, 3 for Sanctuary, unlimited for Rescue</td></tr>
+    </table></div>
+  </div>
+
+  <div class="entity">
+    <div class="entity-head"><div class="ic" style="background:var(--trial)"><svg class="icon"><use href="#i-server"/></svg></div><h4>subscriptions</h4><span class="desc">the source of truth for what a tenant is actually paying for — only the Stripe webhook writes here</span></div>
+    <div class="entity-table-wrap"><table class="fields">
+      <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+      <tr><td class="fname">id</td><td class="ftype">uuid pk</td><td>—</td></tr>
+      <tr><td class="fname">tenant_id</td><td class="ftype">uuid fk → tenants.id</td><td>unique — one active subscription per tenant</td></tr>
+      <tr><td class="fname">stripe_customer_id</td><td class="ftype">text</td><td>—</td></tr>
+      <tr><td class="fname">stripe_subscription_id</td><td class="ftype">text null</td><td>null on the free Litter plan</td></tr>
+      <tr><td class="fname">status</td><td class="ftype">enum</td><td>trialing · active · past_due · canceled</td></tr>
+      <tr><td class="fname">current_period_end</td><td class="ftype">timestamptz</td><td>—</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="m-landing">
+  <div class="section-head"><span class="section-num">09</span><h2>Marketing &amp; pricing</h2></div>
+  <p class="section-intro">The public side of the site — what a visitor sees before they've created a workspace.</p>
+  <div class="screens-grid">
+    <div class="screen-card">
+      <div class="screen-chrome"><div class="dots"><span></span><span></span><span></span></div><div class="url">pets.shaoor-ai.com</div></div>
+      <div class="screen-body" style="display:block;padding:0">
+        <div style="padding:26px 24px 20px;background:linear-gradient(180deg,var(--surface-2),var(--paper))">
+          <div class="pill" style="margin-bottom:12px"><svg class="icon" style="width:.9em"><use href="#i-paw"/></svg>Part of the shaoor-ai.com family</div>
+          <h5 style="font-size:1.15rem;margin-bottom:6px">Every pet. Every habitat. One record.</h5>
+          <p class="sub" style="margin-bottom:16px">Cats, dogs, birds, tanks, foster litters — tracked, costed,
+            and remembered in one workspace. 14 days free, no card.</p>
+          <div style="display:flex;gap:8px"><div class="btn">Start free trial</div><div class="btn ghost">See pricing</div></div>
+        </div>
+        <div class="row3" style="padding:18px 24px 4px">
+          <div class="mini-card"><svg class="icon" style="color:var(--primary)"><use href="#i-layers"/></svg><div style="font-size:.68rem;margin-top:6px">Any species, one schema</div></div>
+          <div class="mini-card"><svg class="icon" style="color:var(--accent)"><use href="#i-cart"/></svg><div style="font-size:.68rem;margin-top:6px">Costs scoped to pet, group, or home</div></div>
+          <div class="mini-card"><svg class="icon" style="color:var(--org)"><use href="#i-users"/></svg><div style="font-size:.68rem;margin-top:6px">Built for shelters, too</div></div>
+        </div>
+      </div>
+      <div class="caption-block"><div class="name"><div class="ic"><svg class="icon"><use href="#i-home"/></svg></div>Landing page</div><p>The hero states the differentiator — species-agnostic, cost-scoped — in the first line, and routes straight to trial signup.</p></div>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-chrome"><div class="dots"><span></span><span></span><span></span></div><div class="url">pets.shaoor-ai.com/pricing</div></div>
+      <div class="screen-body" style="display:block;padding:18px 20px">
+        <h5>Plans</h5>
+        <div class="sub">Monthly · <span style="text-decoration:underline">Annual (2 months free)</span></div>
+        <div class="row2">
+          <div class="mini-card"><div style="font-weight:700;font-size:.78rem">Litter</div><div class="num" style="font-size:.9rem">₹0</div></div>
+          <div class="mini-card" style="border-color:var(--accent)"><div style="font-weight:700;font-size:.78rem">Sanctuary <span class="badge trial">trial</span></div><div class="num" style="font-size:.9rem">₹799</div></div>
+        </div>
+        <div class="row2">
+          <div class="mini-card"><div style="font-weight:700;font-size:.78rem">Household</div><div class="num" style="font-size:.9rem">₹349</div></div>
+          <div class="mini-card"><div style="font-weight:700;font-size:.78rem">Rescue &amp; Shelter</div><div class="num" style="font-size:.78rem">Talk to us</div></div>
+        </div>
+        <div class="field-row"><span class="k">Pets included</span><span>3 · unlimited · unlimited · unlimited</span></div>
+        <div class="field-row"><span class="k">Caregiver seats</span><span>1 · 3 · unlimited · unlimited</span></div>
+        <div class="field-row" style="border-bottom:none"><span class="k">Locations</span><span>1 · 1 · 3 · unlimited</span></div>
+      </div>
+      <div class="caption-block"><div class="name"><div class="ic"><svg class="icon"><use href="#i-invoice"/></svg></div>Pricing page</div><p>A feature-limit comparison, not a feature-checklist wall — the axis that actually differs by tier (pets, seats, locations) is what's shown.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="m-onboard">
+  <div class="section-head"><span class="section-num">10</span><h2>Sign-up &amp; onboarding</h2></div>
+  <p class="section-intro">Creating a workspace and starting the trial happen in the same short flow — no
+    separate "add your pets later" step that leaves the first session empty.</p>
+  <div class="screens-grid">
+    <div class="screen-card">
+      <div class="screen-chrome"><div class="dots"><span></span><span></span><span></span></div><div class="url">pets.shaoor-ai.com/signup</div></div>
+      <div class="screen-body" style="display:block;padding:18px 20px">
+        <h5>Create your workspace</h5>
+        <div class="sub">Step 1 of 3</div>
+        <div class="input-mock"><span class="k">Workspace name</span><span>The Home</span></div>
+        <div class="input-mock"><span class="k">Type</span><span>Household</span></div>
+        <div class="scope-toggle"><span class="on">Household</span><span>Rescue / Shelter</span></div>
+        <div style="margin-top:14px" class="btn">Continue →</div>
+        <div class="footnote" style="margin-top:10px">Starts your 14-day Sanctuary trial. No card needed today.</div>
+      </div>
+      <div class="caption-block"><div class="name"><div class="ic"><svg class="icon"><use href="#i-key"/></svg></div>Create workspace</div><p>Choosing "Rescue / Shelter" here is what later unlocks staff roles and public profiles — the tenant's type is set once, at creation.</p></div>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-chrome"><div class="dots"><span></span><span></span><span></span></div><div class="url">pets.shaoor-ai.com/onboarding/pets</div></div>
+      <div class="screen-body" style="display:block;padding:18px 20px">
+        <h5>Who lives here?</h5>
+        <div class="sub">Step 2 of 3 · add as many as you like, edit anytime</div>
+        <div class="pet-chip"><div class="avatar" style="background:var(--accent)">SM</div><div class="info"><div class="n">Simba</div><div class="s">Persian · Adult cat</div></div></div>
+        <div class="pet-chip"><div class="avatar" style="background:var(--coral)">NV</div><div class="info"><div class="n">Nova &amp; Comet</div><div class="s">Persian · Kittens · Group</div></div></div>
+        <div class="pet-chip"><div class="avatar" style="background:var(--trial)">RT</div><div class="info"><div class="n">The Reef Tank</div><div class="s">Habitat · 40 gal</div></div></div>
+        <div class="btn ghost" style="margin-top:6px"><svg class="icon" style="width:.9em"><use href="#i-plus"/></svg>Add another</div>
+      </div>
+      <div class="caption-block"><div class="name"><div class="ic"><svg class="icon"><use href="#i-paw"/></svg></div>First pets &amp; habitats</div><p>Groups and habitats are offered as peers of individual pets from the very first screen, not discovered later.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="m-app">
+  <div class="section-head"><span class="section-num">11</span><h2>The workspace</h2></div>
+  <p class="section-intro">The core app, carried over from the original design — now inside a web shell with a
+    workspace switcher, since one login can belong to more than one tenant.</p>
+  <div class="screens-grid">
+    <div class="screen-card">
+      <div class="screen-chrome"><div class="dots"><span></span><span></span><span></span></div><div class="url">pets.shaoor-ai.com/app</div></div>
+      <div class="screen-body">
+        <div class="app-nav">
+          <div class="brand"><svg class="icon"><use href="#i-paw"/></svg>Menagerie</div>
+          <div class="ws-switch"><span>🏠 The Home</span><span>⌄</span></div>
+          <a class="active"><svg class="icon"><use href="#i-home"/></svg>Home</a>
+          <a><svg class="icon"><use href="#i-paw"/></svg>Pets</a>
+          <a><svg class="icon"><use href="#i-stetho"/></svg>Health</a>
+          <a><svg class="icon"><use href="#i-cart"/></svg>Shopping</a>
+          <a><svg class="icon"><use href="#i-image"/></svg>Gallery</a>
+        </div>
+        <div class="screen-main">
+          <h5>Good evening</h5>
+          <div class="sub">Trial ends in 9 days · <span style="text-decoration:underline">upgrade</span></div>
+          <div class="row3">
+            <div class="stat-tile"><div class="num">₹2,140</div><div class="lbl">Spent · 30d</div></div>
+            <div class="stat-tile"><div class="num">3</div><div class="lbl">Tasks due</div></div>
+            <div class="stat-tile"><div class="num">1</div><div class="lbl">Vaccine due soon</div></div>
+          </div>
+          <div class="pet-chip"><div class="avatar" style="background:var(--accent)">SM</div><div class="info"><div class="n">Simba</div><div class="s">Weight logged 3d ago</div></div><span class="badge ok" style="margin-left:auto">on track</span></div>
+          <div class="pet-chip"><div class="avatar" style="background:var(--coral)">NV</div><div class="info"><div class="n">Nova &amp; Comet</div><div class="s">2nd booster due</div></div><span class="badge due" style="margin-left:auto">due</span></div>
+          <div class="pet-chip"><div class="avatar" style="background:var(--trial)">RT</div><div class="info"><div class="n">The Reef Tank</div><div class="s">Water change in 2d</div></div><span class="badge warn" style="margin-left:auto">soon</span></div>
+        </div>
+      </div>
+      <div class="caption-block"><div class="name"><div class="ic"><svg class="icon"><use href="#i-home"/></svg></div>Home, inside a workspace</div><p>The trial countdown sits in the header, not a dismissible banner — the one thing every trialing tenant should always see.</p></div>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-chrome"><div class="dots"><span></span><span></span><span></span></div><div class="url">pets.shaoor-ai.com/app/health</div></div>
+      <div class="screen-body">
+        <div class="app-nav">
+          <div class="brand"><svg class="icon"><use href="#i-paw"/></svg>Menagerie</div>
+          <div class="ws-switch"><span>🏠 The Home</span><span>⌄</span></div>
+          <a><svg class="icon"><use href="#i-home"/></svg>Home</a>
+          <a><svg class="icon"><use href="#i-paw"/></svg>Pets</a>
+          <a class="active"><svg class="icon"><use href="#i-stetho"/></svg>Health</a>
+          <a><svg class="icon"><use href="#i-cart"/></svg>Shopping</a>
+          <a><svg class="icon"><use href="#i-image"/></svg>Gallery</a>
+        </div>
+        <div class="screen-main">
+          <h5>Health</h5>
+          <div class="sub">Household-wide · filter by pet</div>
+          <div class="tab-row"><span class="tab on">Visits</span><span class="tab">Illnesses</span><span class="tab">Vaccinations</span></div>
+          <table class="mini-table">
+            <tr><th>Date</th><th>Who</th><th>Reason</th><th>Cost</th></tr>
+            <tr><td>Aug 28</td><td>Nova, Comet</td><td>Wellness check</td><td>₹2,600</td></tr>
+            <tr><td>Aug 12</td><td>Simba</td><td>Ear infection</td><td>₹1,200</td></tr>
+            <tr><td>Jul 30</td><td>Simba</td><td>Annual booster</td><td>₹850</td></tr>
+          </table>
+          <div class="btn" style="margin-top:12px"><svg class="icon" style="width:.9em"><use href="#i-plus"/></svg>Log a visit</div>
+        </div>
+      </div>
+      <div class="caption-block"><div class="name"><div class="ic"><svg class="icon"><use href="#i-stetho"/></svg></div>Health log</div><p>A joint visit for Nova and Comet lists both names and costs once — the group-scoping rule from §03, unchanged by the rebuild.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="m-billing">
+  <div class="section-head"><span class="section-num">12</span><h2>Billing &amp; team</h2></div>
+  <p class="section-intro">The two screens that exist only because this is a subscription product — owner-only,
+    gated by the <code>owner</code> membership role.</p>
+  <div class="screens-grid">
+    <div class="screen-card">
+      <div class="screen-chrome"><div class="dots"><span></span><span></span><span></span></div><div class="url">pets.shaoor-ai.com/app/settings/billing</div></div>
+      <div class="screen-body" style="display:block;padding:18px 20px">
+        <h5>Billing</h5>
+        <div class="sub">The Home · owner: you</div>
+        <div class="mini-card" style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-weight:700;font-size:.82rem">Sanctuary <span class="badge trial">trial</span></div><div style="font-size:.66rem;color:var(--muted)">Ends Sep 12 · then ₹799/mo</div></div>
+            <div class="btn primary">Add card</div>
+          </div>
+        </div>
+        <div class="field-row"><span class="k">Pets used</span><span>3 of unlimited</span></div>
+        <div class="field-row"><span class="k">Seats used</span><span>2 of unlimited</span></div>
+        <div class="field-row" style="border-bottom:none"><span class="k">Locations</span><span>1 of 3</span></div>
+        <div class="btn ghost" style="margin-top:14px">Manage in Stripe portal →</div>
+      </div>
+      <div class="caption-block"><div class="name"><div class="ic"><svg class="icon"><use href="#i-invoice"/></svg></div>Billing settings</div><p>Usage against the plan's limits is shown even on a free-riding trial — nudging toward the tier the workspace is already using, not the cheapest one.</p></div>
+    </div>
+
+    <div class="screen-card">
+      <div class="screen-chrome"><div class="dots"><span></span><span></span><span></span></div><div class="url">pets.shaoor-ai.com/app/settings/team</div></div>
+      <div class="screen-body" style="display:block;padding:18px 20px">
+        <h5>Team</h5>
+        <div class="sub">Invite the people who help care for these pets</div>
+        <div class="mini-table" style="margin-bottom:10px">
+          <div class="field-row"><span>you@shaoor-ai.com</span><span class="pill">owner</span></div>
+          <div class="field-row"><span>partner@example.com</span><span class="pill">caregiver</span></div>
+          <div class="field-row" style="border-bottom:none"><span>vet.iyer@example.com</span><span class="pill">viewer · pending</span></div>
+        </div>
+        <div class="input-mock"><span class="k">Invite by email</span><span>+ role</span></div>
+        <div class="btn" style="margin-top:4px"><svg class="icon" style="width:.9em"><use href="#i-plus"/></svg>Send invite</div>
+      </div>
+      <div class="caption-block"><div class="name"><div class="ic"><svg class="icon"><use href="#i-users"/></svg></div>Team &amp; roles</div><p>A pending "viewer" invite for a vet is the concrete case memberships was built for — temporary, read-only access without a full caregiver seat.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="roadmap">
+  <div class="section-head"><span class="section-num">13</span><h2>Build roadmap</h2></div>
+  <p class="section-intro">Tenancy and billing are built first — every later phase assumes
+    <code>tenant_id</code> and RLS already exist, rather than retrofitting them once pet data is live.</p>
+  <div class="plan-wrap"><table class="plan">
+    <tr><th>Phase</th><th>Scope</th><th>Ships</th></tr>
+    <tr><td class="lead"><span class="phase-num">1</span> Foundation</td><td class="tag">tenants · memberships · RLS</td><td>Supabase schema, auth, workspace creation, invite flow — no pet data yet.</td></tr>
+    <tr><td class="lead"><span class="phase-num">2</span> Billing</td><td class="tag">plans · subscriptions · Stripe</td><td>Trial clock, Checkout, Customer Portal, webhook handler, downgrade cron.</td></tr>
+    <tr><td class="lead"><span class="phase-num">3</span> Core records</td><td class="tag">pets · groups · habitats</td><td>Onboarding flow, pet/habitat CRUD, the Home dashboard.</td></tr>
+    <tr><td class="lead"><span class="phase-num">4</span> Health &amp; vets</td><td class="tag">vet_visits · illnesses · vaccinations · grooming</td><td>Vet directory, health log, reminder emails via cron.</td></tr>
+    <tr><td class="lead"><span class="phase-num">5</span> Shopping &amp; tasks</td><td class="tag">products · orders · care_tasks</td><td>Scoped shopping and recurring care, expense reporting.</td></tr>
+    <tr><td class="lead"><span class="phase-num">6</span> Gallery &amp; org tier</td><td class="tag">media · comments · public profiles</td><td>Photo uploads, comments, and the Rescue &amp; Shelter public adoption pages.</td></tr>
+  </table></div>
+</section>
+
+</main>
+
+<footer>
+  <p>pets.shaoor-ai.com — a Shaoor AI Tech Consultants product, sibling to construct.shaoor-ai.com. Design
+    document v2, rebuilt for a multi-tenant subscription launch.</p>
+</footer>
+</div>
+</div>
