@@ -40,6 +40,7 @@ export async function addVetVisit(tenantId: string, formData: FormData) {
     provider_id: str(formData, "provider_id"),
     visit_date: str(formData, "visit_date") ?? new Date().toISOString().slice(0, 10),
     reason,
+    vet_name: str(formData, "vet_name"),
     cost: num(formData, "cost"),
     weight_kg: num(formData, "weight_kg"),
     notes: str(formData, "notes"),

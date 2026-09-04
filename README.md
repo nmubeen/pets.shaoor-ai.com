@@ -69,7 +69,11 @@ A Next.js (App Router) build of the marketing site and app shell described in
   "Recent health events" and "Vaccines due" tiles pull from the same data.
   Visits and grooming pick a provider from the maintained list below
   instead of typing a name each time, and both can optionally log the
-  pet's weight — normally checked at every visit either way. The **Growth**
+  pet's weight — normally checked at every visit either way. Vet visits
+  also carry a free-text consulting doctor (`vet_name`,
+  `0019_vet_visit_doctor.sql`) separate from the facility (`provider_id`)
+  — the hospital is fixed, but who actually saw the pet varies visit to
+  visit. The **Growth**
   tab (`lib/growth.ts`, `components/health/GrowthPanel.tsx`) merges those
   `weight_kg` readings from both tables per pet into a hand-rolled SVG line
   chart (no charting dependency for one simple plot) plus a table below it,

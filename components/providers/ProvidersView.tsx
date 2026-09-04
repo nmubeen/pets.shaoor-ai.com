@@ -126,7 +126,7 @@ export function ProvidersView({ tenantId, providers }: { tenantId: string; provi
                     )}
                     {p.website && (
                       <a href={p.website} target="_blank" rel="noreferrer" className="text-primary hover:underline">
-                        {p.website}
+                        Click here
                       </a>
                     )}
                   </div>

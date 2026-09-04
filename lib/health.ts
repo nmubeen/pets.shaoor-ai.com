@@ -14,6 +14,9 @@ export type HealthRow = {
   who: string;
   reason: string;
   provider: string | null;
+  /** Consulting doctor's name — vet_visits only, since the facility's
+   * attending doctor can vary visit to visit; null for every other kind. */
+  doctor: string | null;
   cost: string | null;
   status: string | null;
   notes: string | null;
@@ -42,7 +45,7 @@ export async function getVetVisits(
   const [{ data }, who, provider] = await Promise.all([
     supabase
       .from("vet_visits")
-      .select("id, pet_id, provider_id, visit_date, reason, cost, notes")
+      .select("id, pet_id, provider_id, visit_date, reason, vet_name, cost, notes")
       .eq("tenant_id", tenantId)
       .order("visit_date", { ascending: false }),
     whoResolver(supabase, tenantId),
@@ -56,6 +59,7 @@ export async function getVetVisits(
     who: who(v.pet_id),
     reason: v.reason,
     provider: provider(v.provider_id),
+    doctor: v.vet_name,
     cost: formatCurrency(v.cost),
     status: null,
     notes: v.notes,
@@ -82,6 +86,7 @@ export async function getIllnesses(
     who: who(v.pet_id),
     reason: v.reason,
     provider: null,
+    doctor: null,
     cost: null,
     status: v.status === "resolved" ? "Resolved" : "Active",
     notes: v.notes,
@@ -110,6 +115,7 @@ export async function getVaccinations(
     who: who(v.pet_id),
     reason: v.reason,
     provider: null,
+    doctor: null,
     cost: null,
     status: statusLabel[v.status] ?? v.status,
     notes: v.notes,
@@ -137,6 +143,7 @@ export async function getGroomingVisits(
     who: who(v.pet_id),
     reason: v.service,
     provider: provider(v.provider_id),
+    doctor: null,
     cost: formatCurrency(v.cost),
     status: null,
     notes: v.notes,

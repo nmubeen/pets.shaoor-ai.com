@@ -158,6 +158,7 @@ export interface Database {
           provider_id: string | null;
           visit_date: string;
           reason: string;
+          vet_name: string | null;
           cost: number | null;
           weight_kg: number | null;
           notes: string | null;

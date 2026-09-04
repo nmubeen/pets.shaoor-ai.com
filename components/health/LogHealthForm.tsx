@@ -62,7 +62,13 @@ export function LogHealthForm({
               <span className={label}>Reason</span>
               <input name="reason" required className={field} placeholder="Wellness check" />
             </label>
-            <ProviderPicker providers={providers} label="Vet / hospital (optional)" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <ProviderPicker providers={providers} label="Vet / hospital (optional)" />
+              <label className="flex flex-col gap-1.5">
+                <span className={label}>Consulting doctor (optional)</span>
+                <input name="vet_name" className={field} placeholder="Dr. Mehta" />
+              </label>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Date</span>

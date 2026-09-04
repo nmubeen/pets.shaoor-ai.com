@@ -147,7 +147,11 @@ export function HealthView({
                   <td className="px-4 py-3 font-medium">{r.who}</td>
                   <td className="px-4 py-3">
                     {r.reason}
-                    {r.provider && <div className="text-xs text-muted mt-0.5">{r.provider}</div>}
+                    {(r.provider || r.doctor) && (
+                      <div className="text-xs text-muted mt-0.5">
+                        {[r.provider, r.doctor && `Dr. ${r.doctor}`].filter(Boolean).join(" · ")}
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3 font-mono">{r.cost ?? r.status ?? "—"}</td>
                   {active === "vaccinations" && (
