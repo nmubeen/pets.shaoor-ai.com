@@ -1,7 +1,7 @@
 import { Card, Badge } from "@/components/ui";
 import { RazorpayCheckout } from "@/components/billing/RazorpayCheckout";
 import { CancelSubscriptionButton } from "@/components/billing/CancelSubscriptionButton";
-import { requireActiveMembership } from "@/lib/tenant";
+import { requireMembershipUnchecked } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
 import { formatCurrency } from "@/lib/format";
 
@@ -10,8 +10,12 @@ function fmtDate(iso: string | null) {
   return new Date(iso).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
 }
 
+// Deliberately NOT gated by requireActiveMembership() — this is exactly
+// the page a blocked owner needs to reach to fix a lapsed/cancelled
+// subscription (see /app/pending's "Manage billing" link). Gating it too
+// would make a blocked workspace unrecoverable through the UI.
 export default async function BillingPage() {
-  const { supabase, user, active } = await requireActiveMembership();
+  const { supabase, user, active } = await requireMembershipUnchecked();
 
   const [{ data: plan }, { data: subscription }, roster, { count: seatCount }] = await Promise.all([
     supabase.from("plans").select("*").eq("code", active.planCode).maybeSingle(),

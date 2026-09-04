@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { uploadImage, removeImage } from "@/lib/storage";
 import type { PetSex, Species } from "@/lib/database.types";
 import { SPECIES_LIST } from "@/lib/species-labels";
+import { enforcePetsLimit, PlanLimitExceededError } from "@/lib/entitlements";
 
 function str(formData: FormData, key: string): string | null {
   const v = formData.get(key);
@@ -93,6 +94,15 @@ export async function addPet(tenantId: string, formData: FormData) {
   if (typeof s !== "string") return s;
 
   const supabase = await createClient();
+
+  try {
+    const { count } = await supabase.from("pets").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId);
+    await enforcePetsLimit(supabase, tenantId, "pets", count ?? 0);
+  } catch (err) {
+    if (err instanceof PlanLimitExceededError) return { error: err.message };
+    throw err;
+  }
+
   const photo = await resolvePhoto(supabase, tenantId, formData, null);
   if ("error" in photo) return photo;
 

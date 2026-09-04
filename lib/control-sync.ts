@@ -7,6 +7,15 @@
 // broken signup/payment/trial-expiry for the user. Called from signup,
 // the Razorpay webhook, the trial-expiry cron, and the cancel action —
 // see each for its `reason` string.
+//
+// shaoor-ai.com's control schema lives in this SAME physical Postgres
+// database (menagerie/control/construct/chat are all schemas in one
+// project) — this used to be an HTTP call to shaoor-ai.com, built on the
+// mistaken belief it was a separate database. It isn't, so this now calls
+// straight through to a wrapper RPC (menagerie.sync_control_subscription,
+// see supabase/migrations/0024_control_sync_wrapper.sql) that internally
+// invokes control.sync_shaoor_pets_subscription — no HTTP, no env vars,
+// no round trip.
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -22,10 +31,6 @@ function toControlPlanCode(planCode: string): ControlPlanCode {
 
 export async function syncSubscriptionToControlPlane(tenantId: string, reason: string) {
   try {
-    const controlPlaneUrl = process.env.SHAOOR_CONTROL_PLANE_URL;
-    const secret = process.env.PETS_CONTROL_SECRET;
-    if (!controlPlaneUrl || !secret) return; // not configured locally — silently skip, same as sendEmail's soft-fail
-
     const supabase = createAdminClient();
     const [{ data: tenant }, { data: subscription }, { data: owner }] = await Promise.all([
       supabase.from("tenants").select("id, name, plan_code, trial_ends_at").eq("id", tenantId).maybeSingle(),
@@ -43,24 +48,20 @@ export async function syncSubscriptionToControlPlane(tenantId: string, reason: s
     else if (subscription?.status === "canceled") status = "CANCELLED";
     else status = "ACTIVE"; // litter (free), or a lapsed trial with no paid subscription — currently valid, just free
 
-    await fetch(`${controlPlaneUrl}/api/control/sync/pets`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", authorization: `Bearer ${secret}` },
-      body: JSON.stringify({
-        tenantId: tenant.id,
-        tenantName: tenant.name,
-        ownerSubject: owner?.user_id ?? null,
-        ownerEmail: owner?.invited_email ?? null,
-        planCode: toControlPlanCode(tenant.plan_code),
-        status,
-        trialEndsAt: trialActive ? tenant.trial_ends_at : null,
-        currentPeriodStart: null,
-        currentPeriodEnd: subscription?.current_period_end ?? null,
-        reason,
-        correlationId: `pets-sync-${tenantId}-${Date.now()}`,
-      }),
-      signal: AbortSignal.timeout(5000),
+    const { error } = await supabase.rpc("sync_control_subscription", {
+      p_tenant_id: tenant.id,
+      p_tenant_name: tenant.name,
+      p_owner_subject: owner?.user_id ?? null,
+      p_owner_email: owner?.invited_email ?? null,
+      p_plan_code: toControlPlanCode(tenant.plan_code),
+      p_status: status,
+      p_trial_ends_at: trialActive ? tenant.trial_ends_at : null,
+      p_current_period_start: null,
+      p_current_period_end: subscription?.current_period_end ?? null,
+      p_reason: reason,
+      p_correlation_id: `pets-sync-${tenantId}-${Date.now()}`,
     });
+    if (error) console.error("Control plane sync failed (non-blocking)", error);
   } catch (error) {
     console.error("Control plane sync failed (non-blocking)", error);
   }

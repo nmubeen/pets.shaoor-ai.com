@@ -4,6 +4,8 @@ import { NextResponse, type NextRequest } from "next/server";
 // Refreshes the Supabase auth session on every request so Server Components
 // always see a valid (or correctly expired) cookie. Route guarding itself
 // happens in app/app/layout.tsx, not here — this only keeps cookies fresh.
+// (Renamed from lib/supabase/middleware.ts alongside the root middleware.ts
+// -> proxy.ts move — see proxy.ts's header comment for why.)
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 

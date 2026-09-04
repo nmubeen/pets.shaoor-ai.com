@@ -7,6 +7,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { getPetsCommercialAccess } from "@/lib/access/pets-commercial-access";
 import type { MembershipRole, WorkspaceType } from "@/lib/database.types";
 
 const ACTIVE_TENANT_COOKIE = "menagerie_active_tenant";
@@ -34,8 +35,11 @@ export async function requireUser() {
  * Redirects to /login if signed out, or to /signup if signed in but with no
  * workspace at all (shouldn't normally happen — handle_new_user creates one
  * at signup — but covers an unconfirmed-email edge case gracefully).
+ * Does NOT check commercial access — used by requireActiveMembership()
+ * before it gates, and by /app/pending itself (which must stay reachable
+ * even when access is blocked, so it can't call the gated version).
  */
-export async function requireActiveMembership(): Promise<{
+export async function requireMembershipUnchecked(): Promise<{
   supabase: Awaited<ReturnType<typeof createClient>>;
   user: User;
   memberships: ActiveMembership[];
@@ -76,6 +80,21 @@ export async function requireActiveMembership(): Promise<{
   const active = memberships.find((m) => m.tenantId === preferred) ?? memberships[0];
 
   return { supabase, user, memberships, active };
+}
+
+/** Same as requireMembershipUnchecked(), but also redirects to /app/pending
+ * when the active workspace's subscription doesn't currently allow access
+ * (mirrors construct.shaoor-ai.com's requireActiveConstructContext()). */
+export async function requireActiveMembership(): Promise<{
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  user: User;
+  memberships: ActiveMembership[];
+  active: ActiveMembership;
+}> {
+  const result = await requireMembershipUnchecked();
+  const access = await getPetsCommercialAccess(result.supabase, result.active.tenantId);
+  if (!access.allowed) redirect(`/app/pending?reason=${access.reason ?? "subscription"}`);
+  return result;
 }
 
 export { ACTIVE_TENANT_COOKIE };

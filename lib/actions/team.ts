@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email";
 import { emailShell, emailButton } from "@/lib/email-templates";
+import { enforcePetsLimit, PlanLimitExceededError } from "@/lib/entitlements";
 
 const ROLE_LABEL: Record<string, string> = { caregiver: "a caregiver", viewer: "a viewer" };
 
@@ -45,6 +46,14 @@ export async function inviteMember(tenantId: string, formData: FormData) {
   if (role !== "caregiver" && role !== "viewer") return { error: "Invalid role." };
 
   const supabase = await createClient();
+
+  try {
+    const { count } = await supabase.from("memberships").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId).in("status", ["active", "invited"]);
+    await enforcePetsLimit(supabase, tenantId, "seats", count ?? 0);
+  } catch (err) {
+    if (err instanceof PlanLimitExceededError) return { error: err.message };
+    throw err;
+  }
 
   const [{ data: tenant }, {
     data: { user },

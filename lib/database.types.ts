@@ -368,6 +368,22 @@ export interface Database {
         Args: Record<PropertyKey, never>;
         Returns: void;
       };
+      sync_control_subscription: {
+        Args: {
+          p_tenant_id: string;
+          p_tenant_name: string;
+          p_owner_subject: string | null;
+          p_owner_email: string | null;
+          p_plan_code: string;
+          p_status: string;
+          p_trial_ends_at: string | null;
+          p_current_period_start: string | null;
+          p_current_period_end: string | null;
+          p_reason: string;
+          p_correlation_id: string;
+        };
+        Returns: Record<string, unknown>;
+      };
     };
   };
 }
