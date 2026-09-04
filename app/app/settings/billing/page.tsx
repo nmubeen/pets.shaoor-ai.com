@@ -1,7 +1,13 @@
 import { Card, Badge } from "@/components/ui";
-import { UpgradeButton, ManageInPortalButton } from "@/components/billing/BillingActions";
 import { requireActiveMembership } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
+
+// Payment processing (Stripe) is intentionally not wired up yet — see
+// lib/stripe.ts and app/api/stripe/* for the scaffolding, left in place but
+// disconnected from the UI. Everything on this page (plan, trial, usage)
+// is real data from menagerie.tenants / .subscriptions / .plans; there's
+// just no way to pay yet, and the trial downgrades to Litter automatically
+// via the cron sweep with no card ever required.
 
 function fmtDate(iso: string | null) {
   if (!iso) return null;
@@ -22,7 +28,6 @@ export default async function BillingPage() {
       .eq("status", "active"),
   ]);
 
-  const isOwner = active.role === "owner";
   const isTrialing = subscription?.status === "trialing" && active.trialEndsAt;
   const price = plan?.price_monthly_inr;
 
@@ -30,7 +35,9 @@ export default async function BillingPage() {
     <div className="flex flex-col gap-6 max-w-2xl">
       <div>
         <h1 className="text-2xl mb-1">Billing</h1>
-        <p className="text-sm text-muted">{active.tenantName} · your role: {active.role}</p>
+        <p className="text-sm text-muted">
+          {active.tenantName} · your role: {active.role}
+        </p>
       </div>
 
       <Card className="p-5">
@@ -39,31 +46,15 @@ export default async function BillingPage() {
             <div className="flex items-center gap-2 font-semibold text-base">
               {plan?.name ?? active.planCode}
               {isTrialing && <Badge tone="trial">trial</Badge>}
-              {subscription?.status === "past_due" && <Badge tone="due">past due</Badge>}
             </div>
             <div className="text-xs text-muted mt-1">
               {isTrialing
-                ? `Ends ${fmtDate(active.trialEndsAt)}${price ? ` · then ₹${price}/mo` : ""}`
+                ? `Ends ${fmtDate(active.trialEndsAt)}${price ? ` · then ₹${price}/mo` : ""} · no card required`
                 : price
                   ? `₹${price}/mo`
                   : "Contact sales for pricing"}
             </div>
           </div>
-          {isOwner &&
-            (subscription?.stripe_customer_id ? (
-              <ManageInPortalButton
-                tenantId={active.tenantId}
-                className="bg-primary text-primary-ink text-sm font-semibold px-4 py-2.5 rounded-lg hover:brightness-110 transition"
-              />
-            ) : (
-              <UpgradeButton
-                tenantId={active.tenantId}
-                planCode={active.planCode === "litter" ? "household" : active.planCode}
-                className="bg-primary text-primary-ink text-sm font-semibold px-4 py-2.5 rounded-lg hover:brightness-110 transition"
-              >
-                Add card
-              </UpgradeButton>
-            ))}
         </div>
       </Card>
 
@@ -89,21 +80,10 @@ export default async function BillingPage() {
         </div>
       </Card>
 
-      {isOwner && subscription?.stripe_customer_id && (
-        <ManageInPortalButton
-          tenantId={active.tenantId}
-          className="self-start text-sm text-muted border border-line rounded-lg px-4 py-2.5 hover:text-ink hover:bg-surface-2 transition"
-        />
-      )}
-
-      {!isOwner && (
-        <p className="text-xs text-muted">Only the workspace owner can manage billing.</p>
-      )}
-
       <p className="text-xs text-muted">
-        Subscription changes, invoices, and cancellation all happen through
-        Stripe&rsquo;s own Customer Portal — Menagerie never stores your card
-        details directly.
+        Payment isn&rsquo;t wired up yet — when your trial ends without a
+        plan change, this workspace moves to the free Litter tier
+        automatically. No card is collected at any point today.
       </p>
     </div>
   );
