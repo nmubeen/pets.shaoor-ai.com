@@ -5,11 +5,13 @@
 // applies. Unauthenticated requests here always take the second branch.
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import type { Species } from "@/lib/database.types";
 
 export type AdoptablePet = {
   id: string;
   name: string;
-  species: string;
+  species: Species;
+  breed: string;
   lifeStage: string | null;
   adoptionNote: string | null;
   orgName: string;
@@ -18,7 +20,8 @@ export type AdoptablePet = {
 function mapRow(p: {
   id: string;
   name: string;
-  species: string;
+  species: Species;
+  breed: string;
   life_stage: string | null;
   adoption_note: string | null;
   tenants: unknown;
@@ -28,6 +31,7 @@ function mapRow(p: {
     id: p.id,
     name: p.name,
     species: p.species,
+    breed: p.breed,
     lifeStage: p.life_stage,
     adoptionNote: p.adoption_note,
     orgName: tenant?.name ?? "A Menagerie workspace",
@@ -38,7 +42,7 @@ export async function listAdoptablePets(): Promise<AdoptablePet[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("pets")
-    .select("id, name, species, life_stage, adoption_note, tenants(name)")
+    .select("id, name, species, breed, life_stage, adoption_note, tenants(name)")
     .eq("is_adoptable", true)
     .order("created_at", { ascending: false });
   return (data ?? []).map(mapRow);
@@ -48,7 +52,7 @@ export async function getAdoptablePet(id: string): Promise<AdoptablePet | null> 
   const supabase = await createClient();
   const { data } = await supabase
     .from("pets")
-    .select("id, name, species, life_stage, adoption_note, tenants(name)")
+    .select("id, name, species, breed, life_stage, adoption_note, tenants(name)")
     .eq("id", id)
     .eq("is_adoptable", true)
     .maybeSingle();

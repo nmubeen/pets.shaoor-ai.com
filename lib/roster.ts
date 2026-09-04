@@ -5,13 +5,14 @@
 // were removed.
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
-import type { PetSex, SpeciesGroup } from "@/lib/database.types";
+import type { PetSex, Species } from "@/lib/database.types";
+import { SPECIES_LABEL } from "@/lib/species-labels";
 
 /** Fields that only ever apply to kind: "pet" — null for habitats. */
 export type PetDetails = {
-  breed: string | null;
+  species: Species;
+  breed: string;
   sex: PetSex;
-  speciesGroup: SpeciesGroup | null;
   birthDate: string | null;
   lifeStage: string | null;
   weightKg: number | null;
@@ -31,12 +32,11 @@ export type RosterItem = {
   initials: string;
   color: string;
   createdAt: string;
-  species: string | null; // pet
   habitatType: string | null; // habitat
   capacityNote: string | null; // habitat
   photoPath: string | null; // raw storage path — for the edit form to replace/remove
   photoUrl: string | null; // signed URL — for display
-  pet: PetDetails | null; // pet only
+  pet: PetDetails | null; // pet only — species/breed live here, not top-level
 };
 
 const COLORS = [
@@ -71,9 +71,8 @@ function ageLabel(birthDate: string | null): string | null {
 
 const SEX_LABEL: Record<PetSex, string | null> = { male: "Male", female: "Female", unknown: null };
 
-function petSubtitle(species: string, breed: string | null, sex: PetSex, birthDate: string | null, lifeStage: string | null) {
-  const primary = breed ? `${breed} ${species}` : species;
-  return [primary, SEX_LABEL[sex], ageLabel(birthDate) ?? lifeStage].filter(Boolean).join(" · ");
+function petSubtitle(species: Species, breed: string, sex: PetSex, birthDate: string | null, lifeStage: string | null) {
+  return [breed, SPECIES_LABEL[species], SEX_LABEL[sex], ageLabel(birthDate) ?? lifeStage].filter(Boolean).join(" · ");
 }
 
 export async function getRoster(
@@ -84,7 +83,7 @@ export async function getRoster(
     supabase
       .from("pets")
       .select(
-        "id,name,species,breed,sex,species_group,birth_date,life_stage,weight_kg,color,microchip_id,neutered,notes,is_adoptable,adoption_note,photo_path,created_at"
+        "id,name,species,breed,sex,birth_date,life_stage,weight_kg,color,microchip_id,neutered,notes,is_adoptable,adoption_note,photo_path,created_at"
       )
       .eq("tenant_id", tenantId),
     supabase
@@ -103,14 +102,13 @@ export async function getRoster(
         subtitle: petSubtitle(p.species, p.breed, sex, p.birth_date, p.life_stage),
         initials: initialsFor(p.name),
         createdAt: p.created_at,
-        species: p.species,
         habitatType: null,
         capacityNote: null,
         photoPath: p.photo_path,
         pet: {
+          species: p.species,
           breed: p.breed,
           sex,
-          speciesGroup: p.species_group,
           birthDate: p.birth_date,
           lifeStage: p.life_stage,
           weightKg: p.weight_kg,
@@ -130,7 +128,6 @@ export async function getRoster(
       subtitle: ["Habitat", h.habitat_type, h.capacity_note].filter(Boolean).join(" · "),
       initials: initialsFor(h.name),
       createdAt: h.created_at,
-      species: null,
       habitatType: h.habitat_type,
       capacityNote: h.capacity_note,
       photoPath: h.photo_path,

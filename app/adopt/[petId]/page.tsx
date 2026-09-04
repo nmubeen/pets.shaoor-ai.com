@@ -5,6 +5,7 @@ import { Footer } from "@/components/marketing/Footer";
 import { Card, Btn } from "@/components/ui";
 import { BackIcon, PawIcon } from "@/components/icons";
 import { getAdoptablePet } from "@/lib/adoption";
+import { SPECIES_LABEL } from "@/lib/species-labels";
 
 export default async function AdoptProfilePage({ params }: { params: Promise<{ petId: string }> }) {
   const { petId } = await params;
@@ -25,7 +26,9 @@ export default async function AdoptProfilePage({ params }: { params: Promise<{ p
             <PawIcon className="text-2xl" />
           </div>
           <h1 className="text-3xl mb-1">{pet.name}</h1>
-          <p className="text-muted mb-6">{[pet.species, pet.lifeStage].filter(Boolean).join(" · ")}</p>
+          <p className="text-muted mb-6">
+            {[pet.breed, SPECIES_LABEL[pet.species], pet.lifeStage].filter(Boolean).join(" · ")}
+          </p>
 
           {pet.adoptionNote && <p className="whitespace-pre-line mb-8">{pet.adoptionNote}</p>}
 

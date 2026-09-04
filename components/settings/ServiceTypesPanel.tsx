@@ -4,20 +4,11 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
 import { addServiceType, updateServiceType, deleteServiceType } from "@/lib/actions/care-services";
+import { SPECIES_LIST, SPECIES_LABEL } from "@/lib/species-labels";
 import type { ServiceType } from "@/lib/care-services";
 
 const field = "bg-paper border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary transition";
 const label = "text-[.68rem] uppercase tracking-[.05em] text-muted";
-
-const SPECIES_LABEL: Record<string, string> = {
-  dog: "Dog",
-  cat: "Cat",
-  bird: "Bird",
-  reptile: "Reptile",
-  fish: "Fish",
-  small_mammal: "Small mammal",
-  other: "Other",
-};
 
 function ServiceTypeForm({
   tenantId,
@@ -54,11 +45,11 @@ function ServiceTypeForm({
         </label>
         <label className="flex flex-col gap-1.5">
           <span className={label}>Species (optional — blank = any species)</span>
-          <select name="species_group" defaultValue={initial?.speciesGroup ?? ""} className={field}>
+          <select name="species" defaultValue={initial?.species ?? ""} className={field}>
             <option value="">Any species</option>
-            {Object.entries(SPECIES_LABEL).map(([value, l]) => (
+            {SPECIES_LIST.map((value) => (
               <option key={value} value={value}>
-                {l}
+                {SPECIES_LABEL[value]}
               </option>
             ))}
           </select>
@@ -174,7 +165,7 @@ export function ServiceTypesPanel({ tenantId, serviceTypes }: { tenantId: string
                   <span className="font-medium">{s.name}</span>
                   <span className="text-muted">
                     {" "}
-                    — {s.speciesGroup ? SPECIES_LABEL[s.speciesGroup] : "Any species"} ·{" "}
+                    — {s.species ? SPECIES_LABEL[s.species] : "Any species"} ·{" "}
                     {s.frequencyDays ? `every ${s.frequencyDays} days` : "no reminder"}
                   </span>
                 </div>

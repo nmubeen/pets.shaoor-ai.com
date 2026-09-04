@@ -2,9 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import type { SpeciesGroup } from "@/lib/database.types";
-
-const SPECIES_GROUPS: SpeciesGroup[] = ["dog", "cat", "bird", "reptile", "fish", "small_mammal", "other"];
+import type { Species } from "@/lib/database.types";
+import { SPECIES_LIST } from "@/lib/species-labels";
 
 function str(formData: FormData, key: string): string | null {
   const v = formData.get(key);
@@ -34,8 +33,8 @@ function planFields(formData: FormData) {
 
 /** Only ever creates a tenant-owned row — the built-in defaults (tenant_id null) aren't reachable through this. */
 export async function addVaccinationPlan(tenantId: string, formData: FormData) {
-  const speciesGroup = str(formData, "species_group");
-  if (!speciesGroup || !SPECIES_GROUPS.includes(speciesGroup as SpeciesGroup)) return { error: "Choose a species." };
+  const species = str(formData, "species");
+  if (!species || !SPECIES_LIST.includes(species as Species)) return { error: "Choose a species." };
   const fields = planFields(formData);
   if (!fields.vaccine_name) return { error: "Vaccine name is required." };
   if (fields.age_weeks_due === null) return { error: "Age when due (in weeks) is required." };
@@ -43,7 +42,7 @@ export async function addVaccinationPlan(tenantId: string, formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.from("vaccine_protocols").insert({
     tenant_id: tenantId,
-    species_group: speciesGroup as SpeciesGroup,
+    species: species as Species,
     dose_sequence: 1,
     is_core: true,
     vaccine_name: fields.vaccine_name,

@@ -4,20 +4,11 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
 import { addVaccinationPlan, updateVaccinationPlan, deleteVaccinationPlan } from "@/lib/actions/vaccination-plans";
+import { SPECIES_LIST, SPECIES_LABEL } from "@/lib/species-labels";
 import type { VaccinationPlan } from "@/lib/vaccination-plans";
 
 const field = "bg-paper border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary transition";
 const label = "text-[.68rem] uppercase tracking-[.05em] text-muted";
-
-const SPECIES_LABEL: Record<string, string> = {
-  dog: "Dog",
-  cat: "Cat",
-  bird: "Bird",
-  reptile: "Reptile",
-  fish: "Fish",
-  small_mammal: "Small mammal",
-  other: "Other",
-};
 
 function PlanForm({
   tenantId,
@@ -50,13 +41,13 @@ function PlanForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <label className="flex flex-col gap-1.5">
           <span className={label}>Species</span>
-          <select name="species_group" required defaultValue={initial?.speciesGroup ?? ""} className={field}>
+          <select name="species" required defaultValue={initial?.species ?? ""} className={field}>
             <option value="" disabled>
               Choose a species
             </option>
-            {Object.entries(SPECIES_LABEL).map(([value, l]) => (
+            {SPECIES_LIST.map((value) => (
               <option key={value} value={value}>
-                {l}
+                {SPECIES_LABEL[value]}
               </option>
             ))}
           </select>
@@ -141,7 +132,7 @@ function PlanRow({ p, tenantId, onEdit }: { p: VaccinationPlan; tenantId: string
         <span className="font-medium">{p.vaccineName}</span>
         <span className="text-muted">
           {" "}
-          — {SPECIES_LABEL[p.speciesGroup]} · due at {p.ageWeeksDue}wk
+          — {SPECIES_LABEL[p.species]} · due at {p.ageWeeksDue}wk
           {p.boosterIntervalMonths ? ` · booster every ${p.boosterIntervalMonths}mo` : ""}
         </span>
         {p.notes && <div className="text-xs text-muted mt-0.5">{p.notes}</div>}

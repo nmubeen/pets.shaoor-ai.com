@@ -1,10 +1,10 @@
-// Turns a species_group + birth_date into a concrete, editable vaccination
+// Turns a species + birth_date into a concrete, editable vaccination
 // schedule — the "predictive" half of the feature. See
 // supabase/migrations/0014_predictive_scheduling.sql for the data model
 // and the reasoning behind how series doses vs. recurring boosters work.
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
-import type { SpeciesGroup } from "@/lib/database.types";
+import type { Species } from "@/lib/database.types";
 
 export type ProtocolStep = {
   id: string;
@@ -18,12 +18,12 @@ export type ProtocolStep = {
 
 export async function getProtocols(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  speciesGroup: SpeciesGroup
+  species: Species
 ): Promise<ProtocolStep[]> {
   const { data } = await supabase
     .from("vaccine_protocols")
     .select("id, vaccine_name, dose_sequence, age_weeks_due, booster_interval_months, is_core, notes")
-    .eq("species_group", speciesGroup)
+    .eq("species", species)
     .order("vaccine_name")
     .order("dose_sequence");
 

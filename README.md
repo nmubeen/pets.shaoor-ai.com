@@ -45,11 +45,20 @@ A Next.js (App Router) build of the marketing site and app shell described in
   every health/shopping/task/media row scoped to that pet or habitat at the
   DB level, plus best-effort cleanup of its Storage photos; the UI always
   confirms first), and a merged "roster" view (`lib/roster.ts`) powering the
-  dashboard, `/app/pets`, and onboarding. A pet record captures breed, sex,
+  dashboard, `/app/pets`, and onboarding. **`species` and `breed` were
+  renamed and swapped from the original design** (`0022_rename_species_breed.sql`)
+  — the old pair (a required free-text `species`, e.g. "Persian Cat", plus a
+  separate optional `breed`) described the same thing at two different
+  specificities and was confusing; now `species` is the one structured,
+  required field (dog/cat/bird/reptile/fish/small_mammal/other — the same
+  enum the predictive-scheduling and service-catalog features already
+  matched pets against, previously called `species_group`) and `breed` the
+  one free-text, required field (e.g. "Labrador") — asked in that order,
+  species first, on the roster form. A pet record also captures sex,
   birth date, life stage, weight, color/markings, microchip ID, spay/neuter
   status, and notes — `/app/pets` shows a computed age from birth date and
   has real "Edit" and "Delete" affordances on every card. Onboarding stays
-  deliberately quick (name/species/life stage only — "add now, fill in
+  deliberately quick (species/breed/life stage only — "add now, fill in
   details later"); the full field set lives on `/app/pets`. Every pet and
   habitat can also carry a display photo (`photo_path`, uploaded straight
   into the same private "media" Storage bucket the gallery uses, under
@@ -107,10 +116,9 @@ A Next.js (App Router) build of the marketing site and app shell described in
   stays a separate, manually-set "current weight" snapshot, never
   auto-synced from visit history.
 - **Predictive vaccination scheduling, medications & Settings → Care** —
-  beyond passive record-keeping: an optional `species_group` on `pets`
-  (dog/cat/bird/reptile/fish/small_mammal/other — deliberately a
-  scheduling classifier only, not a reintroduction of per-species tables
-  per §03) matches a pet against `vaccine_protocols`
+  beyond passive record-keeping: `pets.species` (dog/cat/bird/reptile/fish/
+  small_mammal/other — required; see Core records above for the rename
+  from `species_group`) matches a pet against `vaccine_protocols`
   (`0014_predictive_scheduling.sql`) seeded with the standard puppy/kitten
   core series (DHPP, Rabies, Bordetella for dogs; FVRCP, Rabies, FeLV for
   cats). **`/app/settings/care`** (`0020_unified_visits.sql` widened

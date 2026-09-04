@@ -11,7 +11,7 @@ export type IllnessStatus = "active" | "resolved";
 export type VaccinationStatus = "due" | "scheduled" | "complete";
 export type PetSex = "male" | "female" | "unknown";
 export type ServiceProviderCategory = "vet" | "grooming" | "offline_shop" | "online_shop";
-export type SpeciesGroup = "dog" | "cat" | "bird" | "reptile" | "fish" | "small_mammal" | "other";
+export type Species = "dog" | "cat" | "bird" | "reptile" | "fish" | "small_mammal" | "other";
 export type MedicationStatus = "active" | "completed" | "discontinued";
 
 // The polymorphic pet_id/habitat_id scope — exactly one non-null, enforced
@@ -84,13 +84,20 @@ export interface Database {
         },
         "tenant_id"
       >;
+      // species (dog/cat/bird/...) and breed (free text, e.g. "Labrador")
+      // were renamed from species_group and the old free-text species
+      // column respectively (0022_rename_species_breed.sql) — the old
+      // pair (species as free text + a separate optional breed) was
+      // confusing since both described "what kind of animal", just at
+      // different specificity; now species is the one structured,
+      // required field and breed the one free-text, required field.
       pets: Table<
         {
           id: string;
           tenant_id: string;
           name: string;
-          species: string;
-          breed: string | null;
+          species: Species;
+          breed: string;
           sex: PetSex | null;
           birth_date: string | null;
           life_stage: string | null;
@@ -102,10 +109,9 @@ export interface Database {
           is_adoptable: boolean;
           adoption_note: string | null;
           photo_path: string | null;
-          species_group: SpeciesGroup | null;
           created_at: string;
         },
-        "tenant_id" | "name" | "species"
+        "tenant_id" | "name" | "species" | "breed"
       >;
       habitats: Table<
         {
@@ -181,7 +187,7 @@ export interface Database {
           // null = applies to any species (generic); set = specific to
           // that species, tracked/reminded separately from the
           // same-named service for a different one (0021_service_type_species.sql).
-          species_group: SpeciesGroup | null;
+          species: Species | null;
           created_at: string;
         },
         "tenant_id" | "name"
@@ -236,7 +242,7 @@ export interface Database {
         {
           id: string;
           tenant_id: string | null;
-          species_group: SpeciesGroup;
+          species: Species;
           vaccine_name: string;
           dose_sequence: number;
           age_weeks_due: number;
@@ -245,7 +251,7 @@ export interface Database {
           notes: string | null;
           created_at: string;
         },
-        "species_group" | "vaccine_name" | "age_weeks_due"
+        "species" | "vaccine_name" | "age_weeks_due"
       >;
       medications: Table<
         {

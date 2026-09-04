@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Card, Avatar } from "@/components/ui";
 import { addPet, addHabitat, updatePet, updateHabitat } from "@/lib/actions/roster";
+import { SPECIES_LIST, SPECIES_LABEL } from "@/lib/species-labels";
 import type { RosterItem } from "@/lib/roster";
 
 type Kind = "pet" | "habitat";
@@ -107,40 +108,31 @@ export function AddRosterForm({
           />
         </label>
 
-        {kind !== "habitat" && (
-          <label className="flex flex-col gap-1.5">
-            <span className={label}>Species</span>
-            <input
-              name="species"
-              required={kind === "pet"}
-              defaultValue={initial?.species ?? ""}
-              className={field}
-              placeholder="Persian cat"
-            />
-          </label>
+        {kind === "pet" && (
+          <>
+            <label className="flex flex-col gap-1.5">
+              <span className={label}>Species</span>
+              <select name="species" required defaultValue={pet?.species ?? ""} className={field}>
+                <option value="" disabled>
+                  Choose a species
+                </option>
+                {SPECIES_LIST.map((s) => (
+                  <option key={s} value={s}>
+                    {SPECIES_LABEL[s]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className={label}>Breed</span>
+              <input name="breed" required defaultValue={pet?.breed ?? ""} className={field} placeholder="Labrador" />
+            </label>
+          </>
         )}
 
         {kind === "pet" && !compact && (
           <>
-            <label className="flex flex-col gap-1.5">
-              <span className={label}>Species group (optional — powers vaccination schedule suggestions)</span>
-              <select name="species_group" defaultValue={pet?.speciesGroup ?? ""} className={field}>
-                <option value="">Not set</option>
-                <option value="dog">Dog</option>
-                <option value="cat">Cat</option>
-                <option value="bird">Bird</option>
-                <option value="reptile">Reptile</option>
-                <option value="fish">Fish</option>
-                <option value="small_mammal">Small mammal</option>
-                <option value="other">Other</option>
-              </select>
-            </label>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1.5">
-                <span className={label}>Breed (optional)</span>
-                <input name="breed" defaultValue={pet?.breed ?? ""} className={field} placeholder="Persian" />
-              </label>
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Sex</span>
                 <select name="sex" defaultValue={pet?.sex ?? "unknown"} className={field}>
@@ -149,25 +141,22 @@ export function AddRosterForm({
                   <option value="female">Female</option>
                 </select>
               </label>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Birth date (optional)</span>
                 <input type="date" name="birth_date" defaultValue={pet?.birthDate ?? ""} className={field} />
               </label>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Life stage (optional)</span>
                 <input
                   name="life_stage"
                   defaultValue={pet?.lifeStage ?? ""}
                   className={field}
-                  placeholder="Adult cat"
+                  placeholder="Adult"
                 />
               </label>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Weight, kg (optional)</span>
                 <input
@@ -180,6 +169,9 @@ export function AddRosterForm({
                   placeholder="4.2"
                 />
               </label>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Spayed / neutered</span>
                 <select
@@ -192,18 +184,16 @@ export function AddRosterForm({
                   <option value="no">No</option>
                 </select>
               </label>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Color / markings (optional)</span>
                 <input name="color" defaultValue={pet?.color ?? ""} className={field} placeholder="Cream & white" />
               </label>
-              <label className="flex flex-col gap-1.5">
-                <span className={label}>Microchip ID (optional)</span>
-                <input name="microchip_id" defaultValue={pet?.microchipId ?? ""} className={field} />
-              </label>
             </div>
+
+            <label className="flex flex-col gap-1.5">
+              <span className={label}>Microchip ID (optional)</span>
+              <input name="microchip_id" defaultValue={pet?.microchipId ?? ""} className={field} />
+            </label>
 
             <label className="flex flex-col gap-1.5">
               <span className={label}>Notes (optional)</span>
@@ -221,7 +211,7 @@ export function AddRosterForm({
         {kind === "pet" && compact && (
           <label className="flex flex-col gap-1.5">
             <span className={label}>Life stage (optional)</span>
-            <input name="life_stage" defaultValue={pet?.lifeStage ?? ""} className={field} placeholder="Adult cat" />
+            <input name="life_stage" defaultValue={pet?.lifeStage ?? ""} className={field} placeholder="Adult" />
           </label>
         )}
 

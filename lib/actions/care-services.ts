@@ -2,9 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import type { SpeciesGroup } from "@/lib/database.types";
-
-const SPECIES_GROUPS: SpeciesGroup[] = ["dog", "cat", "bird", "reptile", "fish", "small_mammal", "other"];
+import type { Species } from "@/lib/database.types";
+import { SPECIES_LIST } from "@/lib/species-labels";
 
 function str(formData: FormData, key: string): string | null {
   const v = formData.get(key);
@@ -18,10 +17,10 @@ function num(formData: FormData, key: string): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-/** Blank option means "applies to any species" (null) — same tri-state pattern as roster.ts's speciesGroup parser. */
-function speciesGroup(formData: FormData): SpeciesGroup | null {
-  const v = str(formData, "species_group");
-  return v && SPECIES_GROUPS.includes(v as SpeciesGroup) ? (v as SpeciesGroup) : null;
+/** Blank option means "applies to any species" (null) — same tri-state pattern as roster.ts's old speciesGroup parser. */
+function species(formData: FormData): Species | null {
+  const v = str(formData, "species");
+  return v && SPECIES_LIST.includes(v as Species) ? (v as Species) : null;
 }
 
 function revalidate() {
@@ -38,7 +37,7 @@ export async function addServiceType(tenantId: string, formData: FormData) {
     tenant_id: tenantId,
     name,
     frequency_days: num(formData, "frequency_days"),
-    species_group: speciesGroup(formData),
+    species: species(formData),
   });
   if (error) {
     if (error.code === "23505") return { error: "A service with that name (for that species) already exists." };
@@ -56,7 +55,7 @@ export async function updateServiceType(tenantId: string, serviceTypeId: string,
   const supabase = await createClient();
   const { error } = await supabase
     .from("care_service_types")
-    .update({ name, frequency_days: num(formData, "frequency_days"), species_group: speciesGroup(formData) })
+    .update({ name, frequency_days: num(formData, "frequency_days"), species: species(formData) })
     .eq("id", serviceTypeId)
     .eq("tenant_id", tenantId);
   if (error) {

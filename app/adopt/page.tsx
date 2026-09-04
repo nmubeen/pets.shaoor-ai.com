@@ -3,6 +3,7 @@ import { Navbar } from "@/components/marketing/Navbar";
 import { Footer } from "@/components/marketing/Footer";
 import { Card, Eyebrow } from "@/components/ui";
 import { listAdoptablePets } from "@/lib/adoption";
+import { SPECIES_LABEL } from "@/lib/species-labels";
 
 export const metadata = {
   title: "Adoptable pets — Menagerie",
@@ -31,7 +32,7 @@ export default async function AdoptDirectoryPage() {
                 <Card className="p-5 h-full flex flex-col gap-3 hover:-translate-y-0.5 hover:border-primary transition">
                   <div className="font-semibold text-base">{p.name}</div>
                   <div className="text-xs text-muted">
-                    {[p.species, p.lifeStage].filter(Boolean).join(" · ")}
+                    {[p.breed, SPECIES_LABEL[p.species], p.lifeStage].filter(Boolean).join(" · ")}
                   </div>
                   {p.adoptionNote && (
                     <p className="text-sm text-muted line-clamp-3 flex-1">{p.adoptionNote}</p>

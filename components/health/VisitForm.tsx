@@ -103,11 +103,11 @@ export function VisitForm({
 
   const pets = roster.filter((r) => r.kind === "pet");
   const [petId, setPetId] = useState(pets[0]?.id ?? "");
-  const selectedSpeciesGroup = pets.find((p) => p.id === petId)?.pet?.speciesGroup ?? null;
+  const selectedSpecies = pets.find((p) => p.id === petId)?.pet?.species ?? null;
   // Species-scoped services first (frequency often differs by species),
   // plus generic ones that apply to any — see findOrCreateServiceType.
   const serviceSuggestions = serviceTypes
-    .filter((s) => s.speciesGroup === null || s.speciesGroup === selectedSpeciesGroup)
+    .filter((s) => s.species === null || s.species === selectedSpecies)
     .map((s) => s.name);
 
   function handleSubmit(formData: FormData) {

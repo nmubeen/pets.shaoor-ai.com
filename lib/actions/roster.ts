@@ -6,9 +6,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { uploadImage, removeImage } from "@/lib/storage";
-import type { PetSex, SpeciesGroup } from "@/lib/database.types";
-
-const SPECIES_GROUPS: SpeciesGroup[] = ["dog", "cat", "bird", "reptile", "fish", "small_mammal", "other"];
+import type { PetSex, Species } from "@/lib/database.types";
+import { SPECIES_LIST } from "@/lib/species-labels";
 
 function str(formData: FormData, key: string): string | null {
   const v = formData.get(key);
@@ -35,16 +34,14 @@ function triBool(formData: FormData, key: string): boolean | null {
   return null;
 }
 
-function speciesGroup(formData: FormData): SpeciesGroup | null {
-  const v = str(formData, "species_group");
-  return v && SPECIES_GROUPS.includes(v as SpeciesGroup) ? (v as SpeciesGroup) : null;
+function species(formData: FormData): Species | { error: string } {
+  const v = str(formData, "species");
+  return v && SPECIES_LIST.includes(v as Species) ? (v as Species) : { error: "Choose a species." };
 }
 
 function petFields(formData: FormData) {
   return {
-    breed: str(formData, "breed"),
     sex: sex(formData),
-    species_group: speciesGroup(formData),
     birth_date: str(formData, "birth_date"),
     life_stage: str(formData, "life_stage"),
     weight_kg: num(formData, "weight_kg"),
@@ -90,8 +87,10 @@ async function resolvePhoto(
 
 export async function addPet(tenantId: string, formData: FormData) {
   const name = str(formData, "name");
-  const species = str(formData, "species");
-  if (!name || !species) return { error: "Name and species are required." };
+  const breed = str(formData, "breed");
+  if (!name || !breed) return { error: "Name and breed are required." };
+  const s = species(formData);
+  if (typeof s !== "string") return s;
 
   const supabase = await createClient();
   const photo = await resolvePhoto(supabase, tenantId, formData, null);
@@ -100,7 +99,8 @@ export async function addPet(tenantId: string, formData: FormData) {
   const { error } = await supabase.from("pets").insert({
     tenant_id: tenantId,
     name,
-    species,
+    species: s,
+    breed,
     ...petFields(formData),
     ...photo,
   });
@@ -112,8 +112,10 @@ export async function addPet(tenantId: string, formData: FormData) {
 
 export async function updatePet(tenantId: string, petId: string, formData: FormData) {
   const name = str(formData, "name");
-  const species = str(formData, "species");
-  if (!name || !species) return { error: "Name and species are required." };
+  const breed = str(formData, "breed");
+  if (!name || !breed) return { error: "Name and breed are required." };
+  const s = species(formData);
+  if (typeof s !== "string") return s;
 
   const supabase = await createClient();
   const photo = await resolvePhoto(supabase, tenantId, formData, str(formData, "current_photo_path"));
@@ -121,7 +123,7 @@ export async function updatePet(tenantId: string, petId: string, formData: FormD
 
   const { error } = await supabase
     .from("pets")
-    .update({ name, species, ...petFields(formData), ...photo })
+    .update({ name, species: s, breed, ...petFields(formData), ...photo })
     .eq("id", petId)
     .eq("tenant_id", tenantId);
   if (error) return { error: error.message };

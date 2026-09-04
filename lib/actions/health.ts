@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getProtocols, dueDateFor } from "@/lib/protocols";
-import type { SpeciesGroup } from "@/lib/database.types";
+import type { Species } from "@/lib/database.types";
 
 type Supa = Awaited<ReturnType<typeof createClient>>;
 
@@ -49,33 +49,33 @@ function readRows(formData: FormData, nameField: string, costField: string): { n
  * Finds a tenant's service catalog entry by name (case-insensitive),
  * creating it if new — same "type it, it gets added" pattern as
  * lib/actions/shopping.ts's findOrCreateProduct. Species-aware
- * (0021_service_type_species.sql): frequency often differs by species
- * (Deworming every 30 days for a dog, 60 for a cat), so an exact
- * species_group match is preferred over a generic (null) one, and a
- * brand-new entry is tagged with the visited pet's species rather than
- * left generic — a user who really wants it to apply to any species can
- * still clear that in Settings.
+ * (0021_service_type_species.sql, 0022_rename_species_breed.sql):
+ * frequency often differs by species (Deworming every 30 days for a dog,
+ * 60 for a cat), so an exact species match is preferred over a generic
+ * (null) one, and a brand-new entry is tagged with the visited pet's
+ * species rather than left generic — a user who really wants it to apply
+ * to any species can still clear that in Settings.
  */
 async function findOrCreateServiceType(
   supabase: Supa,
   tenantId: string,
   name: string,
-  petSpeciesGroup: SpeciesGroup | null
+  petSpecies: Species
 ): Promise<{ id: string; frequencyDays: number | null } | null> {
   const { data: candidates } = await supabase
     .from("care_service_types")
-    .select("id, frequency_days, species_group")
+    .select("id, frequency_days, species")
     .eq("tenant_id", tenantId)
     .ilike("name", name);
 
-  const exact = candidates?.find((c) => c.species_group === petSpeciesGroup);
-  const generic = candidates?.find((c) => c.species_group === null);
+  const exact = candidates?.find((c) => c.species === petSpecies);
+  const generic = candidates?.find((c) => c.species === null);
   const existing = exact ?? generic;
   if (existing) return { id: existing.id, frequencyDays: existing.frequency_days };
 
   const { data: created, error } = await supabase
     .from("care_service_types")
-    .insert({ tenant_id: tenantId, name, species_group: petSpeciesGroup })
+    .insert({ tenant_id: tenantId, name, species: petSpecies })
     .select("id, frequency_days")
     .single();
   if (error || !created) return null;
@@ -224,8 +224,8 @@ export async function addVisit(tenantId: string, formData: FormData) {
     services.reduce((sum, r) => sum + (r.cost ?? 0), 0) + vaccines.reduce((sum, r) => sum + (r.cost ?? 0), 0);
 
   const supabase = await createClient();
-  const { data: pet } = await supabase.from("pets").select("species_group").eq("id", petId).eq("tenant_id", tenantId).maybeSingle();
-  const petSpeciesGroup = pet?.species_group ?? null;
+  const { data: pet } = await supabase.from("pets").select("species").eq("id", petId).eq("tenant_id", tenantId).maybeSingle();
+  if (!pet) return { error: "Pet not found." };
 
   const { data: visit, error } = await supabase
     .from("visits")
@@ -245,7 +245,7 @@ export async function addVisit(tenantId: string, formData: FormData) {
   if (error || !visit) return { error: error?.message ?? "Could not save that visit." };
 
   for (const s of services) {
-    const serviceType = await findOrCreateServiceType(supabase, tenantId, s.name, petSpeciesGroup);
+    const serviceType = await findOrCreateServiceType(supabase, tenantId, s.name, pet.species);
     const { error: insertError } = await supabase.from("visit_services").insert({
       tenant_id: tenantId,
       visit_id: visit.id,
@@ -318,8 +318,8 @@ export async function addVaccination(tenantId: string, formData: FormData) {
  * due-dated schedule instead of requiring the owner to know it themselves.
  * Pulls both the global dog/cat defaults and this workspace's own custom
  * vaccination plan entries (Settings → Care) — RLS returns both for the
- * same species_group query, no code-level union needed. Safe to call more
- * than once — steps already generated (matched by protocol_id) aren't
+ * same species query, no code-level union needed. Safe to call more than
+ * once — steps already generated (matched by protocol_id) aren't
  * duplicated. Every row it creates is a normal, freely-editable
  * vaccination row afterward, same as one logged by hand.
  */
@@ -328,16 +328,15 @@ export async function generateVaccinationSchedule(tenantId: string, petId: strin
 
   const { data: pet } = await supabase
     .from("pets")
-    .select("species_group, birth_date")
+    .select("species, birth_date")
     .eq("id", petId)
     .eq("tenant_id", tenantId)
     .maybeSingle();
   if (!pet) return { error: "Pet not found.", generated: 0 };
-  if (!pet.species_group) return { error: "Set this pet's species group first (edit the pet).", generated: 0 };
   if (!pet.birth_date) return { error: "Set this pet's birth date first (edit the pet).", generated: 0 };
 
   const [protocols, { data: existing }] = await Promise.all([
-    getProtocols(supabase, pet.species_group),
+    getProtocols(supabase, pet.species),
     supabase.from("vaccinations").select("protocol_id").eq("tenant_id", tenantId).eq("pet_id", petId).not("protocol_id", "is", null),
   ]);
   if (protocols.length === 0) return { error: "No standard schedule available for this species yet.", generated: 0 };

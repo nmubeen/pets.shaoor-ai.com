@@ -94,7 +94,7 @@ export function RosterGrid({
                 <div className="text-[.68rem] text-muted font-mono">Chip: {r.pet.microchipId}</div>
               )}
               {r.pet?.notes && <div className="text-xs text-muted">{r.pet.notes}</div>}
-              {r.kind === "pet" && r.pet?.speciesGroup && r.pet?.birthDate && (
+              {r.kind === "pet" && r.pet?.birthDate && (
                 <SuggestScheduleButton tenantId={tenantId} petId={r.id} />
               )}
               {isOrg && r.kind === "pet" && (
