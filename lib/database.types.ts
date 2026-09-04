@@ -36,8 +36,8 @@ export interface Database {
         {
           code: string;
           name: string;
-          stripe_price_id_monthly: string | null;
-          stripe_price_id_annual: string | null;
+          razorpay_plan_id_monthly: string | null;
+          razorpay_plan_id_annual: string | null;
           price_monthly_inr: number | null;
           pet_limit: number | null;
           seat_limit: number | null;
@@ -72,8 +72,8 @@ export interface Database {
         {
           id: string;
           tenant_id: string;
-          stripe_customer_id: string | null;
-          stripe_subscription_id: string | null;
+          razorpay_customer_id: string | null;
+          razorpay_subscription_id: string | null;
           status: SubscriptionStatus;
           current_period_end: string | null;
           created_at: string;

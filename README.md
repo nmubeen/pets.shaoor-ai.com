@@ -95,12 +95,36 @@ A Next.js (App Router) build of the marketing site and app shell described in
   private (no service-role key configured to safely sign public URLs), so
   public profiles are text-only for now.
 
-**Billing (§05) is scaffolded but intentionally disconnected**: `plans`
-(seeded) and `subscriptions` tables exist, and the Stripe Checkout/Portal/
-webhook routes (`app/api/stripe/*`, `lib/stripe.ts`) are written and build
-cleanly, but the billing page doesn't call them — no payment processing is
-live. The 14-day trial and its downgrade-to-Litter (`/api/cron/trial-expiry`)
-are DB-only and work with no card ever required.
+**Billing (§05) uses Razorpay, not Stripe** — Stripe stopped onboarding new
+India-based businesses in 2016, and Razorpay's Subscriptions API supports
+UPI Autopay natively alongside cards, which matters for an India-priced
+consumer product. `plans`/`subscriptions` carry `razorpay_plan_id_*` /
+`razorpay_customer_id`/`razorpay_subscription_id` (migration
+`0012_razorpay.sql`, renamed from the original Stripe scaffold's columns).
+The flow: `/api/razorpay/subscription` creates a Razorpay Subscription
+(there's no Stripe-style hosted redirect — `components/billing/
+RazorpayCheckout.tsx` loads Checkout.js client-side and opens it as a
+modal); `/api/razorpay/webhook` is the **only** writer of
+`menagerie.subscriptions`, verified via the SDK's own
+`Razorpay.validateWebhookSignature`, same trust boundary as the original
+Stripe design — the client-side checkout callback is never trusted on its
+own. Razorpay has no built-in Customer Portal equivalent, so "Cancel plan"
+(`lib/actions/billing.ts`) is a small hand-built action calling
+`subscriptions.cancel(id, /* cancelAtCycleEnd */ true)` directly — keeps
+the plan through the period already paid for, then the webhook's
+`subscription.cancelled` event downgrades to Litter once that period ends.
+`npm run razorpay:seed-plans` creates the Household/Sanctuary Plans via API
+and records their ids. The 14-day trial and its downgrade-to-Litter
+(`/api/cron/trial-expiry`) are DB-only and work with no card ever required,
+unaffected by any of this.
+
+**Verified without live credentials**: the DB migration, and the webhook's
+signature verification (valid/wrong-secret/tampered-body, all behave
+correctly). **Not yet verified** — needs real `RAZORPAY_KEY_ID` /
+`RAZORPAY_KEY_SECRET` (test mode works immediately after account creation,
+before KYC completes) and `SUPABASE_SECRET_KEY`: creating a live Plan/
+Subscription, an actual checkout completing, and the webhook actually
+writing to the DB end-to-end.
 
 **Also deferred**: surfacing Menagerie subscriptions in the shared
 `shaoor-ai.com/admin/subscriptions` control plane (like `construct.shaoor-ai.com`
@@ -136,7 +160,9 @@ proper SMTP provider (Resend/Postmark/SendGrid) belongs under Authentication
 
 ## What's not built yet
 
-Payment processing (Stripe) and the shared admin control-plane integration —
-both scaffolded/investigated but intentionally paused, see above. Every
-product phase from the roadmap (§13, phases 1–6) is otherwise implemented
-and verified end-to-end against the live Supabase project.
+Live Razorpay verification (blocked on your account's API keys, see above)
+and the shared admin control-plane integration (`shaoor-ai.com/admin/
+subscriptions`) — investigated, genuinely a bigger cross-repo task with an
+open design question, intentionally paused. Every product phase from the
+roadmap (§13, phases 1–6) is otherwise implemented and verified end-to-end
+against the live Supabase project.
