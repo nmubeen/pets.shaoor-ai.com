@@ -101,6 +101,15 @@ export function VisitForm({
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
+  const pets = roster.filter((r) => r.kind === "pet");
+  const [petId, setPetId] = useState(pets[0]?.id ?? "");
+  const selectedSpeciesGroup = pets.find((p) => p.id === petId)?.pet?.speciesGroup ?? null;
+  // Species-scoped services first (frequency often differs by species),
+  // plus generic ones that apply to any — see findOrCreateServiceType.
+  const serviceSuggestions = serviceTypes
+    .filter((s) => s.speciesGroup === null || s.speciesGroup === selectedSpeciesGroup)
+    .map((s) => s.name);
+
   function handleSubmit(formData: FormData) {
     setError(null);
     startTransition(async () => {
@@ -117,7 +126,7 @@ export function VisitForm({
   return (
     <Card className="p-5">
       <form action={handleSubmit} className="flex flex-col gap-3">
-        <PetPicker roster={roster} />
+        <PetPicker roster={roster} value={petId} onChange={setPetId} />
 
         <label className="flex flex-col gap-1.5">
           <span className={label}>Reason</span>
@@ -150,7 +159,7 @@ export function VisitForm({
           costField="service_cost"
           namePlaceholder="Deworming"
           datalistId="service-suggestions"
-          suggestions={serviceTypes.map((s) => s.name)}
+          suggestions={serviceSuggestions}
           minRows={1}
         />
 

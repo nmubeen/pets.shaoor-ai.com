@@ -73,11 +73,18 @@ A Next.js (App Router) build of the marketing site and app shell described in
     time rather than entered separately. Typing a service name not seen
     before adds it to a tenant-wide catalog (`care_service_types`,
     `findOrCreateServiceType` — same pattern as shopping's
-    `findOrCreateProduct`); one with a configured **frequency**
-    auto-manages a `care_tasks` reminder (completes whatever was already
-    open for that pet+service, schedules the next one that many days out)
-    — so "when was the last deworming" is just its due-date's reminder,
-    always current.
+    `findOrCreateProduct`), tagged to the pet&rsquo;s own species; one with
+    a configured **frequency** auto-manages a `care_tasks` reminder
+    (completes whatever was already open for that pet+service, schedules
+    the next one that many days out) — so "when was the last deworming" is
+    just its due-date's reminder, always current. A service can be
+    **species-scoped** (`0021_service_type_species.sql`) — Deworming might
+    be every 30 days for a dog but 60 for a cat, or something like Wing
+    Clipping might not apply to a dog at all — so the same name can exist
+    once per species (each with its own frequency and its own independent
+    reminder) plus once generically for anything not species-specific
+    (Consultation); the suggestion list in the form narrows to the
+    selected pet's species plus the generic ones as you pick a pet.
   - **Vaccinations given** — a second multi-row list; each entry matches
     the pet's existing *due* vaccination by name (completing it and
     triggering the same booster-reschedule `markVaccinationGiven` already
@@ -113,8 +120,8 @@ A Next.js (App Router) build of the marketing site and app shell described in
   vaccination plans (name, purpose, age when due, booster interval) —
   useful for a species with no built-in default, or a vaccine the
   defaults miss — alongside a **service types** editor for the Visits
-  form's catalog above (name + optional reminder frequency). "Suggest
-  schedule" on a pet's card (`generateVaccinationSchedule`, idempotent)
+  form's catalog above (name + optional species + optional reminder
+  frequency). "Suggest schedule" on a pet's card (`generateVaccinationSchedule`, idempotent)
   picks up both built-in and custom protocols for its species — one query,
   RLS returns the union, no code-level merge needed. Completing a
   protocol-linked vaccination auto-creates the next occurrence when its

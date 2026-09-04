@@ -178,6 +178,10 @@ export interface Database {
           tenant_id: string;
           name: string;
           frequency_days: number | null;
+          // null = applies to any species (generic); set = specific to
+          // that species, tracked/reminded separately from the
+          // same-named service for a different one (0021_service_type_species.sql).
+          species_group: SpeciesGroup | null;
           created_at: string;
         },
         "tenant_id" | "name"

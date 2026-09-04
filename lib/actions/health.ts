@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getProtocols, dueDateFor } from "@/lib/protocols";
+import type { SpeciesGroup } from "@/lib/database.types";
 
 type Supa = Awaited<ReturnType<typeof createClient>>;
 
@@ -44,23 +45,37 @@ function readRows(formData: FormData, nameField: string, costField: string): { n
   return rows;
 }
 
-/** Finds a tenant's service catalog entry by name (case-insensitive), creating it if new — same "type it, it gets added" pattern as lib/actions/shopping.ts's findOrCreateProduct. */
+/**
+ * Finds a tenant's service catalog entry by name (case-insensitive),
+ * creating it if new — same "type it, it gets added" pattern as
+ * lib/actions/shopping.ts's findOrCreateProduct. Species-aware
+ * (0021_service_type_species.sql): frequency often differs by species
+ * (Deworming every 30 days for a dog, 60 for a cat), so an exact
+ * species_group match is preferred over a generic (null) one, and a
+ * brand-new entry is tagged with the visited pet's species rather than
+ * left generic — a user who really wants it to apply to any species can
+ * still clear that in Settings.
+ */
 async function findOrCreateServiceType(
   supabase: Supa,
   tenantId: string,
-  name: string
+  name: string,
+  petSpeciesGroup: SpeciesGroup | null
 ): Promise<{ id: string; frequencyDays: number | null } | null> {
-  const { data: existing } = await supabase
+  const { data: candidates } = await supabase
     .from("care_service_types")
-    .select("id, frequency_days")
+    .select("id, frequency_days, species_group")
     .eq("tenant_id", tenantId)
-    .ilike("name", name)
-    .maybeSingle();
+    .ilike("name", name);
+
+  const exact = candidates?.find((c) => c.species_group === petSpeciesGroup);
+  const generic = candidates?.find((c) => c.species_group === null);
+  const existing = exact ?? generic;
   if (existing) return { id: existing.id, frequencyDays: existing.frequency_days };
 
   const { data: created, error } = await supabase
     .from("care_service_types")
-    .insert({ tenant_id: tenantId, name })
+    .insert({ tenant_id: tenantId, name, species_group: petSpeciesGroup })
     .select("id, frequency_days")
     .single();
   if (error || !created) return null;
@@ -209,6 +224,9 @@ export async function addVisit(tenantId: string, formData: FormData) {
     services.reduce((sum, r) => sum + (r.cost ?? 0), 0) + vaccines.reduce((sum, r) => sum + (r.cost ?? 0), 0);
 
   const supabase = await createClient();
+  const { data: pet } = await supabase.from("pets").select("species_group").eq("id", petId).eq("tenant_id", tenantId).maybeSingle();
+  const petSpeciesGroup = pet?.species_group ?? null;
+
   const { data: visit, error } = await supabase
     .from("visits")
     .insert({
@@ -227,7 +245,7 @@ export async function addVisit(tenantId: string, formData: FormData) {
   if (error || !visit) return { error: error?.message ?? "Could not save that visit." };
 
   for (const s of services) {
-    const serviceType = await findOrCreateServiceType(supabase, tenantId, s.name);
+    const serviceType = await findOrCreateServiceType(supabase, tenantId, s.name, petSpeciesGroup);
     const { error: insertError } = await supabase.from("visit_services").insert({
       tenant_id: tenantId,
       visit_id: visit.id,

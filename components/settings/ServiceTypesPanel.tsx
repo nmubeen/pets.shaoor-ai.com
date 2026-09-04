@@ -9,6 +9,16 @@ import type { ServiceType } from "@/lib/care-services";
 const field = "bg-paper border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary transition";
 const label = "text-[.68rem] uppercase tracking-[.05em] text-muted";
 
+const SPECIES_LABEL: Record<string, string> = {
+  dog: "Dog",
+  cat: "Cat",
+  bird: "Bird",
+  reptile: "Reptile",
+  fish: "Fish",
+  small_mammal: "Small mammal",
+  other: "Other",
+};
+
 function ServiceTypeForm({
   tenantId,
   initial,
@@ -36,22 +46,35 @@ function ServiceTypeForm({
   }
 
   return (
-    <form action={handleSubmit} className="flex flex-col sm:flex-row gap-2.5 sm:items-end border border-line rounded-lg p-3">
-      <label className="flex flex-col gap-1.5 flex-1">
-        <span className={label}>Name</span>
-        <input name="name" required defaultValue={initial?.name} className={field} placeholder="Deworming" />
-      </label>
-      <label className="flex flex-col gap-1.5 sm:w-56">
-        <span className={label}>Repeats every (days, optional)</span>
-        <input
-          type="number"
-          name="frequency_days"
-          min="1"
-          defaultValue={initial?.frequencyDays ?? ""}
-          className={field}
-          placeholder="No reminder"
-        />
-      </label>
+    <form action={handleSubmit} className="flex flex-col gap-2.5 border border-line rounded-lg p-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <label className="flex flex-col gap-1.5">
+          <span className={label}>Name</span>
+          <input name="name" required defaultValue={initial?.name} className={field} placeholder="Deworming" />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className={label}>Species (optional — blank = any species)</span>
+          <select name="species_group" defaultValue={initial?.speciesGroup ?? ""} className={field}>
+            <option value="">Any species</option>
+            {Object.entries(SPECIES_LABEL).map(([value, l]) => (
+              <option key={value} value={value}>
+                {l}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className={label}>Repeats every (days, optional)</span>
+          <input
+            type="number"
+            name="frequency_days"
+            min="1"
+            defaultValue={initial?.frequencyDays ?? ""}
+            className={field}
+            placeholder="No reminder"
+          />
+        </label>
+      </div>
       <div className="flex gap-2">
         <button
           type="submit"
@@ -64,7 +87,7 @@ function ServiceTypeForm({
           Cancel
         </button>
       </div>
-      {error && <p className="text-xs text-coral w-full">{error}</p>}
+      {error && <p className="text-xs text-coral">{error}</p>}
     </form>
   );
 }
@@ -101,7 +124,9 @@ export function ServiceTypesPanel({ tenantId, serviceTypes }: { tenantId: string
           <h2 className="text-sm font-semibold">Service types</h2>
           <p className="text-xs text-muted mt-0.5">
             Deworming, nail clipping, grooming, consultation… give one a frequency to get an automatic reminder each
-            time it&rsquo;s logged on a visit. Typing a new one on a visit adds it here too.
+            time it&rsquo;s logged on a visit. Frequency (and whether it applies at all) often differs by species —
+            set one, or leave it blank to apply to any species. Typing a new one on a visit adds it here too, tagged
+            to that pet&rsquo;s species.
           </p>
         </div>
         <button
@@ -147,7 +172,11 @@ export function ServiceTypesPanel({ tenantId, serviceTypes }: { tenantId: string
               <div key={s.id} className="flex items-center justify-between py-2.5 text-sm">
                 <div>
                   <span className="font-medium">{s.name}</span>
-                  <span className="text-muted"> — {s.frequencyDays ? `every ${s.frequencyDays} days` : "no reminder"}</span>
+                  <span className="text-muted">
+                    {" "}
+                    — {s.speciesGroup ? SPECIES_LABEL[s.speciesGroup] : "Any species"} ·{" "}
+                    {s.frequencyDays ? `every ${s.frequencyDays} days` : "no reminder"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-3">
                   <button onClick={() => setEditingId(s.id)} className="text-xs text-muted hover:text-ink transition">
