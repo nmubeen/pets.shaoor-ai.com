@@ -5,6 +5,7 @@
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
 import { getRoster } from "@/lib/roster";
+import { getProviders } from "@/lib/providers";
 
 export type HealthRow = {
   id: string;
@@ -12,6 +13,7 @@ export type HealthRow = {
   dateIso: string;
   who: string;
   reason: string;
+  provider: string | null;
   cost: string | null;
   status: string | null;
   notes: string | null;
@@ -33,17 +35,24 @@ async function whoResolver(supabase: Awaited<ReturnType<typeof createClient>>, t
     byId.get(row.pet_id ?? row.group_id ?? row.habitat_id ?? "") ?? "Unknown";
 }
 
+async function providerResolver(supabase: Awaited<ReturnType<typeof createClient>>, tenantId: string) {
+  const providers = await getProviders(supabase, tenantId);
+  const byId = new Map(providers.map((p) => [p.id, p.name]));
+  return (providerId: string | null) => (providerId ? (byId.get(providerId) ?? null) : null);
+}
+
 export async function getVetVisits(
   supabase: Awaited<ReturnType<typeof createClient>>,
   tenantId: string
 ): Promise<HealthRow[]> {
-  const [{ data }, who] = await Promise.all([
+  const [{ data }, who, provider] = await Promise.all([
     supabase
       .from("vet_visits")
-      .select("id, pet_id, group_id, habitat_id, visit_date, reason, cost, notes")
+      .select("id, pet_id, group_id, habitat_id, provider_id, visit_date, reason, cost, notes")
       .eq("tenant_id", tenantId)
       .order("visit_date", { ascending: false }),
     whoResolver(supabase, tenantId),
+    providerResolver(supabase, tenantId),
   ]);
 
   return (data ?? []).map((v) => ({
@@ -52,6 +61,7 @@ export async function getVetVisits(
     dateIso: v.visit_date,
     who: who(v),
     reason: v.reason,
+    provider: provider(v.provider_id),
     cost: fmtCost(v.cost),
     status: null,
     notes: v.notes,
@@ -77,6 +87,7 @@ export async function getIllnesses(
     dateIso: v.diagnosed_date,
     who: who(v),
     reason: v.reason,
+    provider: null,
     cost: null,
     status: v.status === "resolved" ? "Resolved" : "Active",
     notes: v.notes,
@@ -104,6 +115,7 @@ export async function getVaccinations(
     dateIso: v.administered_date ?? v.due_date ?? "",
     who: who(v),
     reason: v.reason,
+    provider: null,
     cost: null,
     status: statusLabel[v.status] ?? v.status,
     notes: v.notes,
@@ -114,13 +126,14 @@ export async function getGroomingVisits(
   supabase: Awaited<ReturnType<typeof createClient>>,
   tenantId: string
 ): Promise<HealthRow[]> {
-  const [{ data }, who] = await Promise.all([
+  const [{ data }, who, provider] = await Promise.all([
     supabase
       .from("grooming_visits")
-      .select("id, pet_id, group_id, habitat_id, visit_date, service, cost, notes")
+      .select("id, pet_id, group_id, habitat_id, provider_id, visit_date, service, cost, notes")
       .eq("tenant_id", tenantId)
       .order("visit_date", { ascending: false }),
     whoResolver(supabase, tenantId),
+    providerResolver(supabase, tenantId),
   ]);
 
   return (data ?? []).map((v) => ({
@@ -129,6 +142,7 @@ export async function getGroomingVisits(
     dateIso: v.visit_date,
     who: who(v),
     reason: v.service,
+    provider: provider(v.provider_id),
     cost: fmtCost(v.cost),
     status: null,
     notes: v.notes,

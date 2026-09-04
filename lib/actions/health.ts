@@ -26,30 +26,6 @@ function revalidateHealth() {
   revalidatePath("/app/health");
 }
 
-/** Finds a vet by name for this tenant, creating it if it doesn't exist yet. */
-async function findOrCreateVetId(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  tenantId: string,
-  name: string | null
-): Promise<string | null> {
-  if (!name) return null;
-  const { data: existing } = await supabase
-    .from("vets")
-    .select("id")
-    .eq("tenant_id", tenantId)
-    .eq("name", name)
-    .maybeSingle();
-  if (existing) return existing.id;
-
-  const { data: created, error } = await supabase
-    .from("vets")
-    .insert({ tenant_id: tenantId, name })
-    .select("id")
-    .single();
-  if (error) return null;
-  return created.id;
-}
-
 export async function addVetVisit(tenantId: string, formData: FormData) {
   const s = scope(formData);
   if ("error" in s) return s;
@@ -57,11 +33,9 @@ export async function addVetVisit(tenantId: string, formData: FormData) {
   if (!reason) return { error: "Reason is required." };
 
   const supabase = await createClient();
-  const vetId = await findOrCreateVetId(supabase, tenantId, str(formData, "vet_name"));
-
   const { error } = await supabase.from("vet_visits").insert({
     tenant_id: tenantId,
-    vet_id: vetId,
+    provider_id: str(formData, "provider_id"),
     visit_date: str(formData, "visit_date") ?? new Date().toISOString().slice(0, 10),
     reason,
     cost: num(formData, "cost"),
@@ -129,6 +103,7 @@ export async function addGroomingVisit(tenantId: string, formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.from("grooming_visits").insert({
     tenant_id: tenantId,
+    provider_id: str(formData, "provider_id"),
     service,
     visit_date: str(formData, "visit_date") ?? new Date().toISOString().slice(0, 10),
     cost: num(formData, "cost"),

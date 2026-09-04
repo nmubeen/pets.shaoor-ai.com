@@ -6,6 +6,7 @@ import { PlusIcon } from "@/components/icons";
 import { LogHealthForm, type HealthTabKey } from "@/components/health/LogHealthForm";
 import type { HealthRow } from "@/lib/health";
 import type { RosterItem } from "@/lib/roster";
+import type { Provider } from "@/lib/providers";
 
 const TABS: { key: HealthTabKey; label: string; logLabel: string }[] = [
   { key: "visits", label: "Visits", logLabel: "Log a visit" },
@@ -17,6 +18,8 @@ const TABS: { key: HealthTabKey; label: string; logLabel: string }[] = [
 export function HealthView({
   tenantId,
   roster,
+  vetProviders,
+  groomingProviders,
   visits,
   illnesses,
   vaccinations,
@@ -24,6 +27,8 @@ export function HealthView({
 }: {
   tenantId: string;
   roster: RosterItem[];
+  vetProviders: Provider[];
+  groomingProviders: Provider[];
   visits: HealthRow[];
   illnesses: HealthRow[];
   vaccinations: HealthRow[];
@@ -75,7 +80,13 @@ export function HealthView({
       </div>
 
       {showForm && (
-        <LogHealthForm tab={active} tenantId={tenantId} roster={roster} onDone={() => setShowForm(false)} />
+        <LogHealthForm
+          tab={active}
+          tenantId={tenantId}
+          roster={roster}
+          providers={active === "visits" ? vetProviders : active === "grooming" ? groomingProviders : []}
+          onDone={() => setShowForm(false)}
+        />
       )}
 
       {roster.length === 0 ? (
@@ -108,7 +119,10 @@ export function HealthView({
                 <tr key={r.id} className="border-b border-line last:border-none">
                   <td className="px-4 py-3 text-muted">{r.date}</td>
                   <td className="px-4 py-3 font-medium">{r.who}</td>
-                  <td className="px-4 py-3">{r.reason}</td>
+                  <td className="px-4 py-3">
+                    {r.reason}
+                    {r.provider && <div className="text-xs text-muted mt-0.5">{r.provider}</div>}
+                  </td>
                   <td className="px-4 py-3 font-mono">{r.cost ?? r.status ?? "—"}</td>
                 </tr>
               ))}

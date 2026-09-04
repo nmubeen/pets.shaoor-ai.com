@@ -13,8 +13,8 @@ A Next.js (App Router) build of the marketing site and app shell described in
   (email + password); a database trigger creates the tenant, owner
   membership, and trial subscription row atomically at signup.
 - **App shell** — `/app`, `/app/pets`, `/app/health`, `/app/shopping`,
-  `/app/gallery`, with a sidebar workspace switcher, trial-countdown
-  header, and sign-out — all backed by real data.
+  `/app/gallery`, `/app/providers`, with a sidebar workspace switcher,
+  trial-countdown header, and sign-out — all backed by real data.
 - **Settings** — `/app/settings/billing` (real plan/usage from the DB —
   payment processing intentionally not wired up, see below) and
   `/app/settings/team` (real invites, owner-gated), matching §12.
@@ -42,22 +42,36 @@ A Next.js (App Router) build of the marketing site and app shell described in
   `lib/actions/gallery.ts`) — shown wherever its avatar circle appears
   instead of initials; replacing or removing a photo cleans up the old
   Storage object.
-- **Health & vets** — `vets`, `vet_visits`, `illnesses`, `vaccinations`,
+- **Health & vets** — `vet_visits`, `illnesses`, `vaccinations`,
   `grooming_visits` tables with RLS, sharing the same polymorphic
   pet/group/habitat scope as the roster tables (§03). `/app/health` has
   four tabs (Visits, Illnesses, Vaccinations, Grooming), each with a real
   log form (`lib/actions/health.ts`, `lib/health.ts`); the dashboard's
   "Recent health events" and "Vaccines due" tiles pull from the same data.
+  Visits and grooming pick a provider from the maintained list below
+  instead of typing a name each time.
+- **Service providers** — `/app/providers`: one unified `service_providers`
+  table (`category`: vet, grooming, offline_shop, online_shop) maintained
+  once and selected from everywhere else via `ProviderPicker`
+  (`components/providers/`) — vet/hospital in Health, grooming center in
+  Health, and "bought from" in Shopping. Originally a narrower `vets` table
+  used only by vet visits; migration `0009_service_providers.sql` folded it
+  in (preserving ids, so existing vet visits kept resolving) rather than
+  leaving two parallel concepts.
 - **Shopping & tasks** — `products`, `shopping_orders`, `care_tasks` tables
   with RLS. Unlike health records, an order or task can be scoped to the
   whole workspace, not just a pet/group/habitat (§03's "pet, group, or
-  household" scoping) — see `lib/scope.ts`. `/app/shopping` has a real
-  log-order form and an All/Pet/Group/Habitat/Household filter
-  (`lib/shopping.ts`); the dashboard's "Care tasks" card lets you add and
-  complete recurring tasks (`lib/actions/tasks.ts`) — completing one that
-  repeats immediately schedules the next occurrence. "Spent · 30d" is a
-  computed rollup across shopping/vet/grooming costs rather than a separate
-  expenses ledger, so nothing gets double-entered.
+  household" scoping) — see `lib/scope.ts`. `/app/shopping` logs an order
+  with ordered/delivered dates, quantity + unit, an item URL (for online
+  orders), which shop it came from, and an optional item photo — the photo
+  belongs to the `product` (reused across every order of that item, not
+  re-uploaded each time), same private Storage pattern as roster photos.
+  An All/Pet/Group/Habitat/Household filter (`lib/shopping.ts`); the
+  dashboard's "Care tasks" card lets you add and complete recurring tasks
+  (`lib/actions/tasks.ts`) — completing one that repeats immediately
+  schedules the next occurrence. "Spent · 30d" is a computed rollup across
+  shopping/vet/grooming costs rather than a separate expenses ledger, so
+  nothing gets double-entered.
 - **Gallery, comments & adoption profiles** — `media` and `comments`
   tables with RLS, plus a private Supabase Storage bucket (`media`, one
   bucket with `{tenant_id}/...` path prefixes per §06) with its own

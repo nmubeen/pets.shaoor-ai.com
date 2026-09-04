@@ -145,7 +145,7 @@ export default async function AppHomePage() {
                     <div className="text-xs text-muted">{o.scope}</div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted">{o.date}</span>
+                    <span className="text-xs text-muted">{o.orderedDate}</span>
                     <span className="font-mono text-xs">{o.cost ?? "—"}</span>
                   </div>
                 </div>

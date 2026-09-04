@@ -6,6 +6,7 @@ import { PlusIcon } from "@/components/icons";
 import { LogOrderForm } from "@/components/shopping/LogOrderForm";
 import type { ShoppingOrderRow, SpendSummary } from "@/lib/shopping";
 import type { RosterItem } from "@/lib/roster";
+import type { Provider } from "@/lib/providers";
 
 const SCOPES = [
   { key: "all", label: "All" },
@@ -15,6 +16,8 @@ const SCOPES = [
   { key: "household", label: "Household" },
 ] as const;
 
+const th = "text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line whitespace-nowrap";
+
 function fmtInr(n: number): string {
   return `₹${Math.round(n).toLocaleString("en-IN")}`;
 }
@@ -22,11 +25,13 @@ function fmtInr(n: number): string {
 export function ShoppingView({
   tenantId,
   roster,
+  providers,
   orders,
   summary,
 }: {
   tenantId: string;
   roster: RosterItem[];
+  providers: Provider[];
   orders: ShoppingOrderRow[];
   summary: SpendSummary;
 }) {
@@ -67,7 +72,9 @@ export function ShoppingView({
         ))}
       </div>
 
-      {showForm && <LogOrderForm tenantId={tenantId} roster={roster} onDone={() => setShowForm(false)} />}
+      {showForm && (
+        <LogOrderForm tenantId={tenantId} roster={roster} providers={providers} onDone={() => setShowForm(false)} />
+      )}
 
       <div className="grid md:grid-cols-3 gap-4">
         <Card className="p-4">
@@ -89,31 +96,50 @@ export function ShoppingView({
       {filtered.length === 0 ? (
         <Card className="p-6 text-center text-sm text-muted">Nothing logged here yet.</Card>
       ) : (
-        <Card className="overflow-hidden">
+        <Card className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="bg-surface-2">
-                <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line">
-                  Date
-                </th>
-                <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line">
-                  Item
-                </th>
-                <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line">
-                  Scope
-                </th>
-                <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line">
-                  Cost
-                </th>
+                <th className={th}>Item</th>
+                <th className={th}>Scope</th>
+                <th className={th}>Bought from</th>
+                <th className={th}>Ordered</th>
+                <th className={th}>Delivered</th>
+                <th className={th}>Cost</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((o) => (
                 <tr key={o.id} className="border-b border-line last:border-none">
-                  <td className="px-4 py-3 text-muted">{o.date}</td>
-                  <td className="px-4 py-3 font-medium">{o.item}</td>
-                  <td className="px-4 py-3 text-muted">{o.scope}</td>
-                  <td className="px-4 py-3 font-mono">{o.cost ?? "—"}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                      {o.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={o.imageUrl}
+                          alt={o.item}
+                          className="w-8 h-8 rounded-md object-cover border border-line flex-none"
+                        />
+                      ) : null}
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">
+                          {o.itemUrl ? (
+                            <a href={o.itemUrl} target="_blank" rel="noreferrer" className="hover:underline">
+                              {o.item}
+                            </a>
+                          ) : (
+                            o.item
+                          )}
+                        </div>
+                        {o.qtyLabel && <div className="text-xs text-muted">{o.qtyLabel}</div>}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-muted whitespace-nowrap">{o.scope}</td>
+                  <td className="px-4 py-3 text-muted whitespace-nowrap">{o.provider ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted whitespace-nowrap">{o.orderedDate}</td>
+                  <td className="px-4 py-3 text-muted whitespace-nowrap">{o.deliveredDate ?? "—"}</td>
+                  <td className="px-4 py-3 font-mono whitespace-nowrap">{o.cost ?? "—"}</td>
                 </tr>
               ))}
             </tbody>

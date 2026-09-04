@@ -10,6 +10,7 @@ export type RosterKind = "pet" | "group" | "habitat";
 export type IllnessStatus = "active" | "resolved";
 export type VaccinationStatus = "due" | "scheduled" | "complete";
 export type PetSex = "male" | "female" | "unknown";
+export type ServiceProviderCategory = "vet" | "grooming" | "offline_shop" | "online_shop";
 
 // The polymorphic pet_id/group_id/habitat_id scope shared by stat_entries,
 // vet_visits, illnesses, vaccinations, and grooming_visits (§03) — exactly
@@ -139,23 +140,25 @@ export interface Database {
         } & Scope,
         "tenant_id" | "stat_type"
       >;
-      vets: Table<
+      service_providers: Table<
         {
           id: string;
           tenant_id: string;
+          category: ServiceProviderCategory;
           name: string;
           phone: string | null;
           address: string | null;
+          website: string | null;
           notes: string | null;
           created_at: string;
         },
-        "tenant_id" | "name"
+        "tenant_id" | "category" | "name"
       >;
       vet_visits: Table<
         {
           id: string;
           tenant_id: string;
-          vet_id: string | null;
+          provider_id: string | null;
           visit_date: string;
           reason: string;
           cost: number | null;
@@ -194,6 +197,7 @@ export interface Database {
         {
           id: string;
           tenant_id: string;
+          provider_id: string | null;
           service: string;
           visit_date: string;
           cost: number | null;
@@ -209,6 +213,7 @@ export interface Database {
           name: string;
           category: string | null;
           notes: string | null;
+          image_path: string | null;
           created_at: string;
         },
         "tenant_id" | "name"
@@ -218,7 +223,12 @@ export interface Database {
           id: string;
           tenant_id: string;
           product_id: string;
+          provider_id: string | null;
           order_date: string;
+          delivered_date: string | null;
+          item_url: string | null;
+          qty: number | null;
+          qty_unit: string | null;
           cost: number | null;
           notes: string | null;
           created_at: string;

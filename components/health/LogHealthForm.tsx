@@ -4,8 +4,10 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
 import { ScopePicker } from "@/components/scope/ScopePicker";
+import { ProviderPicker } from "@/components/providers/ProviderPicker";
 import { addVetVisit, addIllness, addVaccination, addGroomingVisit } from "@/lib/actions/health";
 import type { RosterItem } from "@/lib/roster";
+import type { Provider } from "@/lib/providers";
 
 export type HealthTabKey = "visits" | "illnesses" | "vaccinations" | "grooming";
 
@@ -23,11 +25,13 @@ export function LogHealthForm({
   tab,
   tenantId,
   roster,
+  providers,
   onDone,
 }: {
   tab: HealthTabKey;
   tenantId: string;
   roster: RosterItem[];
+  providers: Provider[];
   onDone: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
@@ -58,10 +62,7 @@ export function LogHealthForm({
               <span className={label}>Reason</span>
               <input name="reason" required className={field} placeholder="Wellness check" />
             </label>
-            <label className="flex flex-col gap-1.5">
-              <span className={label}>Vet (optional)</span>
-              <input name="vet_name" className={field} placeholder="Dr. Iyer" />
-            </label>
+            <ProviderPicker providers={providers} label="Vet / hospital (optional)" />
             <div className="grid grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Date</span>
@@ -126,6 +127,7 @@ export function LogHealthForm({
               <span className={label}>Service</span>
               <input name="service" required className={field} placeholder="Bath & trim" />
             </label>
+            <ProviderPicker providers={providers} label="Grooming center (optional)" />
             <div className="grid grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Date</span>
