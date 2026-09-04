@@ -126,6 +126,20 @@ export function AddRosterForm({
 
         {kind === "pet" && !compact && (
           <>
+            <label className="flex flex-col gap-1.5">
+              <span className={label}>Species group (optional — powers vaccination schedule suggestions)</span>
+              <select name="species_group" defaultValue={pet?.speciesGroup ?? ""} className={field}>
+                <option value="">Not set</option>
+                <option value="dog">Dog</option>
+                <option value="cat">Cat</option>
+                <option value="bird">Bird</option>
+                <option value="reptile">Reptile</option>
+                <option value="fish">Fish</option>
+                <option value="small_mammal">Small mammal</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+
             <div className="grid grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Breed (optional)</span>

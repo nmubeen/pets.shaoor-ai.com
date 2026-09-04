@@ -11,6 +11,8 @@ export type IllnessStatus = "active" | "resolved";
 export type VaccinationStatus = "due" | "scheduled" | "complete";
 export type PetSex = "male" | "female" | "unknown";
 export type ServiceProviderCategory = "vet" | "grooming" | "offline_shop" | "online_shop";
+export type SpeciesGroup = "dog" | "cat" | "bird" | "reptile" | "fish" | "small_mammal" | "other";
+export type MedicationStatus = "active" | "completed" | "discontinued";
 
 // The polymorphic pet_id/group_id/habitat_id scope shared by stat_entries,
 // vet_visits, illnesses, vaccinations, and grooming_visits (§03) — exactly
@@ -99,6 +101,7 @@ export interface Database {
           is_adoptable: boolean;
           adoption_note: string | null;
           photo_path: string | null;
+          species_group: SpeciesGroup | null;
           created_at: string;
         },
         "tenant_id" | "name" | "species"
@@ -185,6 +188,7 @@ export interface Database {
         {
           id: string;
           tenant_id: string;
+          protocol_id: string | null;
           reason: string;
           status: VaccinationStatus;
           due_date: string | null;
@@ -193,6 +197,37 @@ export interface Database {
           created_at: string;
         } & Scope,
         "tenant_id" | "reason"
+      >;
+      vaccine_protocols: Table<
+        {
+          id: string;
+          species_group: SpeciesGroup;
+          vaccine_name: string;
+          dose_sequence: number;
+          age_weeks_due: number;
+          booster_interval_months: number | null;
+          is_core: boolean;
+          notes: string | null;
+          created_at: string;
+        },
+        "species_group" | "vaccine_name" | "age_weeks_due"
+      >;
+      medications: Table<
+        {
+          id: string;
+          tenant_id: string;
+          provider_id: string | null;
+          name: string;
+          dosage: string | null;
+          frequency_days: number;
+          start_date: string;
+          end_date: string | null;
+          next_due_date: string;
+          status: MedicationStatus;
+          notes: string | null;
+          created_at: string;
+        } & Scope,
+        "tenant_id" | "name"
       >;
       grooming_visits: Table<
         {

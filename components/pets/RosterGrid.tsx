@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
 import { AdoptionToggle } from "@/components/pets/AdoptionToggle";
+import { SuggestScheduleButton } from "@/components/pets/SuggestScheduleButton";
 import { AddRosterForm } from "@/components/roster/AddRosterForm";
 import type { RosterItem } from "@/lib/roster";
 
@@ -68,6 +69,9 @@ export function RosterGrid({
                 <div className="text-[.68rem] text-muted font-mono">Chip: {r.pet.microchipId}</div>
               )}
               {r.pet?.notes && <div className="text-xs text-muted">{r.pet.notes}</div>}
+              {r.kind === "pet" && r.pet?.speciesGroup && r.pet?.birthDate && (
+                <SuggestScheduleButton tenantId={tenantId} petId={r.id} />
+              )}
               {isOrg && r.kind === "pet" && (
                 <div className="border-t border-line pt-2 mt-auto">
                   <AdoptionToggle

@@ -3,12 +3,13 @@
 // separate tables, so the merge happens here rather than as a DB view.
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
-import type { PetSex } from "@/lib/database.types";
+import type { PetSex, SpeciesGroup } from "@/lib/database.types";
 
 /** Fields that only ever apply to kind: "pet" — null for groups/habitats. */
 export type PetDetails = {
   breed: string | null;
   sex: PetSex;
+  speciesGroup: SpeciesGroup | null;
   birthDate: string | null;
   lifeStage: string | null;
   weightKg: number | null;
@@ -81,7 +82,7 @@ export async function getRoster(
     supabase
       .from("pets")
       .select(
-        "id,name,species,breed,sex,birth_date,life_stage,weight_kg,color,microchip_id,neutered,notes,is_adoptable,adoption_note,photo_path,created_at"
+        "id,name,species,breed,sex,species_group,birth_date,life_stage,weight_kg,color,microchip_id,neutered,notes,is_adoptable,adoption_note,photo_path,created_at"
       )
       .eq("tenant_id", tenantId),
     supabase.from("pet_groups").select("id,name,species,photo_path,created_at").eq("tenant_id", tenantId),
@@ -108,6 +109,7 @@ export async function getRoster(
         pet: {
           breed: p.breed,
           sex,
+          speciesGroup: p.species_group,
           birthDate: p.birth_date,
           lifeStage: p.life_stage,
           weightKg: p.weight_kg,

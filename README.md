@@ -51,6 +51,30 @@ A Next.js (App Router) build of the marketing site and app shell described in
   "Recent health events" and "Vaccines due" tiles pull from the same data.
   Visits and grooming pick a provider from the maintained list below
   instead of typing a name each time.
+- **Predictive vaccination scheduling & medications** — beyond passive
+  record-keeping: an optional `species_group` on `pets` (dog/cat/bird/
+  reptile/fish/small_mammal/other — deliberately a scheduling classifier
+  only, not a reintroduction of per-species tables per §03) matches a pet
+  against a global, non-tenant-scoped `vaccine_protocols` reference table
+  (`0014_predictive_scheduling.sql`) seeded with the standard puppy/kitten
+  core series (DHPP, Rabies, Bordetella for dogs; FVRCP, Rabies, FeLV for
+  cats — dose sequence, age-in-weeks due, and booster interval). Set a
+  pet's species group and birth date, and "Suggest schedule" on its roster
+  card (`generateVaccinationSchedule`, idempotent — safe to click again)
+  creates a concrete, due-dated `vaccinations` row per protocol step
+  (`birth_date + age_weeks_due`). Marking a protocol-linked vaccination
+  "given" (`markVaccinationGiven`) auto-creates the next occurrence when
+  its protocol has a `booster_interval_months` (e.g. the annual DHPP/Rabies
+  booster), dated from the actual administered date — a series step with
+  no booster interval (e.g. the last Bordetella dose) just completes with
+  nothing scheduled after it. A new `medications` table (same polymorphic
+  pet/group/habitat scope, optional prescribing provider) tracks ongoing
+  courses on their own tab in `/app/health` — "Log dose" advances
+  `next_due_date` by the medication's repeat interval (UTC-safe date math
+  throughout, same pattern as care tasks), automatically flipping the
+  medication to `completed` instead of scheduling past its `end_date`.
+  Verified end-to-end against the live Supabase project, including the
+  UTC-safe reschedule math and the booster-vs-no-booster branch.
 - **Service providers** — `/app/providers`: one unified `service_providers`
   table (`category`: vet, grooming, offline_shop, online_shop) maintained
   once and selected from everywhere else via `ProviderPicker`

@@ -6,7 +6,9 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { uploadImage, removeImage } from "@/lib/storage";
-import type { PetSex } from "@/lib/database.types";
+import type { PetSex, SpeciesGroup } from "@/lib/database.types";
+
+const SPECIES_GROUPS: SpeciesGroup[] = ["dog", "cat", "bird", "reptile", "fish", "small_mammal", "other"];
 
 function str(formData: FormData, key: string): string | null {
   const v = formData.get(key);
@@ -33,10 +35,16 @@ function triBool(formData: FormData, key: string): boolean | null {
   return null;
 }
 
+function speciesGroup(formData: FormData): SpeciesGroup | null {
+  const v = str(formData, "species_group");
+  return v && SPECIES_GROUPS.includes(v as SpeciesGroup) ? (v as SpeciesGroup) : null;
+}
+
 function petFields(formData: FormData) {
   return {
     breed: str(formData, "breed"),
     sex: sex(formData),
+    species_group: speciesGroup(formData),
     birth_date: str(formData, "birth_date"),
     life_stage: str(formData, "life_stage"),
     weight_kg: num(formData, "weight_kg"),
