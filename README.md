@@ -262,26 +262,43 @@ before KYC completes) and `SUPABASE_SECRET_KEY`: creating a live Plan/
 Subscription, an actual checkout completing, and the webhook actually
 writing to the DB end-to-end.
 
-**Cross-repo control-plane sync** (`lib/control-sync.ts`): unlike Chat/
-Construct, Pets is fully self-serve (trial + Razorpay both happen with no
-admin gate), so instead of shaoor-ai.com's admin-activation flow, this app
-*pushes* its own subscription state to shaoor-ai.com's shared `control.*`
-schema via an authenticated callback (`POST /api/control/sync/pets`,
-bearer-secret via `PETS_CONTROL_SECRET`) whenever it changes — new
+**Cross-repo control-plane sync** (`lib/control-sync.ts`): Pets shares the
+same physical Postgres database as shaoor-ai.com and construct.shaoor-ai.com
+(this Supabase project's `menagerie` schema sits alongside their
+`control`/`construct`/`chat` schemas) — confirmed live this session, after
+this integration was first built on the mistaken assumption Pets was a
+separate project. Since Pets only ever talks to Postgres via
+supabase-js/PostgREST (scoped to `menagerie`), it can't call a `control`
+schema function directly — `syncSubscriptionToControlPlane()` instead
+calls a thin `menagerie.sync_control_subscription(...)` wrapper RPC
+(`supabase/migrations/0024_control_sync_wrapper.sql`, `security definer`,
+callable via `supabase.rpc(...)`) that internally invokes
+`control.sync_shaoor_pets_subscription` — no HTTP, no env vars, no
+separate credential. Called on every subscription-relevant event: new
 workspace signup (`/onboarding/pets`), Razorpay webhook events, trial
 expiry (`/api/cron/trial-expiry`), and owner-initiated cancellation
-(`lib/actions/billing.ts`). Each call is a best-effort, non-blocking
-idempotent upsert (`control.sync_shaoor_pets_subscription`, keyed on
-tenant id) — a sync failure never blocks the underlying action, it just
-logs. `GET /api/control/tenants` (same bearer secret) is the read side:
-shaoor-ai.com's dashboard resolves tenant display names through it, since
-Pets' Supabase project is physically separate and can't be SQL-joined the
-way Chat/Construct's shared database can. See shaoor-ai.com's own README
-for the dashboard side (`/admin/subscriptions`, `/admin/plans`,
-`/admin/roles`). **Not yet verified end-to-end** — needs
-`SHAOOR_CONTROL_PLANE_URL`/`PETS_CONTROL_SECRET` set in both apps'
-environments (see `.env.local.example`) and the migration applied on
-shaoor-ai.com's side.
+(`lib/actions/billing.ts`) — best-effort and non-blocking, a sync failure
+never blocks the underlying action, it just logs. shaoor-ai.com's
+`/admin/subscriptions` resolves tenant names via a plain SQL join into
+`menagerie.tenants` (no read-side HTTP endpoint needed either).
+
+Access is gated live on every request (`lib/access/pets-commercial-access.ts`,
+wired into `requireActiveMembership()`) instead of the old no-check-at-all
+behavior — `litter` (free) is always allowed; trialing/active/past-due
+subscriptions are allowed; a cancelled-but-still-in-period subscription is
+allowed; everything else redirects to `/app/pending`. Plan limits
+(`menagerie.plans.pet_limit`/`seat_limit`, previously displayed but never
+enforced) are now actually checked before adding a pet or inviting a team
+member (`lib/entitlements.ts`). Admin lifecycle actions from
+shaoor-ai.com's `/admin/subscriptions` write through to
+`menagerie.tenants`/`menagerie.subscriptions` directly (cross-schema SQL
+from that app's own Prisma connection), not just the `control.*` mirror,
+so they actually take effect here. See shaoor-ai.com's own README for the
+dashboard side, and construct.shaoor-ai.com's for the same architecture
+now shared there too. Verified end-to-end against the live database this
+session (real signups/reconciliation, gating boundary cases, admin
+write-through) — see git history for the verification scripts used (all
+deleted after, per this repo's normal discipline).
 
 ### Transactional email — Zeptomail
 
@@ -350,10 +367,9 @@ credentials are in place.
 
 ## What's not built yet
 
-Live Razorpay and live Zeptomail verification (both blocked on API
-credentials, see above), and live end-to-end verification of the
-shaoor-ai.com control-plane sync (built on both sides, see above — needs
-env vars set and shaoor-ai.com's new migration applied before a real sync
-call can be tested). Every product phase from the roadmap (§13, phases
-1–6) is otherwise implemented and verified end-to-end against the live
-Supabase project.
+Live Razorpay and live Zeptomail verification (both blocked on real API
+credentials — see above). The shaoor-ai.com control-plane sync, live
+access gating and entitlement enforcement are all built and verified
+end-to-end against the live database (see above). Every product phase
+from the roadmap (§13, phases 1–6) is otherwise implemented and verified
+end-to-end against the live Supabase project.
