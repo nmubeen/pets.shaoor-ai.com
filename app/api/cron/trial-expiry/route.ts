@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { syncSubscriptionToControlPlane } from "@/lib/control-sync";
 
 // Vercel Cron hits this daily (see vercel.json). Vercel automatically sends
 // `Authorization: Bearer $CRON_SECRET` on cron-triggered requests when a
@@ -39,6 +40,7 @@ export async function GET(request: Request) {
       .from("tenants")
       .update({ plan_code: "litter", trial_ends_at: null })
       .in("id", toDowngrade);
+    await Promise.all(toDowngrade.map((id) => syncSubscriptionToControlPlane(id, "Trial expired, downgraded to Litter")));
   }
 
   return NextResponse.json({ downgraded: toDowngrade.length });

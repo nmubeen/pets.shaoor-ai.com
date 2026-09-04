@@ -262,11 +262,26 @@ before KYC completes) and `SUPABASE_SECRET_KEY`: creating a live Plan/
 Subscription, an actual checkout completing, and the webhook actually
 writing to the DB end-to-end.
 
-**Also deferred**: surfacing Menagerie subscriptions in the shared
-`shaoor-ai.com/admin/subscriptions` control plane (like `construct.shaoor-ai.com`
-already does) — investigated, genuinely a bigger cross-repo task with an open
-design question (self-serve trial vs. admin-gated activation), paused to
-finish this roadmap first.
+**Cross-repo control-plane sync** (`lib/control-sync.ts`): unlike Chat/
+Construct, Pets is fully self-serve (trial + Razorpay both happen with no
+admin gate), so instead of shaoor-ai.com's admin-activation flow, this app
+*pushes* its own subscription state to shaoor-ai.com's shared `control.*`
+schema via an authenticated callback (`POST /api/control/sync/pets`,
+bearer-secret via `PETS_CONTROL_SECRET`) whenever it changes — new
+workspace signup (`/onboarding/pets`), Razorpay webhook events, trial
+expiry (`/api/cron/trial-expiry`), and owner-initiated cancellation
+(`lib/actions/billing.ts`). Each call is a best-effort, non-blocking
+idempotent upsert (`control.sync_shaoor_pets_subscription`, keyed on
+tenant id) — a sync failure never blocks the underlying action, it just
+logs. `GET /api/control/tenants` (same bearer secret) is the read side:
+shaoor-ai.com's dashboard resolves tenant display names through it, since
+Pets' Supabase project is physically separate and can't be SQL-joined the
+way Chat/Construct's shared database can. See shaoor-ai.com's own README
+for the dashboard side (`/admin/subscriptions`, `/admin/plans`,
+`/admin/roles`). **Not yet verified end-to-end** — needs
+`SHAOOR_CONTROL_PLANE_URL`/`PETS_CONTROL_SECRET` set in both apps'
+environments (see `.env.local.example`) and the migration applied on
+shaoor-ai.com's side.
 
 ### Transactional email — Zeptomail
 
@@ -336,8 +351,9 @@ credentials are in place.
 ## What's not built yet
 
 Live Razorpay and live Zeptomail verification (both blocked on API
-credentials, see above) and the shared admin control-plane integration
-(`shaoor-ai.com/admin/subscriptions`) — investigated, genuinely a bigger
-cross-repo task with an open design question, intentionally paused. Every
-product phase from the roadmap (§13, phases 1–6) is otherwise implemented
-and verified end-to-end against the live Supabase project.
+credentials, see above), and live end-to-end verification of the
+shaoor-ai.com control-plane sync (built on both sides, see above — needs
+env vars set and shaoor-ai.com's new migration applied before a real sync
+call can be tested). Every product phase from the roadmap (§13, phases
+1–6) is otherwise implemented and verified end-to-end against the live
+Supabase project.

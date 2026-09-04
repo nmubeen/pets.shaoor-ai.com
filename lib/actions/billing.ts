@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getRazorpay } from "@/lib/razorpay";
+import { syncSubscriptionToControlPlane } from "@/lib/control-sync";
 
 // Razorpay has no hosted "Customer Portal" the way Stripe does — this is
 // the hand-built equivalent for the one thing that matters most:
@@ -44,6 +45,8 @@ export async function cancelSubscription(tenantId: string) {
   } catch (err) {
     return { error: (err as Error).message };
   }
+
+  await syncSubscriptionToControlPlane(tenantId, "Owner requested cancellation");
 
   revalidatePath("/app/settings/billing");
   return { error: null };

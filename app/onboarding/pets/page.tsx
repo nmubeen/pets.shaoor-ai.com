@@ -4,10 +4,17 @@ import { AddRosterPanel } from "@/components/roster/AddRosterPanel";
 import { requireActiveMembership } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
 import { FinishSetupButton } from "@/components/roster/FinishSetupButton";
+import { syncSubscriptionToControlPlane } from "@/lib/control-sync";
 
 export default async function OnboardingPetsPage() {
   const { supabase, active } = await requireActiveMembership();
   const roster = await getRoster(supabase, active.tenantId);
+
+  // The first server-rendered page a new workspace always hits — a
+  // reliable, one-time-per-visit hook for the initial control-plane sync
+  // without touching the client-side signup form. Idempotent and
+  // non-blocking (see lib/control-sync.ts), so repeat visits are harmless.
+  await syncSubscriptionToControlPlane(active.tenantId, "New workspace signup");
 
   return (
     <AuthShell

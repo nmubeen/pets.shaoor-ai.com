@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { syncSubscriptionToControlPlane } from "@/lib/control-sync";
 
 // The only writer of menagerie.subscriptions (§05) — same trust boundary as
 // the old Stripe webhook. No user session exists on this request, so it
@@ -77,6 +78,8 @@ export async function POST(request: Request) {
     } else if (status === "canceled") {
       await supabase.from("tenants").update({ plan_code: "litter", trial_ends_at: null }).eq("id", tenantId);
     }
+
+    await syncSubscriptionToControlPlane(tenantId, `Razorpay webhook: ${event.event}`);
   }
 
   return NextResponse.json({ received: true });
