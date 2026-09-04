@@ -37,8 +37,7 @@ export default async function OnboardingPetsPage() {
       <FinishSetupButton />
       <p className="text-xs text-muted text-center mt-3">
         Habitats are peers of individual pets — add a tank the same way
-        you&rsquo;d add one animal. You can group pets together (e.g. all your
-        cats) once they&rsquo;re added, from the Pets page.
+        you&rsquo;d add one animal.
       </p>
     </AuthShell>
   );

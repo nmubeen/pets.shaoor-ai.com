@@ -53,27 +53,23 @@ A Next.js (App Router) build of the marketing site and app shell described in
   `lib/actions/gallery.ts`) — shown wherever its avatar circle appears
   instead of initials; replacing or removing a photo cleans up the old
   Storage object.
-- **Groups** — deliberately *not* a peer of pets/habitats (that was the
-  original §03 design; migration `0015_groups_redesign.sql` reworked it
-  after real usage showed it wrong). A group is now a saved, named
-  collection of 2+ *existing* pets (e.g. "Adult cats", "Kittens") via a
-  `pet_group_members` join table — a pet can belong to any number of
-  groups, and a group is never itself the subject of a health record, an
-  order, or a photo (it dropped out of the `pet_id`/`habitat_id` scope
-  used everywhere else — see `lib/scope.ts`). Managed from a "Groups"
-  section on `/app/pets` (`lib/groups.ts`, `lib/actions/groups.ts`,
-  `components/groups/GroupsPanel.tsx`) — create/edit lets you name the
-  group, give it a photo, and check off member pets from the workspace's
-  full pet list; deleting a group only removes the saved grouping; the
-  member pets are untouched.
 - **Health & vets** — `vet_visits`, `illnesses`, `vaccinations`,
   `grooming_visits` tables with RLS, sharing the same polymorphic
   pet/habitat scope as the roster tables (§03). `/app/health` has
-  four tabs (Visits, Illnesses, Vaccinations, Grooming), each with a real
-  log form (`lib/actions/health.ts`, `lib/health.ts`); the dashboard's
+  five tabs (Visits, Illnesses, Vaccinations, Grooming, Growth), each with a
+  real log form (`lib/actions/health.ts`, `lib/health.ts`); the dashboard's
   "Recent health events" and "Vaccines due" tiles pull from the same data.
   Visits and grooming pick a provider from the maintained list below
-  instead of typing a name each time.
+  instead of typing a name each time, and both can optionally log the
+  pet's weight — normally checked at every visit either way. The **Growth**
+  tab (`lib/growth.ts`, `components/health/GrowthPanel.tsx`) merges those
+  `weight_kg` readings from both tables per pet into a hand-rolled SVG line
+  chart (no charting dependency for one simple plot) plus a table below it,
+  color-coded by whether the reading came from a vet visit or a grooming
+  visit — a real growth curve instead of the single static "current weight"
+  the pet's own record already had (that field is untouched, and never
+  auto-synced from visit history — it stays a separate, manually-set
+  snapshot).
 - **Predictive vaccination scheduling & medications** — beyond passive
   record-keeping: an optional `species_group` on `pets` (dog/cat/bird/
   reptile/fish/small_mammal/other — deliberately a scheduling classifier

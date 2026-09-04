@@ -6,13 +6,15 @@ import { Card } from "@/components/ui";
 import { PlusIcon } from "@/components/icons";
 import { LogHealthForm, type HealthTabKey } from "@/components/health/LogHealthForm";
 import { MedicationsPanel } from "@/components/health/MedicationsPanel";
+import { GrowthPanel } from "@/components/health/GrowthPanel";
 import { markVaccinationGiven } from "@/lib/actions/health";
 import type { HealthRow } from "@/lib/health";
 import type { MedicationRow } from "@/lib/medications";
+import type { PetWeightHistory } from "@/lib/growth";
 import type { RosterItem } from "@/lib/roster";
 import type { Provider } from "@/lib/providers";
 
-type TabKey = HealthTabKey | "medications";
+type TabKey = HealthTabKey | "medications" | "growth";
 
 const TABS: { key: TabKey; label: string; logLabel: string }[] = [
   { key: "visits", label: "Visits", logLabel: "Log a visit" },
@@ -20,6 +22,7 @@ const TABS: { key: TabKey; label: string; logLabel: string }[] = [
   { key: "vaccinations", label: "Vaccinations", logLabel: "Log a vaccination" },
   { key: "grooming", label: "Grooming", logLabel: "Log a grooming visit" },
   { key: "medications", label: "Medications", logLabel: "Add medication" },
+  { key: "growth", label: "Growth", logLabel: "" },
 ];
 
 function MarkGivenButton({ tenantId, vaccinationId }: { tenantId: string; vaccinationId: string }) {
@@ -51,6 +54,7 @@ export function HealthView({
   vaccinations,
   grooming,
   medications,
+  weightHistory,
 }: {
   tenantId: string;
   roster: RosterItem[];
@@ -61,6 +65,7 @@ export function HealthView({
   vaccinations: HealthRow[];
   grooming: HealthRow[];
   medications: MedicationRow[];
+  weightHistory: PetWeightHistory[];
 }) {
   const [active, setActive] = useState<TabKey>("visits");
   const [showForm, setShowForm] = useState(false);
@@ -74,6 +79,16 @@ export function HealthView({
         <Header />
         <TabRow active={active} onChange={setActive} />
         <MedicationsPanel tenantId={tenantId} roster={roster} vetProviders={vetProviders} medications={medications} />
+      </div>
+    );
+  }
+
+  if (active === "growth") {
+    return (
+      <div className="flex flex-col gap-6">
+        <Header />
+        <TabRow active={active} onChange={setActive} />
+        <GrowthPanel history={weightHistory} />
       </div>
     );
   }
@@ -98,7 +113,7 @@ export function HealthView({
 
       {roster.length === 0 ? (
         <Card className="p-6 text-center text-sm text-muted">
-          Add a pet, group, or habitat first — health records are logged against your roster.
+          Add a pet or habitat first — health records are logged against your roster.
         </Card>
       ) : rows.length === 0 ? (
         <Card className="p-6 text-center text-sm text-muted">Nothing logged here yet.</Card>
@@ -164,7 +179,7 @@ function Header({
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div>
         <h1 className="text-2xl mb-1">Health</h1>
-        <p className="text-sm text-muted">Workspace-wide · every pet, group, and habitat</p>
+        <p className="text-sm text-muted">Workspace-wide · every pet and habitat</p>
       </div>
       {roster && roster.length > 0 && tab && setShowForm && (
         <button

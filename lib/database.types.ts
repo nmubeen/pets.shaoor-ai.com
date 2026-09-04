@@ -17,9 +17,6 @@ export type MedicationStatus = "active" | "completed" | "discontinued";
 // The polymorphic pet_id/habitat_id scope shared by stat_entries,
 // vet_visits, illnesses, vaccinations, grooming_visits, and medications
 // (§03) — exactly one is non-null, enforced by a DB check constraint.
-// Groups used to be a third scope option here; per the 0015 redesign a
-// group is a saved collection of pets, not a subject of its own, so it's
-// never a scope target — see pet_group_members below.
 type Scope = {
   pet_id: string | null;
   habitat_id: string | null;
@@ -107,26 +104,6 @@ export interface Database {
         },
         "tenant_id" | "name" | "species"
       >;
-      pet_groups: Table<
-        {
-          id: string;
-          tenant_id: string;
-          name: string;
-          photo_path: string | null;
-          created_at: string;
-        },
-        "tenant_id" | "name"
-      >;
-      pet_group_members: Table<
-        {
-          id: string;
-          tenant_id: string;
-          group_id: string;
-          pet_id: string;
-          created_at: string;
-        },
-        "tenant_id" | "group_id" | "pet_id"
-      >;
       habitats: Table<
         {
           id: string;
@@ -175,6 +152,7 @@ export interface Database {
           visit_date: string;
           reason: string;
           cost: number | null;
+          weight_kg: number | null;
           notes: string | null;
           created_at: string;
         } & Scope,
@@ -246,6 +224,7 @@ export interface Database {
           service: string;
           visit_date: string;
           cost: number | null;
+          weight_kg: number | null;
           notes: string | null;
           created_at: string;
         } & Scope,

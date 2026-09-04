@@ -1,9 +1,8 @@
 // Merges pets and habitats into one "roster" list for the dashboard and
 // /app/pets — they're peers in the schema (§03) but two separate tables, so
-// the merge happens here rather than as a DB view. Groups are deliberately
-// NOT part of the roster since the 0015 redesign: a group is a saved
-// collection of existing pets (see lib/groups.ts), not a subject of its own
-// that health/shopping/tasks/media can be scoped to.
+// the merge happens here rather than as a DB view. There is no third
+// "group" kind — groups (a saved collection of pets) existed briefly and
+// were removed.
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
 import type { PetSex, SpeciesGroup } from "@/lib/database.types";

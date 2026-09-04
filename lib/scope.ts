@@ -2,9 +2,8 @@
 // stat_entries, vet_visits, illnesses, vaccinations, grooming_visits,
 // medications (always exactly one — §03: "Habitats are peers of pets"), and
 // shopping_orders/care_tasks/media (zero or one — §03: "pet, or household",
-// where "household" means both null). Groups are deliberately not a scope
-// option: since the 0015 redesign, a group is a saved collection of
-// existing pets, not a subject of its own — see lib/groups.ts.
+// where "household" means both null). There is no group scope option —
+// groups (a saved collection of pets) existed briefly and were removed.
 import type { RosterKind } from "@/lib/database.types";
 
 export type ScopeFields = { pet_id: string | null; habitat_id: string | null };

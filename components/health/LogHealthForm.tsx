@@ -63,10 +63,14 @@ export function LogHealthForm({
               <input name="reason" required className={field} placeholder="Wellness check" />
             </label>
             <ProviderPicker providers={providers} label="Vet / hospital (optional)" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Date</span>
                 <input type="date" name="visit_date" className={field} defaultValue={new Date().toISOString().slice(0, 10)} />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className={label}>Weight, kg (optional)</span>
+                <input type="number" name="weight_kg" min="0" step="0.1" className={field} placeholder="4.2" />
               </label>
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Cost (optional)</span>
@@ -128,10 +132,14 @@ export function LogHealthForm({
               <input name="service" required className={field} placeholder="Bath & trim" />
             </label>
             <ProviderPicker providers={providers} label="Grooming center (optional)" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Date</span>
                 <input type="date" name="visit_date" className={field} defaultValue={new Date().toISOString().slice(0, 10)} />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className={label}>Weight, kg (optional)</span>
+                <input type="number" name="weight_kg" min="0" step="0.1" className={field} placeholder="4.2" />
               </label>
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Cost (optional)</span>

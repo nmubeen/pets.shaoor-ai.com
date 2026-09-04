@@ -40,6 +40,7 @@ export async function addVetVisit(tenantId: string, formData: FormData) {
     visit_date: str(formData, "visit_date") ?? new Date().toISOString().slice(0, 10),
     reason,
     cost: num(formData, "cost"),
+    weight_kg: num(formData, "weight_kg"),
     notes: str(formData, "notes"),
     ...s,
   });
@@ -210,6 +211,7 @@ export async function addGroomingVisit(tenantId: string, formData: FormData) {
     service,
     visit_date: str(formData, "visit_date") ?? new Date().toISOString().slice(0, 10),
     cost: num(formData, "cost"),
+    weight_kg: num(formData, "weight_kg"),
     notes: str(formData, "notes"),
     ...s,
   });

@@ -14,7 +14,7 @@ const principles = [
   {
     icon: LayersIcon,
     title: "Species-agnostic core",
-    body: "Cats, dogs, birds, reptiles, and aquarium habitats share one schema of pets, groups, habitats, vets, and expenses — no per-species tables to maintain.",
+    body: "Cats, dogs, birds, reptiles, and aquarium habitats share one schema of pets, habitats, vets, and expenses — no per-species tables to maintain.",
   },
   {
     icon: UsersIcon,
@@ -42,7 +42,7 @@ const differentiators = [
   {
     icon: TagIcon,
     title: "Built for how you actually pay",
-    body: "Costs and care events scope to a pet, a group, or the whole household — a joint vet trip for two kittens costs once, not split awkwardly.",
+    body: "Orders, tasks, and photos can scope to a pet, a habitat, or the whole household — a shared bag of litter doesn't need to be split pet-by-pet.",
   },
 ];
 
@@ -154,7 +154,7 @@ export default function LandingPage() {
               <h4 className="text-base font-semibold mb-2">What Menagerie gives you</h4>
               <p className="text-sm text-muted !max-w-none">
                 One workspace, unlimited species, with costs and care events
-                scoped to a pet, a group, a habitat, or the whole household —
+                scoped to a pet, a habitat, or the whole household —
                 and a plan built for <strong className="text-ink">rescues and shelters</strong>,
                 who today have no equivalent at any price.
               </p>
@@ -202,11 +202,11 @@ export default function LandingPage() {
                 <CartIcon />
               </div>
               <div>
-                <h4 className="text-sm font-semibold mb-1">Three-level scoping, everywhere</h4>
+                <h4 className="text-sm font-semibold mb-1">Flexible scoping, everywhere</h4>
                 <p className="text-[.86rem] text-muted !max-w-none">
-                  Shopping, expenses, and care tasks scope to a pet, a group,
-                  or the household — a joint vet trip for two kittens costs
-                  once, scoped to the group.
+                  Shopping, expenses, and care tasks scope to a pet, a
+                  habitat, or the household — a shared bag of food costs
+                  once, not split animal-by-animal.
                 </p>
               </div>
             </div>

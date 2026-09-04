@@ -4,11 +4,12 @@ import { getRoster } from "@/lib/roster";
 import { getVetVisits, getIllnesses, getVaccinations, getGroomingVisits } from "@/lib/health";
 import { getProviders } from "@/lib/providers";
 import { getMedications } from "@/lib/medications";
+import { getWeightHistory } from "@/lib/growth";
 
 export default async function HealthPage() {
   const { supabase, active } = await requireActiveMembership();
 
-  const [roster, visits, illnesses, vaccinations, grooming, vetProviders, groomingProviders, medications] =
+  const [roster, visits, illnesses, vaccinations, grooming, vetProviders, groomingProviders, medications, weightHistory] =
     await Promise.all([
       getRoster(supabase, active.tenantId),
       getVetVisits(supabase, active.tenantId),
@@ -18,6 +19,7 @@ export default async function HealthPage() {
       getProviders(supabase, active.tenantId, ["vet"]),
       getProviders(supabase, active.tenantId, ["grooming"]),
       getMedications(supabase, active.tenantId),
+      getWeightHistory(supabase, active.tenantId),
     ]);
 
   return (
@@ -31,6 +33,7 @@ export default async function HealthPage() {
       vaccinations={vaccinations}
       grooming={grooming}
       medications={medications}
+      weightHistory={weightHistory}
     />
   );
 }

@@ -1,7 +1,7 @@
 // Shared helpers for uploading into the "media" Storage bucket (private,
 // {tenant_id}/... path prefix, RLS via menagerie.my_tenant_ids()/
 // can_write_tenant() — see supabase/migrations/0006_gallery.sql). Used by
-// both gallery photo uploads and roster (pet/group/habitat) display photos.
+// both gallery photo uploads and roster (pet/habitat) display photos.
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
 

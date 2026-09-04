@@ -2,9 +2,7 @@
 
 // Server Actions for adding/editing/deleting pets and habitats. RLS
 // (menagerie.can_write_tenant) is the actual authorization boundary here —
-// tenantId is only a routing hint, not a trust decision. Group actions live
-// separately in lib/actions/groups.ts (a group is a saved collection of
-// existing pets, not a peer roster entity, since the 0015 redesign).
+// tenantId is only a routing hint, not a trust decision.
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { uploadImage, removeImage } from "@/lib/storage";
