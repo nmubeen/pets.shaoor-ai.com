@@ -1,59 +1,7 @@
-// Sample data used to render the app-shell mockups. No backend is wired up —
-// this stands in for what would come from Supabase once §04–§08 of the
-// design doc are implemented.
-
-export const workspace = {
-  name: "The Home",
-  plan: "Sanctuary",
-  trialDaysLeft: 9,
-  trialEndsOn: "Sep 12",
-  owner: "you@shaoor-ai.com",
-};
-
-export const pets = [
-  {
-    id: "simba",
-    name: "Simba",
-    species: "Persian · Adult cat",
-    initials: "SM",
-    color: "var(--accent)",
-    badge: { text: "on track", tone: "ok" as const },
-    note: "Weight logged 3d ago",
-  },
-  {
-    id: "nova-comet",
-    name: "Nova & Comet",
-    species: "Persian · Kittens · Group",
-    initials: "NV",
-    color: "var(--coral)",
-    badge: { text: "due", tone: "due" as const },
-    note: "2nd booster due",
-  },
-  {
-    id: "reef-tank",
-    name: "The Reef Tank",
-    species: "Habitat · 40 gal",
-    initials: "RT",
-    color: "var(--trial)",
-    badge: { text: "soon", tone: "warn" as const },
-    note: "Water change in 2d",
-  },
-];
-
-export const healthVisits = [
-  { date: "Aug 28", who: "Nova, Comet", reason: "Wellness check", cost: "₹2,600" },
-  { date: "Aug 12", who: "Simba", reason: "Ear infection", cost: "₹1,200" },
-  { date: "Jul 30", who: "Simba", reason: "Annual booster", cost: "₹850" },
-];
-
-export const illnesses = [
-  { date: "Aug 12", who: "Simba", reason: "Ear infection", status: "Resolved" },
-];
-
-export const vaccinations = [
-  { date: "Sep 5", who: "Nova & Comet", reason: "2nd booster (FVRCP)", status: "Due" },
-  { date: "Jul 30", who: "Simba", reason: "Annual rabies booster", status: "Complete" },
-];
+// Sample data still standing in for the phases not yet built (shopping,
+// gallery — §05/§06 of the roadmap). Tenancy, auth, pets/groups/habitats,
+// and health records are real now — see lib/tenant.ts, lib/roster.ts,
+// lib/health.ts.
 
 export const shoppingOrders = [
   { date: "Aug 30", item: "Grain-free kibble, 5kg", scope: "Household", cost: "₹1,850" },
@@ -68,12 +16,6 @@ export const galleryItems = [
   { id: 4, caption: "Vet visit, all clear", pet: "Simba", color: "var(--accent)" },
   { id: 5, caption: "Kittens vs. the cat tree", pet: "Nova & Comet", color: "var(--coral)" },
   { id: 6, caption: "Water change day", pet: "The Reef Tank", color: "var(--trial)" },
-];
-
-export const team = [
-  { email: "you@shaoor-ai.com", role: "owner", status: null },
-  { email: "partner@example.com", role: "caregiver", status: null },
-  { email: "vet.iyer@example.com", role: "viewer", status: "pending" },
 ];
 
 export const tiers = [

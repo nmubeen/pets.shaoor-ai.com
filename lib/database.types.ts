@@ -7,6 +7,17 @@ export type MembershipRole = "owner" | "caregiver" | "viewer";
 export type MembershipStatus = "invited" | "active" | "removed";
 export type SubscriptionStatus = "trialing" | "active" | "past_due" | "canceled";
 export type RosterKind = "pet" | "group" | "habitat";
+export type IllnessStatus = "active" | "resolved";
+export type VaccinationStatus = "due" | "scheduled" | "complete";
+
+// The polymorphic pet_id/group_id/habitat_id scope shared by stat_entries,
+// vet_visits, illnesses, vaccinations, and grooming_visits (§03) — exactly
+// one is non-null, enforced by a DB check constraint.
+type Scope = {
+  pet_id: string | null;
+  group_id: string | null;
+  habitat_id: string | null;
+};
 
 type Table<Row, RequiredInsert extends keyof Row> = {
   Row: Row;
@@ -107,16 +118,76 @@ export interface Database {
         {
           id: string;
           tenant_id: string;
-          pet_id: string | null;
-          group_id: string | null;
-          habitat_id: string | null;
           stat_type: string;
           value: number | null;
           unit: string | null;
           note: string | null;
           recorded_at: string;
-        },
+        } & Scope,
         "tenant_id" | "stat_type"
+      >;
+      vets: Table<
+        {
+          id: string;
+          tenant_id: string;
+          name: string;
+          phone: string | null;
+          address: string | null;
+          notes: string | null;
+          created_at: string;
+        },
+        "tenant_id" | "name"
+      >;
+      vet_visits: Table<
+        {
+          id: string;
+          tenant_id: string;
+          vet_id: string | null;
+          visit_date: string;
+          reason: string;
+          cost: number | null;
+          notes: string | null;
+          created_at: string;
+        } & Scope,
+        "tenant_id" | "reason"
+      >;
+      illnesses: Table<
+        {
+          id: string;
+          tenant_id: string;
+          reason: string;
+          status: IllnessStatus;
+          diagnosed_date: string;
+          resolved_date: string | null;
+          notes: string | null;
+          created_at: string;
+        } & Scope,
+        "tenant_id" | "reason"
+      >;
+      vaccinations: Table<
+        {
+          id: string;
+          tenant_id: string;
+          reason: string;
+          status: VaccinationStatus;
+          due_date: string | null;
+          administered_date: string | null;
+          notes: string | null;
+          created_at: string;
+        } & Scope,
+        "tenant_id" | "reason"
+      >;
+      grooming_visits: Table<
+        {
+          id: string;
+          tenant_id: string;
+          service: string;
+          visit_date: string;
+          cost: number | null;
+          notes: string | null;
+          created_at: string;
+        } & Scope,
+        "tenant_id" | "service"
       >;
     };
     Functions: {

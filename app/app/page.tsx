@@ -1,13 +1,19 @@
 import Link from "next/link";
 import { Card, PetChip, StatTile } from "@/components/ui";
 import { PlusIcon, StethoIcon, CartIcon } from "@/components/icons";
-import { healthVisits, shoppingOrders } from "@/lib/mock-data";
+import { shoppingOrders } from "@/lib/mock-data";
 import { requireActiveMembership } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
+import { getVetVisits, getVaccinations } from "@/lib/health";
 
 export default async function AppHomePage() {
   const { supabase, active } = await requireActiveMembership();
-  const roster = await getRoster(supabase, active.tenantId);
+  const [roster, visits, vaccinations] = await Promise.all([
+    getRoster(supabase, active.tenantId),
+    getVetVisits(supabase, active.tenantId),
+    getVaccinations(supabase, active.tenantId),
+  ]);
+  const vaccinesDueSoon = vaccinations.filter((v) => v.status !== "Complete").length;
 
   return (
     <div className="flex flex-col gap-8">
@@ -30,7 +36,7 @@ export default async function AppHomePage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatTile num="₹2,140" label="Spent · 30d" />
         <StatTile num="3" label="Tasks due" />
-        <StatTile num="1" label="Vaccine due soon" />
+        <StatTile num={String(vaccinesDueSoon)} label="Vaccines due" />
         <StatTile num={String(roster.length)} label="Pets & habitats" />
       </div>
 
@@ -69,21 +75,30 @@ export default async function AppHomePage() {
               See all
             </Link>
           </div>
-          <p className="text-xs text-muted mb-3">Sample data — health logging ships in a later phase.</p>
-          <div className="flex flex-col divide-y divide-line">
-            {healthVisits.slice(0, 3).map((v, i) => (
-              <div key={i} className="flex items-center justify-between py-2.5 text-sm">
-                <div>
-                  <div className="font-medium">{v.who}</div>
-                  <div className="text-xs text-muted">{v.reason}</div>
+          {visits.length === 0 ? (
+            <p className="text-sm text-muted">
+              No visits logged yet —{" "}
+              <Link href="/app/health" className="text-primary hover:underline">
+                log one
+              </Link>
+              .
+            </p>
+          ) : (
+            <div className="flex flex-col divide-y divide-line">
+              {visits.slice(0, 3).map((v) => (
+                <div key={v.id} className="flex items-center justify-between py-2.5 text-sm">
+                  <div>
+                    <div className="font-medium">{v.who}</div>
+                    <div className="text-xs text-muted">{v.reason}</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted">{v.date}</span>
+                    <span className="font-mono text-xs">{v.cost ?? "—"}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted">{v.date}</span>
-                  <span className="font-mono text-xs">{v.cost}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </Card>
 
         <Card className="p-5">
