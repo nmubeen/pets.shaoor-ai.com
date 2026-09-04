@@ -60,7 +60,15 @@ A Next.js (App Router) build of the marketing site and app shell described in
   leaving two parallel concepts. Shown as a card grid — same layout as
   `/app/pets` — with a logo/photo per provider (`logo_path`, same private
   Storage pattern as roster and product photos, added in
-  `0010_provider_logo.sql`).
+  `0010_provider_logo.sql`). Every new workspace starts with the 6 common
+  online shops pre-added (Amazon, Flipkart, Zepto, Blinkit, Supertails,
+  Instamart) — seeded by the same `handle_new_user` trigger that creates
+  the tenant at signup (`0011_seed_online_shops.sql`), so a brand-new
+  workspace doesn't start with an empty shop list. Seeded rows have no
+  logo (a logo lives in its owning tenant's private Storage folder, so
+  copying the file reference alone would point at a file the new tenant's
+  RLS correctly can't read) — add one per shop from `/app/providers` if
+  wanted.
 - **Shopping & tasks** — `products`, `shopping_orders`, `care_tasks` tables
   with RLS. Unlike health records, an order or task can be scoped to the
   whole workspace, not just a pet/group/habitat (§03's "pet, group, or
