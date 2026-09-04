@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Card } from "@/components/ui";
+import { Card, Avatar } from "@/components/ui";
 import { addProvider, updateProvider } from "@/lib/actions/providers";
 import type { Provider } from "@/lib/providers";
 import type { ServiceProviderCategory } from "@/lib/database.types";
@@ -53,6 +53,26 @@ export function ProviderForm({
             defaultValue={initial?.name}
             className={field}
             placeholder={isOnlineShop ? "Amazon" : category === "vet" ? "City Pet Hospital" : "Name"}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1.5">
+          <span className={label}>Logo / photo (optional)</span>
+          {mode === "edit" && initial?.logoUrl && (
+            <div className="flex items-center gap-2.5 mb-1">
+              <Avatar label={initial.initials} color={initial.color} photoUrl={initial.logoUrl} />
+              <label className="flex items-center gap-1.5 text-xs text-muted">
+                <input type="checkbox" name="remove_logo" className="accent-coral" />
+                Remove current logo
+              </label>
+            </div>
+          )}
+          {mode === "edit" && <input type="hidden" name="current_logo_path" value={initial?.logoPath ?? ""} />}
+          <input
+            type="file"
+            name="logo"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className={`${field} file:mr-3 file:border-0 file:bg-surface-2 file:text-ink file:rounded-md file:px-2.5 file:py-1 file:text-xs`}
           />
         </label>
 

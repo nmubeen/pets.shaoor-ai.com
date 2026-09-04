@@ -57,7 +57,10 @@ A Next.js (App Router) build of the marketing site and app shell described in
   Health, and "bought from" in Shopping. Originally a narrower `vets` table
   used only by vet visits; migration `0009_service_providers.sql` folded it
   in (preserving ids, so existing vet visits kept resolving) rather than
-  leaving two parallel concepts.
+  leaving two parallel concepts. Shown as a card grid — same layout as
+  `/app/pets` — with a logo/photo per provider (`logo_path`, same private
+  Storage pattern as roster and product photos, added in
+  `0010_provider_logo.sql`).
 - **Shopping & tasks** — `products`, `shopping_orders`, `care_tasks` tables
   with RLS. Unlike health records, an order or task can be scoped to the
   whole workspace, not just a pet/group/habitat (§03's "pet, group, or

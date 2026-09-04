@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Card, Pill } from "@/components/ui";
+import { Card, Avatar } from "@/components/ui";
 import { PlusIcon } from "@/components/icons";
 import { ProviderForm } from "@/components/providers/ProviderForm";
 import { deleteProvider } from "@/lib/actions/providers";
@@ -76,59 +76,61 @@ export function ProvidersView({ tenantId, providers }: { tenantId: string; provi
         ))}
       </div>
 
-      {showAdd && (
-        <ProviderForm tenantId={tenantId} category={active} onDone={() => setShowAdd(false)} />
-      )}
+      {showAdd && <ProviderForm tenantId={tenantId} category={active} onDone={() => setShowAdd(false)} />}
 
       {rows.length === 0 && !showAdd ? (
         <Card className="p-6 text-center text-sm text-muted">
           No {CATEGORY_LABEL[active].toLowerCase()} yet.
         </Card>
       ) : (
-        <div className="flex flex-col gap-3">
-          {rows.map((p) =>
-            editingId === p.id ? (
-              <ProviderForm
-                key={p.id}
-                tenantId={tenantId}
-                category={active}
-                mode="edit"
-                initial={p}
-                onDone={() => {
-                  setEditingId(null);
-                  router.refresh();
-                }}
-              />
-            ) : (
-              <Card key={p.id} className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="font-semibold text-sm">{p.name}</div>
-                    <div className="text-xs text-muted mt-0.5 flex flex-wrap gap-x-3">
-                      {p.phone && <span>{p.phone}</span>}
-                      {p.address && <span>{p.address}</span>}
-                      {p.website && (
-                        <a href={p.website} target="_blank" rel="noreferrer" className="text-primary hover:underline">
-                          {p.website}
-                        </a>
-                      )}
-                    </div>
-                    {p.notes && <div className="text-xs text-muted mt-1">{p.notes}</div>}
-                  </div>
-                  <div className="flex items-center gap-3 flex-none">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {rows.map((p) => {
+            if (editingId === p.id) {
+              return (
+                <div key={p.id} className="sm:col-span-2 lg:col-span-3">
+                  <ProviderForm
+                    tenantId={tenantId}
+                    category={active}
+                    mode="edit"
+                    initial={p}
+                    onDone={() => {
+                      setEditingId(null);
+                      router.refresh();
+                    }}
+                  />
+                </div>
+              );
+            }
+
+            return (
+              <Card key={p.id} className="p-5 flex flex-col gap-4">
+                <div className="flex items-start justify-between">
+                  <Avatar label={p.initials} color={p.color} photoUrl={p.logoUrl} />
+                  <div className="flex items-center gap-3">
                     <button onClick={() => setEditingId(p.id)} className="text-xs text-muted hover:text-ink transition">
                       Edit
                     </button>
                     <DeleteButton tenantId={tenantId} providerId={p.id} />
                   </div>
                 </div>
+                <div>
+                  <div className="font-semibold text-base">{p.name}</div>
+                  <div className="text-xs text-muted mt-0.5 flex flex-col gap-0.5">
+                    {p.phone && <span>{p.phone}</span>}
+                    {p.address && <span>{p.address}</span>}
+                    {p.website && (
+                      <a href={p.website} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                        {p.website}
+                      </a>
+                    )}
+                  </div>
+                  {p.notes && <div className="text-xs text-muted mt-2">{p.notes}</div>}
+                </div>
               </Card>
-            )
-          )}
+            );
+          })}
         </div>
       )}
-
-      <Pill className="self-start">{providers.length} total across all categories</Pill>
     </div>
   );
 }

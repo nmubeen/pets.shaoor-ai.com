@@ -150,6 +150,7 @@ export interface Database {
           address: string | null;
           website: string | null;
           notes: string | null;
+          logo_path: string | null;
           created_at: string;
         },
         "tenant_id" | "category" | "name"

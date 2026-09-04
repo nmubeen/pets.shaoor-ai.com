@@ -10,7 +10,29 @@ export type Provider = {
   address: string | null;
   website: string | null;
   notes: string | null;
+  initials: string;
+  color: string;
+  logoPath: string | null;
+  logoUrl: string | null;
 };
+
+const COLORS = [
+  "var(--accent)",
+  "var(--coral)",
+  "var(--trial)",
+  "var(--good)",
+  "var(--org)",
+  "var(--primary)",
+];
+
+const SIGNED_URL_TTL_SECONDS = 60 * 60;
+
+function initialsFor(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
 
 export async function getProviders(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -19,12 +41,32 @@ export async function getProviders(
 ): Promise<Provider[]> {
   let query = supabase
     .from("service_providers")
-    .select("id, category, name, phone, address, website, notes")
+    .select("id, category, name, phone, address, website, notes, logo_path")
     .eq("tenant_id", tenantId)
     .order("name");
   if (categories && categories.length > 0) {
     query = query.in("category", categories);
   }
   const { data } = await query;
-  return data ?? [];
+  const rows = data ?? [];
+
+  const paths = rows.map((r) => r.logo_path).filter((p): p is string => p !== null);
+  const { data: signed } = paths.length
+    ? await supabase.storage.from("media").createSignedUrls(paths, SIGNED_URL_TTL_SECONDS)
+    : { data: [] as { path: string | null; signedUrl: string | null }[] };
+  const urlByPath = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
+
+  return rows.map((r, i) => ({
+    id: r.id,
+    category: r.category,
+    name: r.name,
+    phone: r.phone,
+    address: r.address,
+    website: r.website,
+    notes: r.notes,
+    initials: initialsFor(r.name),
+    color: COLORS[i % COLORS.length],
+    logoPath: r.logo_path,
+    logoUrl: r.logo_path ? (urlByPath.get(r.logo_path) ?? null) : null,
+  }));
 }
