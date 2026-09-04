@@ -5,6 +5,7 @@
 // tenantId is only a routing hint, not a trust decision.
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { uploadImage, removeImage } from "@/lib/storage";
 import type { PetSex } from "@/lib/database.types";
 
 function str(formData: FormData, key: string): string | null {
@@ -52,17 +53,48 @@ function revalidateRoster() {
   revalidatePath("/onboarding/pets");
 }
 
+/**
+ * Reads the optional "photo" file field a roster form may include, plus a
+ * "remove_photo" checkbox for edit forms. `currentPath` is the item's
+ * existing photo (null for a brand-new item) — replacing or removing
+ * cleans up the old Storage object. Returns a partial to spread into the
+ * insert/update payload: {} means "no change to the photo".
+ */
+async function resolvePhoto(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  tenantId: string,
+  formData: FormData,
+  currentPath: string | null
+): Promise<{ photo_path?: string | null } | { error: string }> {
+  const file = formData.get("photo");
+  if (file instanceof File && file.size > 0) {
+    const { path, error } = await uploadImage(supabase, tenantId, "avatars", file);
+    if (error || !path) return { error: error ?? "Photo upload failed." };
+    await removeImage(supabase, currentPath);
+    return { photo_path: path };
+  }
+  if (str(formData, "remove_photo") === "on" && currentPath) {
+    await removeImage(supabase, currentPath);
+    return { photo_path: null };
+  }
+  return {};
+}
+
 export async function addPet(tenantId: string, formData: FormData) {
   const name = str(formData, "name");
   const species = str(formData, "species");
   if (!name || !species) return { error: "Name and species are required." };
 
   const supabase = await createClient();
+  const photo = await resolvePhoto(supabase, tenantId, formData, null);
+  if ("error" in photo) return photo;
+
   const { error } = await supabase.from("pets").insert({
     tenant_id: tenantId,
     name,
     species,
     ...petFields(formData),
+    ...photo,
   });
   if (error) return { error: error.message };
 
@@ -76,9 +108,12 @@ export async function updatePet(tenantId: string, petId: string, formData: FormD
   if (!name || !species) return { error: "Name and species are required." };
 
   const supabase = await createClient();
+  const photo = await resolvePhoto(supabase, tenantId, formData, str(formData, "current_photo_path"));
+  if ("error" in photo) return photo;
+
   const { error } = await supabase
     .from("pets")
-    .update({ name, species, ...petFields(formData) })
+    .update({ name, species, ...petFields(formData), ...photo })
     .eq("id", petId)
     .eq("tenant_id", tenantId);
   if (error) return { error: error.message };
@@ -92,10 +127,14 @@ export async function addGroup(tenantId: string, formData: FormData) {
   if (!name) return { error: "Name is required." };
 
   const supabase = await createClient();
+  const photo = await resolvePhoto(supabase, tenantId, formData, null);
+  if ("error" in photo) return photo;
+
   const { error } = await supabase.from("pet_groups").insert({
     tenant_id: tenantId,
     name,
     species: str(formData, "species"),
+    ...photo,
   });
   if (error) return { error: error.message };
 
@@ -108,9 +147,12 @@ export async function updateGroup(tenantId: string, groupId: string, formData: F
   if (!name) return { error: "Name is required." };
 
   const supabase = await createClient();
+  const photo = await resolvePhoto(supabase, tenantId, formData, str(formData, "current_photo_path"));
+  if ("error" in photo) return photo;
+
   const { error } = await supabase
     .from("pet_groups")
-    .update({ name, species: str(formData, "species") })
+    .update({ name, species: str(formData, "species"), ...photo })
     .eq("id", groupId)
     .eq("tenant_id", tenantId);
   if (error) return { error: error.message };
@@ -125,11 +167,15 @@ export async function addHabitat(tenantId: string, formData: FormData) {
   if (!name || !habitatType) return { error: "Name and type are required." };
 
   const supabase = await createClient();
+  const photo = await resolvePhoto(supabase, tenantId, formData, null);
+  if ("error" in photo) return photo;
+
   const { error } = await supabase.from("habitats").insert({
     tenant_id: tenantId,
     name,
     habitat_type: habitatType,
     capacity_note: str(formData, "capacity_note"),
+    ...photo,
   });
   if (error) return { error: error.message };
 
@@ -143,9 +189,12 @@ export async function updateHabitat(tenantId: string, habitatId: string, formDat
   if (!name || !habitatType) return { error: "Name and type are required." };
 
   const supabase = await createClient();
+  const photo = await resolvePhoto(supabase, tenantId, formData, str(formData, "current_photo_path"));
+  if ("error" in photo) return photo;
+
   const { error } = await supabase
     .from("habitats")
-    .update({ name, habitat_type: habitatType, capacity_note: str(formData, "capacity_note") })
+    .update({ name, habitat_type: habitatType, capacity_note: str(formData, "capacity_note"), ...photo })
     .eq("id", habitatId)
     .eq("tenant_id", tenantId);
   if (error) return { error: error.message };

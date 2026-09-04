@@ -35,7 +35,13 @@ A Next.js (App Router) build of the marketing site and app shell described in
   `/app/pets` shows a computed age from birth date and has a real "Edit"
   affordance on every card. Onboarding stays deliberately quick (name/
   species/life stage only — "add now, fill in details later"); the full
-  field set lives on `/app/pets`.
+  field set lives on `/app/pets`. Every pet, group, and habitat can also
+  carry a display photo (`photo_path`, uploaded straight into the same
+  private "media" Storage bucket the gallery uses, under
+  `{tenant_id}/avatars/...` — see `lib/storage.ts`, shared with
+  `lib/actions/gallery.ts`) — shown wherever its avatar circle appears
+  instead of initials; replacing or removing a photo cleans up the old
+  Storage object.
 - **Health & vets** — `vets`, `vet_visits`, `illnesses`, `vaccinations`,
   `grooming_visits` tables with RLS, sharing the same polymorphic
   pet/group/habitat scope as the roster tables (§03). `/app/health` has

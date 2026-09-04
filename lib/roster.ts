@@ -31,6 +31,8 @@ export type RosterItem = {
   species: string | null; // pet, group
   habitatType: string | null; // habitat
   capacityNote: string | null; // habitat
+  photoPath: string | null; // raw storage path — for the edit form to replace/remove
+  photoUrl: string | null; // signed URL — for display
   pet: PetDetails | null; // pet only
 };
 
@@ -42,6 +44,8 @@ const COLORS = [
   "var(--org)",
   "var(--primary)",
 ];
+
+const SIGNED_URL_TTL_SECONDS = 60 * 60; // 1 hour
 
 function initialsFor(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -77,17 +81,17 @@ export async function getRoster(
     supabase
       .from("pets")
       .select(
-        "id,name,species,breed,sex,birth_date,life_stage,weight_kg,color,microchip_id,neutered,notes,is_adoptable,adoption_note,created_at"
+        "id,name,species,breed,sex,birth_date,life_stage,weight_kg,color,microchip_id,neutered,notes,is_adoptable,adoption_note,photo_path,created_at"
       )
       .eq("tenant_id", tenantId),
-    supabase.from("pet_groups").select("id,name,species,created_at").eq("tenant_id", tenantId),
+    supabase.from("pet_groups").select("id,name,species,photo_path,created_at").eq("tenant_id", tenantId),
     supabase
       .from("habitats")
-      .select("id,name,habitat_type,capacity_note,created_at")
+      .select("id,name,habitat_type,capacity_note,photo_path,created_at")
       .eq("tenant_id", tenantId),
   ]);
 
-  const items: Omit<RosterItem, "color">[] = [
+  const items: Omit<RosterItem, "color" | "photoUrl">[] = [
     ...(pets.data ?? []).map((p) => {
       const sex = p.sex ?? "unknown";
       return {
@@ -100,6 +104,7 @@ export async function getRoster(
         species: p.species,
         habitatType: null,
         capacityNote: null,
+        photoPath: p.photo_path,
         pet: {
           breed: p.breed,
           sex,
@@ -125,6 +130,7 @@ export async function getRoster(
       species: g.species,
       habitatType: null,
       capacityNote: null,
+      photoPath: g.photo_path,
       pet: null,
     })),
     ...(habitats.data ?? []).map((h) => ({
@@ -137,11 +143,22 @@ export async function getRoster(
       species: null,
       habitatType: h.habitat_type,
       capacityNote: h.capacity_note,
+      photoPath: h.photo_path,
       pet: null,
     })),
   ];
 
   items.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
-  return items.map((item, i) => ({ ...item, color: COLORS[i % COLORS.length] }));
+  const paths = items.map((i) => i.photoPath).filter((p): p is string => p !== null);
+  const { data: signed } = paths.length
+    ? await supabase.storage.from("media").createSignedUrls(paths, SIGNED_URL_TTL_SECONDS)
+    : { data: [] as { path: string | null; signedUrl: string | null }[] };
+  const urlByPath = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
+
+  return items.map((item, i) => ({
+    ...item,
+    color: COLORS[i % COLORS.length],
+    photoUrl: item.photoPath ? (urlByPath.get(item.photoPath) ?? null) : null,
+  }));
 }

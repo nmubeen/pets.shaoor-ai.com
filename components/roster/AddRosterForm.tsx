@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Card } from "@/components/ui";
+import { Card, Avatar } from "@/components/ui";
 import { addPet, addGroup, addHabitat, updatePet, updateGroup, updateHabitat } from "@/lib/actions/roster";
 import type { RosterItem } from "@/lib/roster";
 
@@ -86,6 +86,28 @@ export function AddRosterForm({
             defaultValue={initial?.name}
             className={field}
             placeholder={kind === "habitat" ? "The Reef Tank" : kind === "group" ? "Nova & Comet" : "Simba"}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1.5">
+          <span className={label}>Photo (optional)</span>
+          {mode === "edit" && initial?.photoUrl && (
+            <div className="flex items-center gap-2.5 mb-1">
+              <Avatar label={initial.initials} color={initial.color} photoUrl={initial.photoUrl} />
+              <label className="flex items-center gap-1.5 text-xs text-muted">
+                <input type="checkbox" name="remove_photo" className="accent-coral" />
+                Remove current photo
+              </label>
+            </div>
+          )}
+          {mode === "edit" && (
+            <input type="hidden" name="current_photo_path" value={initial?.photoPath ?? ""} />
+          )}
+          <input
+            type="file"
+            name="photo"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className={`${field} file:mr-3 file:border-0 file:bg-surface-2 file:text-ink file:rounded-md file:px-2.5 file:py-1 file:text-xs`}
           />
         </label>
 

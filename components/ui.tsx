@@ -119,7 +119,25 @@ export function StatTile({ num, label }: { num: string; label: string }) {
   );
 }
 
-export function Avatar({ label, color }: { label: string; color: string }) {
+export function Avatar({
+  label,
+  color,
+  photoUrl,
+}: {
+  label: string;
+  color: string;
+  photoUrl?: string | null;
+}) {
+  if (photoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={photoUrl}
+        alt={label}
+        className="w-10 h-10 rounded-full flex-none object-cover border border-line"
+      />
+    );
+  }
   return (
     <div
       className="w-10 h-10 rounded-full flex-none flex items-center justify-center text-xs font-bold text-white"
@@ -135,17 +153,19 @@ export function PetChip({
   sub,
   color,
   initials,
+  photoUrl,
   badge,
 }: {
   name: string;
   sub: string;
   color: string;
   initials: string;
+  photoUrl?: string | null;
   badge?: { text: string; tone: "ok" | "warn" | "due" | "trial" };
 }) {
   return (
     <div className="flex items-center gap-3 bg-surface border border-line rounded-[10px] px-3.5 py-3">
-      <Avatar label={initials} color={color} />
+      <Avatar label={initials} color={color} photoUrl={photoUrl} />
       <div className="min-w-0 flex-1">
         <div className="font-semibold text-sm truncate">{name}</div>
         <div className="text-xs text-muted truncate">{sub}</div>

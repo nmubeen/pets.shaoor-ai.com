@@ -97,6 +97,7 @@ export interface Database {
           notes: string | null;
           is_adoptable: boolean;
           adoption_note: string | null;
+          photo_path: string | null;
           created_at: string;
         },
         "tenant_id" | "name" | "species"
@@ -108,6 +109,7 @@ export interface Database {
           name: string;
           species: string | null;
           notes: string | null;
+          photo_path: string | null;
           created_at: string;
         },
         "tenant_id" | "name"
@@ -120,6 +122,7 @@ export interface Database {
           habitat_type: string;
           capacity_note: string | null;
           notes: string | null;
+          photo_path: string | null;
           created_at: string;
         },
         "tenant_id" | "name" | "habitat_type"

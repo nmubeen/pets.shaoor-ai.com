@@ -41,7 +41,7 @@ export function RosterGrid({
         return (
           <Card key={r.id} className="p-5 flex flex-col gap-4">
             <div className="flex items-start justify-between">
-              <Avatar label={r.initials} color={r.color} />
+              <Avatar label={r.initials} color={r.color} photoUrl={r.photoUrl} />
               <button
                 onClick={() => setEditingId(r.id)}
                 className="text-xs text-muted hover:text-ink transition"

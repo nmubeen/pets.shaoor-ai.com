@@ -68,7 +68,14 @@ export default async function AppHomePage() {
         ) : (
           <div className="flex flex-col gap-2.5">
             {roster.map((r) => (
-              <PetChip key={r.id} name={r.name} sub={r.subtitle} color={r.color} initials={r.initials} />
+              <PetChip
+                key={r.id}
+                name={r.name}
+                sub={r.subtitle}
+                color={r.color}
+                initials={r.initials}
+                photoUrl={r.photoUrl}
+              />
             ))}
           </div>
         )}
