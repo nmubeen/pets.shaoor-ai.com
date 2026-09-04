@@ -28,9 +28,14 @@ A Next.js (App Router) build of the marketing site and app shell described in
   membership + trial subscription on signup and reconciles pending invites
   by email. See `supabase/migrations/`.
 - **Core records** — `pets`, `pet_groups`, `habitats` tables with RLS,
-  Server Actions to create them (`lib/actions/roster.ts`), and a merged
-  "roster" view (`lib/roster.ts`) powering the dashboard, `/app/pets`, and
-  onboarding.
+  Server Actions to add *and edit* them (`lib/actions/roster.ts`), and a
+  merged "roster" view (`lib/roster.ts`) powering the dashboard, `/app/pets`,
+  and onboarding. A pet record captures breed, sex, birth date, life stage,
+  weight, color/markings, microchip ID, spay/neuter status, and notes —
+  `/app/pets` shows a computed age from birth date and has a real "Edit"
+  affordance on every card. Onboarding stays deliberately quick (name/
+  species/life stage only — "add now, fill in details later"); the full
+  field set lives on `/app/pets`.
 - **Health & vets** — `vets`, `vet_visits`, `illnesses`, `vaccinations`,
   `grooming_visits` tables with RLS, sharing the same polymorphic
   pet/group/habitat scope as the roster tables (§03). `/app/health` has

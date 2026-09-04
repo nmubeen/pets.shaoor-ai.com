@@ -9,10 +9,12 @@ export function AddRosterPanel({
   tenantId,
   triggerClassName,
   triggerLabel = "Add pet or habitat",
+  compact = false,
 }: {
   tenantId: string;
   triggerClassName: string;
   triggerLabel?: string;
+  compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -30,6 +32,7 @@ export function AddRosterPanel({
     <div className="flex flex-col gap-3">
       <AddRosterForm
         tenantId={tenantId}
+        compact={compact}
         onDone={() => {
           setOpen(false);
           router.refresh();

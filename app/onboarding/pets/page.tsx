@@ -23,6 +23,7 @@ export default async function OnboardingPetsPage() {
           tenantId={active.tenantId}
           triggerLabel="Add another pet or habitat"
           triggerClassName="flex items-center justify-center gap-2 text-sm text-muted border border-dashed border-line rounded-lg px-3.5 py-3 hover:text-ink hover:border-primary transition"
+          compact
         />
       </div>
 

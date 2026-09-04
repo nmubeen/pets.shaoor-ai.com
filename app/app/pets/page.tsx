@@ -1,6 +1,6 @@
-import { Card, Avatar } from "@/components/ui";
+import { Card } from "@/components/ui";
 import { AddRosterPanel } from "@/components/roster/AddRosterPanel";
-import { AdoptionToggle } from "@/components/pets/AdoptionToggle";
+import { RosterGrid } from "@/components/pets/RosterGrid";
 import { requireActiveMembership } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
 
@@ -22,34 +22,13 @@ export default async function PetsPage() {
         />
       </div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {roster.map((r) => (
-          <Card key={r.id} className="p-5 flex flex-col gap-4">
-            <div className="flex items-start justify-between">
-              <Avatar label={r.initials} color={r.color} />
-            </div>
-            <div>
-              <div className="font-semibold text-base">{r.name}</div>
-              <div className="text-xs text-muted mt-0.5">{r.subtitle}</div>
-            </div>
-            {isOrg && r.kind === "pet" && (
-              <div className="border-t border-line pt-3">
-                <AdoptionToggle
-                  tenantId={active.tenantId}
-                  petId={r.id}
-                  isAdoptable={r.isAdoptable}
-                  adoptionNote={r.adoptionNote}
-                />
-              </div>
-            )}
-          </Card>
-        ))}
-        {roster.length === 0 && (
-          <Card className="p-6 text-center text-sm text-muted sm:col-span-2 lg:col-span-3">
-            No pets or habitats yet — use “Add pet or habitat” above to add your first one.
-          </Card>
-        )}
-      </div>
+      {roster.length === 0 ? (
+        <Card className="p-6 text-center text-sm text-muted">
+          No pets or habitats yet — use “Add pet or habitat” above to add your first one.
+        </Card>
+      ) : (
+        <RosterGrid tenantId={active.tenantId} roster={roster} isOrg={isOrg} />
+      )}
     </div>
   );
 }

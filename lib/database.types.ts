@@ -9,6 +9,7 @@ export type SubscriptionStatus = "trialing" | "active" | "past_due" | "canceled"
 export type RosterKind = "pet" | "group" | "habitat";
 export type IllnessStatus = "active" | "resolved";
 export type VaccinationStatus = "due" | "scheduled" | "complete";
+export type PetSex = "male" | "female" | "unknown";
 
 // The polymorphic pet_id/group_id/habitat_id scope shared by stat_entries,
 // vet_visits, illnesses, vaccinations, and grooming_visits (§03) — exactly
@@ -85,7 +86,14 @@ export interface Database {
           group_id: string | null;
           name: string;
           species: string;
+          breed: string | null;
+          sex: PetSex | null;
+          birth_date: string | null;
           life_stage: string | null;
+          weight_kg: number | null;
+          color: string | null;
+          microchip_id: string | null;
+          neutered: boolean | null;
           notes: string | null;
           is_adoptable: boolean;
           adoption_note: string | null;
