@@ -118,6 +118,12 @@ export function ProvidersView({ tenantId, providers }: { tenantId: string; provi
                   <div className="text-xs text-muted mt-0.5 flex flex-col gap-0.5">
                     {p.phone && <span>{p.phone}</span>}
                     {p.address && <span>{p.address}</span>}
+                    {p.businessHours && <span>🕒 {p.businessHours}</span>}
+                    {p.mapsUrl && (
+                      <a href={p.mapsUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                        📍 View on map
+                      </a>
+                    )}
                     {p.website && (
                       <a href={p.website} target="_blank" rel="noreferrer" className="text-primary hover:underline">
                         {p.website}

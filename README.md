@@ -120,7 +120,19 @@ A Next.js (App Router) build of the marketing site and app shell described in
   logo (a logo lives in its owning tenant's private Storage folder, so
   copying the file reference alone would point at a file the new tenant's
   RLS correctly can't read) — add one per shop from `/app/providers` if
-  wanted.
+  wanted. Vet, grooming, and offline-shop providers (anywhere with a
+  physical location — the same "not online" split the form already drew
+  for phone/address) can also carry GPS coordinates and business hours
+  (`0018_provider_location_hours.sql`) — latitude/longitude are entered
+  as plain numbers (paste what Google Maps shows when you right-click a
+  spot; both-or-neither and valid-range check constraints back this up),
+  rendered as a "View on map" link (`lib/providers.ts` derives the
+  `https://www.google.com/maps?q=lat,lng` URL) rather than embedding an
+  actual map. Business hours is free text (e.g. "Mon–Sat 9am–8pm, Sun
+  closed") rather than a structured weekly schedule — simpler, and
+  consistent with how every other provider field is just text. Online
+  shops get neither field, same reasoning as phone/address: a website
+  has no location or opening hours.
 - **Shopping** — `products` and `shopping_orders` tables with RLS, plus a
   many-to-many `shopping_order_scopes` join table (`0017_scope_rework.sql`)
   — an order can now name *any combination* of pets and/or habitats (a

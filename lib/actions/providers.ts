@@ -10,6 +10,21 @@ function str(formData: FormData, key: string): string | null {
   return typeof v === "string" && v.trim().length > 0 ? v.trim() : null;
 }
 
+function num(formData: FormData, key: string): number | null {
+  const v = str(formData, key);
+  if (v === null) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Latitude/longitude are both-or-neither (DB constraint backs this up too). */
+function gps(formData: FormData): { latitude: number | null; longitude: number | null } {
+  const latitude = num(formData, "latitude");
+  const longitude = num(formData, "longitude");
+  if (latitude === null || longitude === null) return { latitude: null, longitude: null };
+  return { latitude, longitude };
+}
+
 function revalidateProviders() {
   revalidatePath("/app/providers");
   revalidatePath("/app/health");
@@ -53,6 +68,8 @@ export async function addProvider(tenantId: string, category: ServiceProviderCat
     address: str(formData, "address"),
     website: str(formData, "website"),
     notes: str(formData, "notes"),
+    business_hours: str(formData, "business_hours"),
+    ...gps(formData),
     ...logo,
   });
   if (error) {
@@ -80,6 +97,8 @@ export async function updateProvider(tenantId: string, providerId: string, formD
       address: str(formData, "address"),
       website: str(formData, "website"),
       notes: str(formData, "notes"),
+      business_hours: str(formData, "business_hours"),
+      ...gps(formData),
       ...logo,
     })
     .eq("id", providerId)

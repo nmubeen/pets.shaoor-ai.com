@@ -14,6 +14,11 @@ export type Provider = {
   color: string;
   logoPath: string | null;
   logoUrl: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  /** https://www.google.com/maps?q=lat,lng — null unless both coordinates are set. */
+  mapsUrl: string | null;
+  businessHours: string | null;
 };
 
 const COLORS = [
@@ -41,7 +46,7 @@ export async function getProviders(
 ): Promise<Provider[]> {
   let query = supabase
     .from("service_providers")
-    .select("id, category, name, phone, address, website, notes, logo_path")
+    .select("id, category, name, phone, address, website, notes, logo_path, latitude, longitude, business_hours")
     .eq("tenant_id", tenantId)
     .order("name");
   if (categories && categories.length > 0) {
@@ -68,5 +73,9 @@ export async function getProviders(
     color: COLORS[i % COLORS.length],
     logoPath: r.logo_path,
     logoUrl: r.logo_path ? (urlByPath.get(r.logo_path) ?? null) : null,
+    latitude: r.latitude,
+    longitude: r.longitude,
+    mapsUrl: r.latitude !== null && r.longitude !== null ? `https://www.google.com/maps?q=${r.latitude},${r.longitude}` : null,
+    businessHours: r.business_hours,
   }));
 }

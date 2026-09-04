@@ -77,16 +77,60 @@ export function ProviderForm({
         </label>
 
         {!isOnlineShop && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1.5">
+                <span className={label}>Phone (optional)</span>
+                <input name="phone" defaultValue={initial?.phone ?? ""} className={field} />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className={label}>Address (optional)</span>
+                <input name="address" defaultValue={initial?.address ?? ""} className={field} />
+              </label>
+            </div>
+
             <label className="flex flex-col gap-1.5">
-              <span className={label}>Phone (optional)</span>
-              <input name="phone" defaultValue={initial?.phone ?? ""} className={field} />
+              <span className={label}>Business hours (optional)</span>
+              <input
+                name="business_hours"
+                defaultValue={initial?.businessHours ?? ""}
+                className={field}
+                placeholder="Mon–Sat 9am–8pm, Sun closed"
+              />
             </label>
-            <label className="flex flex-col gap-1.5">
-              <span className={label}>Address (optional)</span>
-              <input name="address" defaultValue={initial?.address ?? ""} className={field} />
-            </label>
-          </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1.5">
+                <span className={label}>Latitude (optional)</span>
+                <input
+                  type="number"
+                  name="latitude"
+                  step="any"
+                  min="-90"
+                  max="90"
+                  defaultValue={initial?.latitude ?? ""}
+                  className={field}
+                  placeholder="12.9716"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className={label}>Longitude (optional)</span>
+                <input
+                  type="number"
+                  name="longitude"
+                  step="any"
+                  min="-180"
+                  max="180"
+                  defaultValue={initial?.longitude ?? ""}
+                  className={field}
+                  placeholder="77.5946"
+                />
+              </label>
+            </div>
+            <p className="text-[.7rem] text-muted -mt-1.5">
+              Tip: right-click the spot on Google Maps and copy the coordinates it shows.
+            </p>
+          </>
         )}
 
         <label className="flex flex-col gap-1.5">

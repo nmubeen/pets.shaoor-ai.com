@@ -143,6 +143,9 @@ export interface Database {
           website: string | null;
           notes: string | null;
           logo_path: string | null;
+          latitude: number | null;
+          longitude: number | null;
+          business_hours: string | null;
           created_at: string;
         },
         "tenant_id" | "category" | "name"
