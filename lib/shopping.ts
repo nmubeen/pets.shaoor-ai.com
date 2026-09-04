@@ -1,7 +1,7 @@
 // Fetches and formats shopping orders for /app/shopping, plus a combined
 // spend rollup ("expense reporting", §05 roadmap phrase) across every
-// cost-bearing table — shopping_orders, vet_visits, grooming_visits —
-// rather than a separate expenses ledger. See supabase/migrations/0005.
+// cost-bearing table — shopping_orders, visits — rather than a separate
+// expenses ledger. See supabase/migrations/0005.
 //
 // Scope went many-to-many in 0017_scope_rework.sql (shopping_order_scopes)
 // — an order can name any combination of pets/habitats, not just one, so
@@ -113,18 +113,13 @@ export async function getSpendSummary(
 ): Promise<SpendSummary> {
   const since = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
 
-  const [orders, visits, grooming] = await Promise.all([
+  const [orders, visits] = await Promise.all([
     supabase.from("shopping_orders").select("cost, order_date").eq("tenant_id", tenantId).gte("order_date", since),
-    supabase.from("vet_visits").select("cost, visit_date").eq("tenant_id", tenantId).gte("visit_date", since),
-    supabase
-      .from("grooming_visits")
-      .select("cost, visit_date")
-      .eq("tenant_id", tenantId)
-      .gte("visit_date", since),
+    supabase.from("visits").select("cost, visit_date").eq("tenant_id", tenantId).gte("visit_date", since),
   ]);
 
   const orderCosts = (orders.data ?? []).map((r) => r.cost ?? 0);
-  const otherCosts = [...(visits.data ?? []), ...(grooming.data ?? [])].map((r) => r.cost ?? 0);
+  const otherCosts = (visits.data ?? []).map((r) => r.cost ?? 0);
   const spentLast30d = [...orderCosts, ...otherCosts].reduce((sum, c) => sum + c, 0);
   const ordersLogged = orders.data?.length ?? 0;
   const avgOrder = ordersLogged > 0 ? orderCosts.reduce((s, c) => s + c, 0) / ordersLogged : null;

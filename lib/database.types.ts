@@ -16,10 +16,10 @@ export type MedicationStatus = "active" | "completed" | "discontinued";
 
 // The polymorphic pet_id/habitat_id scope — exactly one non-null, enforced
 // by a DB check constraint. Used only by stat_entries (dead/unused) and
-// care_tasks now — health records (vet_visits, illnesses, vaccinations,
-// grooming_visits, medications) went pet-only (0017_scope_rework.sql), and
-// shopping_orders moved to a many-to-many join table
-// (shopping_order_scopes, below) instead of this shape entirely.
+// care_tasks now — health records (visits, illnesses, vaccinations,
+// medications) went pet-only (0017_scope_rework.sql), and shopping_orders
+// moved to a many-to-many join table (shopping_order_scopes, below)
+// instead of this shape entirely.
 type Scope = {
   pet_id: string | null;
   habitat_id: string | null;
@@ -150,7 +150,13 @@ export interface Database {
         },
         "tenant_id" | "category" | "name"
       >;
-      vet_visits: Table<
+      // Renamed from vet_visits (0020_unified_visits.sql) — a visit can now
+      // carry any mix of services (visit_services) and vaccinations given
+      // (vaccinations.visit_id), not just a medical checkup; grooming_visits
+      // was folded in rather than kept as a separate table. cost is the sum
+      // of that visit's line items, computed and stored at write time
+      // (lib/actions/health.ts), not a DB trigger.
+      visits: Table<
         {
           id: string;
           tenant_id: string;
@@ -165,6 +171,28 @@ export interface Database {
           created_at: string;
         },
         "tenant_id" | "pet_id" | "reason"
+      >;
+      care_service_types: Table<
+        {
+          id: string;
+          tenant_id: string;
+          name: string;
+          frequency_days: number | null;
+          created_at: string;
+        },
+        "tenant_id" | "name"
+      >;
+      visit_services: Table<
+        {
+          id: string;
+          tenant_id: string;
+          visit_id: string;
+          service_type_id: string | null;
+          name: string;
+          cost: number | null;
+          created_at: string;
+        },
+        "tenant_id" | "visit_id" | "name"
       >;
       illnesses: Table<
         {
@@ -186,18 +214,24 @@ export interface Database {
           tenant_id: string;
           pet_id: string;
           protocol_id: string | null;
+          visit_id: string | null;
           reason: string;
           status: VaccinationStatus;
           due_date: string | null;
           administered_date: string | null;
+          cost: number | null;
           notes: string | null;
           created_at: string;
         },
         "tenant_id" | "pet_id" | "reason"
       >;
+      // tenant_id null = global built-in reference row (dog/cat defaults,
+      // read-only); tenant_id set = that workspace's own custom plan entry
+      // (0020_unified_visits.sql) — see lib/vaccination-plans.ts.
       vaccine_protocols: Table<
         {
           id: string;
+          tenant_id: string | null;
           species_group: SpeciesGroup;
           vaccine_name: string;
           dose_sequence: number;
@@ -226,21 +260,6 @@ export interface Database {
           created_at: string;
         },
         "tenant_id" | "pet_id" | "name"
-      >;
-      grooming_visits: Table<
-        {
-          id: string;
-          tenant_id: string;
-          pet_id: string;
-          provider_id: string | null;
-          service: string;
-          visit_date: string;
-          cost: number | null;
-          weight_kg: number | null;
-          notes: string | null;
-          created_at: string;
-        },
-        "tenant_id" | "pet_id" | "service"
       >;
       products: Table<
         {

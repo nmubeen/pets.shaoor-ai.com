@@ -12,6 +12,7 @@ import {
   InvoiceIcon,
   UsersIcon,
   PinIcon,
+  VialIcon,
 } from "@/components/icons";
 import { switchTenant } from "@/lib/actions/tenant";
 import type { ActiveMembership } from "@/lib/tenant";
@@ -26,6 +27,7 @@ const nav = [
 ];
 
 const settingsNav = [
+  { href: "/app/settings/care", label: "Care", icon: VialIcon },
   { href: "/app/settings/billing", label: "Billing", icon: InvoiceIcon },
   { href: "/app/settings/team", label: "Team", icon: UsersIcon },
 ];

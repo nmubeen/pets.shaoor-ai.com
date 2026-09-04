@@ -1,7 +1,7 @@
 // Shared helpers for the polymorphic pet_id/habitat_id scope. Health
-// records (vet_visits, illnesses, vaccinations, grooming_visits,
-// medications) went pet-only (0017_scope_rework.sql) and no longer use
-// this — see lib/actions/health.ts. shopping_orders moved to a
+// records (visits, illnesses, vaccinations, medications) went pet-only
+// (0017_scope_rework.sql) and no longer use this — see
+// lib/actions/health.ts. shopping_orders moved to a
 // many-to-many join table instead (lib/actions/shopping.ts) — an order
 // can now name any combination of pets/habitats, not just one. What's
 // left here: care_tasks (required — parseScopeRequired, always exactly

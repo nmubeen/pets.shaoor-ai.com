@@ -59,12 +59,12 @@ function WeightChart({ points }: { points: WeightPoint[] }) {
           cx={xFor(new Date(p.dateIso + "T00:00:00Z").getTime())}
           cy={yFor(p.weightKg)}
           r="4.5"
-          fill={p.source === "vet" ? "var(--primary)" : "var(--accent)"}
+          fill="var(--primary)"
           stroke="var(--surface)"
           strokeWidth="1.5"
         >
           <title>
-            {p.date} — {p.weightKg} kg ({p.source === "vet" ? "vet visit" : "grooming"})
+            {p.date} — {p.weightKg} kg
           </title>
         </circle>
       ))}
@@ -79,7 +79,7 @@ export function GrowthPanel({ history }: { history: PetWeightHistory[] }) {
   if (history.length === 0) {
     return (
       <Card className="p-6 text-center text-sm text-muted">
-        Add a pet first — weight is captured when you log a vet or grooming visit.
+        Add a pet first — weight is captured when you log a visit.
       </Card>
     );
   }
@@ -104,29 +104,18 @@ export function GrowthPanel({ history }: { history: PetWeightHistory[] }) {
 
       {!selected || selected.points.length === 0 ? (
         <Card className="p-6 text-center text-sm text-muted">
-          No weight logged yet for {selected?.petName ?? "this pet"} — weight is captured when you log a vet or
-          grooming visit with a weight entered.
+          No weight logged yet for {selected?.petName ?? "this pet"} — weight is captured when you log a visit with
+          a weight entered.
         </Card>
       ) : (
         <Card className="p-5">
           <WeightChart points={selected.points} />
-          <div className="flex items-center gap-4 mt-3 text-xs text-muted">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full inline-block" style={{ background: "var(--primary)" }} />
-              Vet visit
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full inline-block" style={{ background: "var(--accent)" }} />
-              Grooming
-            </span>
-          </div>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-surface-2">
                   <th className={th}>Date</th>
                   <th className={th}>Weight</th>
-                  <th className={th}>Logged at</th>
                 </tr>
               </thead>
               <tbody>
@@ -134,7 +123,6 @@ export function GrowthPanel({ history }: { history: PetWeightHistory[] }) {
                   <tr key={i} className="border-b border-line last:border-none">
                     <td className="px-4 py-2.5 text-muted">{p.date}</td>
                     <td className="px-4 py-2.5 font-mono">{p.weightKg} kg</td>
-                    <td className="px-4 py-2.5 text-muted">{p.source === "vet" ? "Vet visit" : "Grooming"}</td>
                   </tr>
                 ))}
               </tbody>

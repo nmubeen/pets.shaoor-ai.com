@@ -4,18 +4,15 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
 import { PetPicker } from "@/components/scope/PetPicker";
-import { ProviderPicker } from "@/components/providers/ProviderPicker";
-import { addVetVisit, addIllness, addVaccination, addGroomingVisit } from "@/lib/actions/health";
+import { addIllness, addVaccination } from "@/lib/actions/health";
 import type { RosterItem } from "@/lib/roster";
-import type { Provider } from "@/lib/providers";
 
-export type HealthTabKey = "visits" | "illnesses" | "vaccinations" | "grooming";
+/** Visits get their own dedicated form (components/health/VisitForm.tsx) — richer than these two, which stay simple single-event logs. */
+export type HealthTabKey = "illnesses" | "vaccinations";
 
 const ACTIONS = {
-  visits: addVetVisit,
   illnesses: addIllness,
   vaccinations: addVaccination,
-  grooming: addGroomingVisit,
 } as const;
 
 const field = "bg-paper border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary transition";
@@ -25,13 +22,11 @@ export function LogHealthForm({
   tab,
   tenantId,
   roster,
-  providers,
   onDone,
 }: {
   tab: HealthTabKey;
   tenantId: string;
   roster: RosterItem[];
-  providers: Provider[];
   onDone: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
@@ -55,36 +50,6 @@ export function LogHealthForm({
     <Card className="p-5">
       <form action={handleSubmit} className="flex flex-col gap-3">
         <PetPicker roster={roster} />
-
-        {tab === "visits" && (
-          <>
-            <label className="flex flex-col gap-1.5">
-              <span className={label}>Reason</span>
-              <input name="reason" required className={field} placeholder="Wellness check" />
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <ProviderPicker providers={providers} label="Vet / hospital (optional)" />
-              <label className="flex flex-col gap-1.5">
-                <span className={label}>Consulting doctor (optional)</span>
-                <input name="vet_name" className={field} placeholder="Dr. Mehta" />
-              </label>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <label className="flex flex-col gap-1.5">
-                <span className={label}>Date</span>
-                <input type="date" name="visit_date" className={field} defaultValue={new Date().toISOString().slice(0, 10)} />
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className={label}>Weight, kg (optional)</span>
-                <input type="number" name="weight_kg" min="0" step="0.1" className={field} placeholder="4.2" />
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className={label}>Cost (optional)</span>
-                <input type="number" name="cost" min="0" step="0.01" className={field} placeholder="0" />
-              </label>
-            </div>
-          </>
-        )}
 
         {tab === "illnesses" && (
           <>
@@ -126,30 +91,6 @@ export function LogHealthForm({
                   <option value="scheduled">Scheduled</option>
                   <option value="complete">Complete</option>
                 </select>
-              </label>
-            </div>
-          </>
-        )}
-
-        {tab === "grooming" && (
-          <>
-            <label className="flex flex-col gap-1.5">
-              <span className={label}>Service</span>
-              <input name="service" required className={field} placeholder="Bath & trim" />
-            </label>
-            <ProviderPicker providers={providers} label="Grooming center (optional)" />
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <label className="flex flex-col gap-1.5">
-                <span className={label}>Date</span>
-                <input type="date" name="visit_date" className={field} defaultValue={new Date().toISOString().slice(0, 10)} />
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className={label}>Weight, kg (optional)</span>
-                <input type="number" name="weight_kg" min="0" step="0.1" className={field} placeholder="4.2" />
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className={label}>Cost (optional)</span>
-                <input type="number" name="cost" min="0" step="0.01" className={field} placeholder="0" />
               </label>
             </div>
           </>

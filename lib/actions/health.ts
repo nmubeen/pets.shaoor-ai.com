@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getProtocols, dueDateFor } from "@/lib/protocols";
 
+type Supa = Awaited<ReturnType<typeof createClient>>;
+
 function str(formData: FormData, key: string): string | null {
   const v = formData.get(key);
   return typeof v === "string" && v.trim().length > 0 ? v.trim() : null;
@@ -27,25 +29,220 @@ function revalidateHealth() {
   revalidatePath("/app/health");
 }
 
-export async function addVetVisit(tenantId: string, formData: FormData) {
+/** Reads a repeated pair of same-named inputs (one row = one name + one cost, in DOM order) into rows, dropping blank-name rows. */
+function readRows(formData: FormData, nameField: string, costField: string): { name: string; cost: number | null }[] {
+  const names = formData.getAll(nameField);
+  const costs = formData.getAll(costField);
+  const rows: { name: string; cost: number | null }[] = [];
+  for (let i = 0; i < names.length; i++) {
+    const name = typeof names[i] === "string" ? (names[i] as string).trim() : "";
+    if (!name) continue;
+    const rawCost = typeof costs[i] === "string" ? (costs[i] as string).trim() : "";
+    const cost = rawCost ? Number(rawCost) : null;
+    rows.push({ name, cost: cost !== null && Number.isFinite(cost) ? cost : null });
+  }
+  return rows;
+}
+
+/** Finds a tenant's service catalog entry by name (case-insensitive), creating it if new — same "type it, it gets added" pattern as lib/actions/shopping.ts's findOrCreateProduct. */
+async function findOrCreateServiceType(
+  supabase: Supa,
+  tenantId: string,
+  name: string
+): Promise<{ id: string; frequencyDays: number | null } | null> {
+  const { data: existing } = await supabase
+    .from("care_service_types")
+    .select("id, frequency_days")
+    .eq("tenant_id", tenantId)
+    .ilike("name", name)
+    .maybeSingle();
+  if (existing) return { id: existing.id, frequencyDays: existing.frequency_days };
+
+  const { data: created, error } = await supabase
+    .from("care_service_types")
+    .insert({ tenant_id: tenantId, name })
+    .select("id, frequency_days")
+    .single();
+  if (error || !created) return null;
+  return { id: created.id, frequencyDays: created.frequency_days };
+}
+
+/**
+ * A service with a configured frequency (Deworming every 30 days, Nail
+ * Clipping every 20) drives a care_task reminder — logging it here
+ * completes whatever open reminder already existed for this pet+service
+ * (it just got done, hence why it's being logged) and schedules the next
+ * one, same "complete a recurring thing, get the next one" shape as
+ * lib/actions/tasks.ts's completeCareTask. A service with no frequency
+ * (e.g. Consultation) is just a line item, no task involved.
+ */
+async function upsertServiceReminder(
+  supabase: Supa,
+  tenantId: string,
+  petId: string,
+  serviceName: string,
+  frequencyDays: number | null,
+  visitDate: string
+) {
+  if (!frequencyDays) return;
+
+  await supabase
+    .from("care_tasks")
+    .update({ completed_at: new Date().toISOString() })
+    .eq("tenant_id", tenantId)
+    .eq("pet_id", petId)
+    .eq("title", serviceName)
+    .is("completed_at", null);
+
+  const next = new Date(visitDate + "T00:00:00Z");
+  next.setUTCDate(next.getUTCDate() + frequencyDays);
+  await supabase.from("care_tasks").insert({
+    tenant_id: tenantId,
+    pet_id: petId,
+    title: serviceName,
+    due_date: next.toISOString().slice(0, 10),
+    repeat_interval_days: frequencyDays,
+  });
+}
+
+/**
+ * Shared by markVaccinationGiven and recordVaccinationGiven (below) — if
+ * the vaccination came from a protocol step with a recurring booster
+ * interval, schedules the next occurrence dated from the actual
+ * administered date. UTC-safe date math — see completeCareTask's comment
+ * for why mixing local Date parsing with toISOString() output silently
+ * shifts dates by a day on some servers.
+ */
+async function scheduleBoosterIfDue(
+  supabase: Supa,
+  tenantId: string,
+  vax: { pet_id: string; protocol_id: string | null; reason: string },
+  administeredDate: string
+) {
+  if (!vax.protocol_id) return { error: null };
+
+  const { data: protocol } = await supabase
+    .from("vaccine_protocols")
+    .select("booster_interval_months")
+    .eq("id", vax.protocol_id)
+    .maybeSingle();
+  if (!protocol?.booster_interval_months) return { error: null };
+
+  const next = new Date(administeredDate + "T00:00:00Z");
+  next.setUTCMonth(next.getUTCMonth() + protocol.booster_interval_months);
+  const { error } = await supabase.from("vaccinations").insert({
+    tenant_id: tenantId,
+    pet_id: vax.pet_id,
+    protocol_id: vax.protocol_id,
+    reason: vax.reason,
+    status: "due",
+    due_date: next.toISOString().slice(0, 10),
+  });
+  return { error: error?.message ?? null };
+}
+
+/**
+ * Records a vaccine given during a visit. Matches it against the pet's
+ * open (not-yet-complete) vaccinations by name first — completing the
+ * schedule's own "due" row rather than creating a disconnected duplicate
+ * when the vaccine was already anticipated; falls back to inserting a
+ * fresh already-complete row for anything ad hoc / unscheduled.
+ */
+async function recordVaccinationGiven(
+  supabase: Supa,
+  tenantId: string,
+  petId: string,
+  visitId: string,
+  name: string,
+  cost: number | null,
+  administeredDate: string
+): Promise<{ error: string | null }> {
+  const { data: due } = await supabase
+    .from("vaccinations")
+    .select("id, pet_id, protocol_id, reason")
+    .eq("tenant_id", tenantId)
+    .eq("pet_id", petId)
+    .neq("status", "complete")
+    .ilike("reason", name)
+    .maybeSingle();
+
+  if (due) {
+    const { error } = await supabase
+      .from("vaccinations")
+      .update({ status: "complete", administered_date: administeredDate, visit_id: visitId, cost })
+      .eq("id", due.id);
+    if (error) return { error: error.message };
+    return scheduleBoosterIfDue(supabase, tenantId, due, administeredDate);
+  }
+
+  const { error } = await supabase.from("vaccinations").insert({
+    tenant_id: tenantId,
+    pet_id: petId,
+    visit_id: visitId,
+    reason: name,
+    status: "complete",
+    administered_date: administeredDate,
+    cost,
+  });
+  return { error: error?.message ?? null };
+}
+
+/**
+ * Logs one real-world visit, which may carry any mix of services (a
+ * checkup, a grooming session, whatever actually happened) and vaccines
+ * given — one form, one entry, regardless of how many different things
+ * were done. The visit's cost is the sum of every line item entered here,
+ * computed and stored now rather than recomputed later (there's no "edit
+ * a visit's services" flow yet, so this is a write-time snapshot, not a
+ * live trigger).
+ */
+export async function addVisit(tenantId: string, formData: FormData) {
   const petId = requirePetId(formData);
   if (typeof petId !== "string") return petId;
   const reason = str(formData, "reason");
   if (!reason) return { error: "Reason is required." };
 
+  const visitDate = str(formData, "visit_date") ?? new Date().toISOString().slice(0, 10);
+  const services = readRows(formData, "service_name", "service_cost");
+  const vaccines = readRows(formData, "vaccine_name", "vaccine_cost");
+  const totalCost =
+    services.reduce((sum, r) => sum + (r.cost ?? 0), 0) + vaccines.reduce((sum, r) => sum + (r.cost ?? 0), 0);
+
   const supabase = await createClient();
-  const { error } = await supabase.from("vet_visits").insert({
-    tenant_id: tenantId,
-    pet_id: petId,
-    provider_id: str(formData, "provider_id"),
-    visit_date: str(formData, "visit_date") ?? new Date().toISOString().slice(0, 10),
-    reason,
-    vet_name: str(formData, "vet_name"),
-    cost: num(formData, "cost"),
-    weight_kg: num(formData, "weight_kg"),
-    notes: str(formData, "notes"),
-  });
-  if (error) return { error: error.message };
+  const { data: visit, error } = await supabase
+    .from("visits")
+    .insert({
+      tenant_id: tenantId,
+      pet_id: petId,
+      provider_id: str(formData, "provider_id"),
+      vet_name: str(formData, "vet_name"),
+      visit_date: visitDate,
+      reason,
+      weight_kg: num(formData, "weight_kg"),
+      notes: str(formData, "notes"),
+      cost: services.length + vaccines.length > 0 ? totalCost : null,
+    })
+    .select("id")
+    .single();
+  if (error || !visit) return { error: error?.message ?? "Could not save that visit." };
+
+  for (const s of services) {
+    const serviceType = await findOrCreateServiceType(supabase, tenantId, s.name);
+    const { error: insertError } = await supabase.from("visit_services").insert({
+      tenant_id: tenantId,
+      visit_id: visit.id,
+      service_type_id: serviceType?.id ?? null,
+      name: s.name,
+      cost: s.cost,
+    });
+    if (insertError) return { error: insertError.message };
+    if (serviceType) await upsertServiceReminder(supabase, tenantId, petId, s.name, serviceType.frequencyDays, visitDate);
+  }
+
+  for (const v of vaccines) {
+    const { error: vaxError } = await recordVaccinationGiven(supabase, tenantId, petId, visit.id, v.name, v.cost, visitDate);
+    if (vaxError) return { error: vaxError };
+  }
 
   revalidateHealth();
   return { error: null };
@@ -101,9 +298,12 @@ export async function addVaccination(tenantId: string, formData: FormData) {
  * Generates the missing vaccination steps from the species' standard
  * protocol — the "predictive" part: turns a birth date into a concrete,
  * due-dated schedule instead of requiring the owner to know it themselves.
- * Safe to call more than once — steps already generated (matched by
- * protocol_id) aren't duplicated. Every row it creates is a normal,
- * freely-editable vaccination row afterward, same as one logged by hand.
+ * Pulls both the global dog/cat defaults and this workspace's own custom
+ * vaccination plan entries (Settings → Care) — RLS returns both for the
+ * same species_group query, no code-level union needed. Safe to call more
+ * than once — steps already generated (matched by protocol_id) aren't
+ * duplicated. Every row it creates is a normal, freely-editable
+ * vaccination row afterward, same as one logged by hand.
  */
 export async function generateVaccinationSchedule(tenantId: string, petId: string) {
   const supabase = await createClient();
@@ -146,12 +346,10 @@ export async function generateVaccinationSchedule(tenantId: string, petId: strin
 }
 
 /**
- * Marks a vaccination as given today. If it came from a protocol step that
- * carries a recurring booster interval, immediately schedules the next
- * occurrence — same "complete a recurring thing, get the next one" pattern
- * as lib/actions/tasks.ts's completeCareTask, including the UTC-safe date
- * math (see that file's comment for why mixing local Date parsing with
- * toISOString() output silently shifts dates by a day on some servers).
+ * Marks a vaccination as given today (standalone — not tied to a visit;
+ * use addVisit's "Vaccinations given" rows when it happened as part of a
+ * logged visit). Schedules the next booster occurrence if applicable —
+ * see scheduleBoosterIfDue.
  */
 export async function markVaccinationGiven(tenantId: string, vaccinationId: string) {
   const supabase = await createClient();
@@ -172,50 +370,8 @@ export async function markVaccinationGiven(tenantId: string, vaccinationId: stri
     .eq("tenant_id", tenantId);
   if (updateError) return { error: updateError.message };
 
-  if (vax.protocol_id) {
-    const { data: protocol } = await supabase
-      .from("vaccine_protocols")
-      .select("booster_interval_months")
-      .eq("id", vax.protocol_id)
-      .maybeSingle();
-
-    if (protocol?.booster_interval_months) {
-      const next = new Date(administeredDate + "T00:00:00Z");
-      next.setUTCMonth(next.getUTCMonth() + protocol.booster_interval_months);
-      const { error: insertError } = await supabase.from("vaccinations").insert({
-        tenant_id: tenantId,
-        pet_id: vax.pet_id,
-        protocol_id: vax.protocol_id,
-        reason: vax.reason,
-        status: "due",
-        due_date: next.toISOString().slice(0, 10),
-      });
-      if (insertError) return { error: insertError.message };
-    }
-  }
-
-  revalidateHealth();
-  return { error: null };
-}
-
-export async function addGroomingVisit(tenantId: string, formData: FormData) {
-  const petId = requirePetId(formData);
-  if (typeof petId !== "string") return petId;
-  const service = str(formData, "service");
-  if (!service) return { error: "Service is required." };
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("grooming_visits").insert({
-    tenant_id: tenantId,
-    pet_id: petId,
-    provider_id: str(formData, "provider_id"),
-    service,
-    visit_date: str(formData, "visit_date") ?? new Date().toISOString().slice(0, 10),
-    cost: num(formData, "cost"),
-    weight_kg: num(formData, "weight_kg"),
-    notes: str(formData, "notes"),
-  });
-  if (error) return { error: error.message };
+  const { error } = await scheduleBoosterIfDue(supabase, tenantId, vax, administeredDate);
+  if (error) return { error };
 
   revalidateHealth();
   return { error: null };

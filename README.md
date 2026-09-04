@@ -57,55 +57,77 @@ A Next.js (App Router) build of the marketing site and app shell described in
   `lib/actions/gallery.ts`) — shown wherever its avatar circle appears
   instead of initials; replacing or removing a photo cleans up the old
   Storage object.
-- **Health & vets** — `vet_visits`, `illnesses`, `vaccinations`,
-  `grooming_visits` tables with RLS, **pet-only** (`pet_id` required,
-  `0017_scope_rework.sql` dropped the `habitat_id` column entirely) — a
-  habitat doesn't really have "health" in the individual-creature sense
-  this module tracks, so every record names exactly one pet, no exceptions,
-  for clean per-animal tracking (`components/scope/PetPicker.tsx`).
-  `/app/health` has
-  five tabs (Visits, Illnesses, Vaccinations, Grooming, Growth), each with a
-  real log form (`lib/actions/health.ts`, `lib/health.ts`); the dashboard's
-  "Recent health events" and "Vaccines due" tiles pull from the same data.
-  Visits and grooming pick a provider from the maintained list below
-  instead of typing a name each time, and both can optionally log the
-  pet's weight — normally checked at every visit either way. Vet visits
-  also carry a free-text consulting doctor (`vet_name`,
-  `0019_vet_visit_doctor.sql`) separate from the facility (`provider_id`)
-  — the hospital is fixed, but who actually saw the pet varies visit to
-  visit. The **Growth**
-  tab (`lib/growth.ts`, `components/health/GrowthPanel.tsx`) merges those
-  `weight_kg` readings from both tables per pet into a hand-rolled SVG line
-  chart (no charting dependency for one simple plot) plus a table below it,
-  color-coded by whether the reading came from a vet visit or a grooming
-  visit — a real growth curve instead of the single static "current weight"
-  the pet's own record already had (that field is untouched, and never
-  auto-synced from visit history — it stays a separate, manually-set
-  snapshot).
-- **Predictive vaccination scheduling & medications** — beyond passive
-  record-keeping: an optional `species_group` on `pets` (dog/cat/bird/
-  reptile/fish/small_mammal/other — deliberately a scheduling classifier
-  only, not a reintroduction of per-species tables per §03) matches a pet
-  against a global, non-tenant-scoped `vaccine_protocols` reference table
+- **Health & unified visits** — `visits` (renamed from `vet_visits`,
+  `0020_unified_visits.sql`), `illnesses`, `vaccinations`, pet-only
+  (`pet_id` required, `0017_scope_rework.sql` dropped `habitat_id` —
+  habitats don't have "health" in the individual-creature sense this
+  module tracks). A real-world visit is very often a mix of things — a
+  health check that turns into a grooming session too, a vaccination given
+  alongside a checkup — so `/app/health`'s **Visits** tab merged what used
+  to be separate Vet-visit and Grooming-visit records into one entry per
+  trip (`components/health/VisitForm.tsx`) that can carry any combination
+  of:
+  - **Services** — a multi-row list (Deworming, Nail Clipping, Grooming,
+    Consultation, Ear cleaning, whatever actually happened), each with its
+    own optional cost; the visit's total cost is the sum, computed at save
+    time rather than entered separately. Typing a service name not seen
+    before adds it to a tenant-wide catalog (`care_service_types`,
+    `findOrCreateServiceType` — same pattern as shopping's
+    `findOrCreateProduct`); one with a configured **frequency**
+    auto-manages a `care_tasks` reminder (completes whatever was already
+    open for that pet+service, schedules the next one that many days out)
+    — so "when was the last deworming" is just its due-date's reminder,
+    always current.
+  - **Vaccinations given** — a second multi-row list; each entry matches
+    the pet's existing *due* vaccination by name (completing it and
+    triggering the same booster-reschedule `markVaccinationGiven` already
+    does — refactored into a shared `scheduleBoosterIfDue` helper used by
+    both) or, for anything unscheduled, inserts a fresh already-complete
+    row. Either way it's linked back to the visit (`vaccinations.visit_id`
+    and `.cost`, both new) and its cost rolls into the visit total too.
+  
+  A visit still has its own reason, provider (vet **or** grooming, picked
+  from one combined list), consulting doctor (`vet_name`,
+  `0019_vet_visit_doctor.sql` — the facility is fixed, who actually saw
+  the pet varies visit to visit), date, weight, and notes. Illnesses and
+  Vaccinations (as a due/complete tracking list, not the "given during a
+  visit" flow above) keep their own simple single-event tabs, matching
+  how they worked before — they're not really "things you avail," so
+  merging them in wouldn't have solved anything. The **Growth** tab
+  (`lib/growth.ts`, `components/health/GrowthPanel.tsx`) plots
+  `visits.weight_kg` per pet as a hand-rolled SVG line chart (no charting
+  dependency for one simple plot) — independent of `pets.weight_kg`, which
+  stays a separate, manually-set "current weight" snapshot, never
+  auto-synced from visit history.
+- **Predictive vaccination scheduling, medications & Settings → Care** —
+  beyond passive record-keeping: an optional `species_group` on `pets`
+  (dog/cat/bird/reptile/fish/small_mammal/other — deliberately a
+  scheduling classifier only, not a reintroduction of per-species tables
+  per §03) matches a pet against `vaccine_protocols`
   (`0014_predictive_scheduling.sql`) seeded with the standard puppy/kitten
   core series (DHPP, Rabies, Bordetella for dogs; FVRCP, Rabies, FeLV for
-  cats — dose sequence, age-in-weeks due, and booster interval). Set a
-  pet's species group and birth date, and "Suggest schedule" on its roster
-  card (`generateVaccinationSchedule`, idempotent — safe to click again)
-  creates a concrete, due-dated `vaccinations` row per protocol step
-  (`birth_date + age_weeks_due`). Marking a protocol-linked vaccination
-  "given" (`markVaccinationGiven`) auto-creates the next occurrence when
-  its protocol has a `booster_interval_months` (e.g. the annual DHPP/Rabies
-  booster), dated from the actual administered date — a series step with
-  no booster interval (e.g. the last Bordetella dose) just completes with
-  nothing scheduled after it. A new `medications` table (same pet-only
-  scope, optional prescribing provider) tracks ongoing
-  courses on their own tab in `/app/health` — "Log dose" advances
-  `next_due_date` by the medication's repeat interval (UTC-safe date math
-  throughout, same pattern as care tasks), automatically flipping the
-  medication to `completed` instead of scheduling past its `end_date`.
-  Verified end-to-end against the live Supabase project, including the
-  UTC-safe reschedule math and the booster-vs-no-booster branch.
+  cats). **`/app/settings/care`** (`0020_unified_visits.sql` widened
+  `vaccine_protocols` with a nullable `tenant_id` — null means the
+  built-in defaults, unchanged and still read-only; set means a
+  workspace's own custom plan entry) lets a workspace add its own
+  vaccination plans (name, purpose, age when due, booster interval) —
+  useful for a species with no built-in default, or a vaccine the
+  defaults miss — alongside a **service types** editor for the Visits
+  form's catalog above (name + optional reminder frequency). "Suggest
+  schedule" on a pet's card (`generateVaccinationSchedule`, idempotent)
+  picks up both built-in and custom protocols for its species — one query,
+  RLS returns the union, no code-level merge needed. Completing a
+  protocol-linked vaccination auto-creates the next occurrence when its
+  protocol has a `booster_interval_months`, dated from the actual
+  administered date. A `medications` table (same pet-only scope, optional
+  prescribing provider) tracks ongoing courses on their own tab — "Log
+  dose" advances `next_due_date` by the medication's repeat interval
+  (UTC-safe date math throughout), automatically flipping to `completed`
+  instead of scheduling past its `end_date`. Verified end-to-end against
+  the live Supabase project: cost totaling, the auto-catalog and
+  reminder-reschedule behavior, both vaccination-given paths (matched and
+  ad hoc), the built-in/custom protocol union, and the RLS policies that
+  keep the built-in defaults read-only.
 - **Service providers** — `/app/providers`: one unified `service_providers`
   table (`category`: vet, grooming, offline_shop, online_shop) maintained
   once and selected from everywhere else via `ProviderPicker`

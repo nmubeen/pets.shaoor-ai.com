@@ -5,8 +5,8 @@ import { emailShell, emailButton } from "@/lib/email-templates";
 import { formatCurrency } from "@/lib/format";
 
 // The "weekly expense-summary email" from §06 of the design doc. Same cost
-// rollup as lib/shopping.ts's getSpendSummary (shopping + vet + grooming),
-// just over the last 7 days and across every tenant instead of one.
+// rollup as lib/shopping.ts's getSpendSummary (shopping + visits), just
+// over the last 7 days and across every tenant instead of one.
 
 export async function GET(request: Request) {
   const auth = request.headers.get("authorization");
@@ -18,14 +18,13 @@ export async function GET(request: Request) {
   const since = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://pets.shaoor-ai.com";
 
-  const [{ data: orders }, { data: visits }, { data: grooming }] = await Promise.all([
+  const [{ data: orders }, { data: visits }] = await Promise.all([
     supabase.from("shopping_orders").select("tenant_id, cost").gte("order_date", since),
-    supabase.from("vet_visits").select("tenant_id, cost").gte("visit_date", since),
-    supabase.from("grooming_visits").select("tenant_id, cost").gte("visit_date", since),
+    supabase.from("visits").select("tenant_id, cost").gte("visit_date", since),
   ]);
 
   const totals = new Map<string, number>();
-  for (const row of [...(orders ?? []), ...(visits ?? []), ...(grooming ?? [])]) {
+  for (const row of [...(orders ?? []), ...(visits ?? [])]) {
     totals.set(row.tenant_id, (totals.get(row.tenant_id) ?? 0) + (row.cost ?? 0));
   }
 
@@ -51,7 +50,7 @@ export async function GET(request: Request) {
       html: emailShell(
         "Weekly expense summary",
         `<p>Over the last 7 days, <strong>${tenant?.name ?? "your workspace"}</strong> spent
-           <strong style="font-size:20px;">${formatCurrency(total)}</strong> across shopping, vet visits, and grooming.</p>
+           <strong style="font-size:20px;">${formatCurrency(total)}</strong> across shopping and visits.</p>
          ${emailButton(`${siteUrl}/app/shopping`, "View shopping →")}`
       ),
     });

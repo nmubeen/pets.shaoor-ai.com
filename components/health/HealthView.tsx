@@ -5,22 +5,23 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
 import { PlusIcon } from "@/components/icons";
 import { LogHealthForm, type HealthTabKey } from "@/components/health/LogHealthForm";
+import { VisitsPanel } from "@/components/health/VisitsPanel";
 import { MedicationsPanel } from "@/components/health/MedicationsPanel";
 import { GrowthPanel } from "@/components/health/GrowthPanel";
 import { markVaccinationGiven } from "@/lib/actions/health";
-import type { HealthRow } from "@/lib/health";
+import type { HealthRow, VisitRow } from "@/lib/health";
 import type { MedicationRow } from "@/lib/medications";
 import type { PetWeightHistory } from "@/lib/growth";
 import type { RosterItem } from "@/lib/roster";
 import type { Provider } from "@/lib/providers";
+import type { ServiceType } from "@/lib/care-services";
 
-type TabKey = HealthTabKey | "medications" | "growth";
+type TabKey = "visits" | HealthTabKey | "medications" | "growth";
 
 const TABS: { key: TabKey; label: string; logLabel: string }[] = [
-  { key: "visits", label: "Visits", logLabel: "Log a visit" },
+  { key: "visits", label: "Visits", logLabel: "" },
   { key: "illnesses", label: "Illnesses", logLabel: "Log an illness" },
   { key: "vaccinations", label: "Vaccinations", logLabel: "Log a vaccination" },
-  { key: "grooming", label: "Grooming", logLabel: "Log a grooming visit" },
   { key: "medications", label: "Medications", logLabel: "Add medication" },
   { key: "growth", label: "Growth", logLabel: "" },
 ];
@@ -47,32 +48,53 @@ function MarkGivenButton({ tenantId, vaccinationId }: { tenantId: string; vaccin
 export function HealthView({
   tenantId,
   roster,
+  visitProviders,
   vetProviders,
-  groomingProviders,
   visits,
   illnesses,
   vaccinations,
-  grooming,
   medications,
   weightHistory,
+  serviceTypes,
+  dueVaccinationNames,
 }: {
   tenantId: string;
   roster: RosterItem[];
+  /** Vet + grooming providers combined — a visit could be to either. */
+  visitProviders: Provider[];
+  /** Vet-only — Medications' "Prescribed by" shouldn't offer a groomer. */
   vetProviders: Provider[];
-  groomingProviders: Provider[];
-  visits: HealthRow[];
+  visits: VisitRow[];
   illnesses: HealthRow[];
   vaccinations: HealthRow[];
-  grooming: HealthRow[];
   medications: MedicationRow[];
   weightHistory: PetWeightHistory[];
+  serviceTypes: ServiceType[];
+  dueVaccinationNames: string[];
 }) {
   const [active, setActive] = useState<TabKey>("visits");
   const [showForm, setShowForm] = useState(false);
   const pets = roster.filter((r) => r.kind === "pet");
 
-  const rowsByTab: Record<HealthTabKey, HealthRow[]> = { visits, illnesses, vaccinations, grooming };
+  const rowsByTab: Record<HealthTabKey, HealthRow[]> = { illnesses, vaccinations };
   const tab = TABS.find((t) => t.key === active)!;
+
+  if (active === "visits") {
+    return (
+      <div className="flex flex-col gap-6">
+        <Header />
+        <TabRow active={active} onChange={setActive} />
+        <VisitsPanel
+          tenantId={tenantId}
+          roster={roster}
+          providers={visitProviders}
+          serviceTypes={serviceTypes}
+          dueVaccinationNames={dueVaccinationNames}
+          visits={visits}
+        />
+      </div>
+    );
+  }
 
   if (active === "medications") {
     return (
@@ -95,7 +117,6 @@ export function HealthView({
   }
 
   const rows = rowsByTab[active];
-  const lastCol = active === "visits" || active === "grooming" ? "Cost" : "Status";
 
   return (
     <div className="flex flex-col gap-6">
@@ -103,13 +124,7 @@ export function HealthView({
       <TabRow active={active} onChange={setActive} />
 
       {showForm && (
-        <LogHealthForm
-          tab={active}
-          tenantId={tenantId}
-          roster={roster}
-          providers={active === "visits" ? vetProviders : active === "grooming" ? groomingProviders : []}
-          onDone={() => setShowForm(false)}
-        />
+        <LogHealthForm tab={active} tenantId={tenantId} roster={roster} onDone={() => setShowForm(false)} />
       )}
 
       {pets.length === 0 ? (
@@ -133,7 +148,7 @@ export function HealthView({
                   Reason
                 </th>
                 <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line">
-                  {lastCol}
+                  Status
                 </th>
                 {active === "vaccinations" && (
                   <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line" />
@@ -145,15 +160,11 @@ export function HealthView({
                 <tr key={r.id} className="border-b border-line last:border-none">
                   <td className="px-4 py-3 text-muted">{r.date}</td>
                   <td className="px-4 py-3 font-medium">{r.who}</td>
-                  <td className="px-4 py-3">
-                    {r.reason}
-                    {(r.provider || r.doctor) && (
-                      <div className="text-xs text-muted mt-0.5">
-                        {[r.provider, r.doctor && `Dr. ${r.doctor}`].filter(Boolean).join(" · ")}
-                      </div>
-                    )}
+                  <td className="px-4 py-3">{r.reason}</td>
+                  <td className="px-4 py-3 font-mono">
+                    {r.status}
+                    {r.cost && <span className="text-muted"> · {r.cost}</span>}
                   </td>
-                  <td className="px-4 py-3 font-mono">{r.cost ?? r.status ?? "—"}</td>
                   {active === "vaccinations" && (
                     <td className="px-4 py-3">
                       {r.status !== "Complete" && <MarkGivenButton tenantId={tenantId} vaccinationId={r.id} />}
@@ -186,7 +197,7 @@ function Header({
         <h1 className="text-2xl mb-1">Health</h1>
         <p className="text-sm text-muted">Workspace-wide · every pet</p>
       </div>
-      {roster && roster.length > 0 && tab && setShowForm && (
+      {roster && roster.length > 0 && tab && tab.logLabel && setShowForm && (
         <button
           onClick={() => setShowForm(!showForm)}
           className="inline-flex items-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition"

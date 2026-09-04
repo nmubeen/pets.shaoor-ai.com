@@ -14,12 +14,29 @@ export type HealthRow = {
   who: string;
   reason: string;
   provider: string | null;
-  /** Consulting doctor's name — vet_visits only, since the facility's
-   * attending doctor can vary visit to visit; null for every other kind. */
-  doctor: string | null;
   cost: string | null;
   status: string | null;
   notes: string | null;
+};
+
+/** One line item shown under a visit — a service performed or a vaccine given. */
+export type VisitLineItem = { name: string; cost: string | null };
+
+export type VisitRow = {
+  id: string;
+  date: string;
+  dateIso: string;
+  who: string;
+  reason: string;
+  provider: string | null;
+  /** Consulting doctor — the facility (provider) is fixed, who saw the pet can vary visit to visit. */
+  doctor: string | null;
+  weightKg: number | null;
+  notes: string | null;
+  services: VisitLineItem[];
+  vaccinations: VisitLineItem[];
+  /** Sum of every line item — computed and stored at write time (lib/actions/health.ts). */
+  cost: string | null;
 };
 
 function fmtDate(iso: string): string {
@@ -38,21 +55,45 @@ async function providerResolver(supabase: Awaited<ReturnType<typeof createClient
   return (providerId: string | null) => (providerId ? (byId.get(providerId) ?? null) : null);
 }
 
-export async function getVetVisits(
+/**
+ * A visit is one real-world trip — it can carry any mix of services
+ * (visit_services) and vaccinations given (vaccinations.visit_id), which is
+ * why this returns a richer shape than the other health lists (those are
+ * single-event-per-row; a visit isn't). See lib/actions/health.ts's
+ * addVisit for how the line items and the stored total cost are built.
+ */
+export async function getVisits(
   supabase: Awaited<ReturnType<typeof createClient>>,
   tenantId: string
-): Promise<HealthRow[]> {
-  const [{ data }, who, provider] = await Promise.all([
+): Promise<VisitRow[]> {
+  const [{ data: visits }, { data: serviceRows }, { data: vaxRows }, who, provider] = await Promise.all([
     supabase
-      .from("vet_visits")
-      .select("id, pet_id, provider_id, visit_date, reason, vet_name, cost, notes")
+      .from("visits")
+      .select("id, pet_id, provider_id, vet_name, visit_date, reason, cost, weight_kg, notes")
       .eq("tenant_id", tenantId)
       .order("visit_date", { ascending: false }),
+    supabase.from("visit_services").select("visit_id, name, cost").eq("tenant_id", tenantId),
+    supabase.from("vaccinations").select("visit_id, reason, cost").eq("tenant_id", tenantId).not("visit_id", "is", null),
     whoResolver(supabase, tenantId),
     providerResolver(supabase, tenantId),
   ]);
 
-  return (data ?? []).map((v) => ({
+  const servicesByVisit = new Map<string, VisitLineItem[]>();
+  for (const r of serviceRows ?? []) {
+    const list = servicesByVisit.get(r.visit_id) ?? [];
+    list.push({ name: r.name, cost: formatCurrency(r.cost) });
+    servicesByVisit.set(r.visit_id, list);
+  }
+
+  const vaxByVisit = new Map<string, VisitLineItem[]>();
+  for (const r of vaxRows ?? []) {
+    if (!r.visit_id) continue;
+    const list = vaxByVisit.get(r.visit_id) ?? [];
+    list.push({ name: r.reason, cost: formatCurrency(r.cost) });
+    vaxByVisit.set(r.visit_id, list);
+  }
+
+  return (visits ?? []).map((v) => ({
     id: v.id,
     date: fmtDate(v.visit_date),
     dateIso: v.visit_date,
@@ -60,9 +101,11 @@ export async function getVetVisits(
     reason: v.reason,
     provider: provider(v.provider_id),
     doctor: v.vet_name,
-    cost: formatCurrency(v.cost),
-    status: null,
+    weightKg: v.weight_kg,
     notes: v.notes,
+    services: servicesByVisit.get(v.id) ?? [],
+    vaccinations: vaxByVisit.get(v.id) ?? [],
+    cost: formatCurrency(v.cost),
   }));
 }
 
@@ -86,11 +129,19 @@ export async function getIllnesses(
     who: who(v.pet_id),
     reason: v.reason,
     provider: null,
-    doctor: null,
     cost: null,
     status: v.status === "resolved" ? "Resolved" : "Active",
     notes: v.notes,
   }));
+}
+
+/** Distinct names of not-yet-complete vaccinations — datalist suggestions for VisitForm's "Vaccinations given" rows. */
+export async function getDueVaccinationNames(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  tenantId: string
+): Promise<string[]> {
+  const { data } = await supabase.from("vaccinations").select("reason").eq("tenant_id", tenantId).neq("status", "complete");
+  return [...new Set((data ?? []).map((v) => v.reason))];
 }
 
 export async function getVaccinations(
@@ -100,7 +151,7 @@ export async function getVaccinations(
   const [{ data }, who] = await Promise.all([
     supabase
       .from("vaccinations")
-      .select("id, pet_id, due_date, administered_date, reason, status, notes")
+      .select("id, pet_id, due_date, administered_date, reason, status, cost, notes")
       .eq("tenant_id", tenantId)
       .order("due_date", { ascending: false, nullsFirst: false }),
     whoResolver(supabase, tenantId),
@@ -115,37 +166,8 @@ export async function getVaccinations(
     who: who(v.pet_id),
     reason: v.reason,
     provider: null,
-    doctor: null,
-    cost: null,
-    status: statusLabel[v.status] ?? v.status,
-    notes: v.notes,
-  }));
-}
-
-export async function getGroomingVisits(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  tenantId: string
-): Promise<HealthRow[]> {
-  const [{ data }, who, provider] = await Promise.all([
-    supabase
-      .from("grooming_visits")
-      .select("id, pet_id, provider_id, visit_date, service, cost, notes")
-      .eq("tenant_id", tenantId)
-      .order("visit_date", { ascending: false }),
-    whoResolver(supabase, tenantId),
-    providerResolver(supabase, tenantId),
-  ]);
-
-  return (data ?? []).map((v) => ({
-    id: v.id,
-    date: fmtDate(v.visit_date),
-    dateIso: v.visit_date,
-    who: who(v.pet_id),
-    reason: v.service,
-    provider: provider(v.provider_id),
-    doctor: null,
     cost: formatCurrency(v.cost),
-    status: null,
+    status: statusLabel[v.status] ?? v.status,
     notes: v.notes,
   }));
 }

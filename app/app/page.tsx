@@ -3,7 +3,7 @@ import { Card, StatTile } from "@/components/ui";
 import { PlusIcon, StethoIcon, CartIcon } from "@/components/icons";
 import { requireActiveMembership } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
-import { getVetVisits, getVaccinations } from "@/lib/health";
+import { getVisits, getVaccinations } from "@/lib/health";
 import { getShoppingOrders, getSpendSummary } from "@/lib/shopping";
 import { getOpenCareTasks } from "@/lib/tasks";
 import { TasksCard } from "@/components/tasks/TasksCard";
@@ -13,7 +13,7 @@ export default async function AppHomePage() {
   const { supabase, active } = await requireActiveMembership();
   const [roster, visits, vaccinations, orders, summary, tasks] = await Promise.all([
     getRoster(supabase, active.tenantId),
-    getVetVisits(supabase, active.tenantId),
+    getVisits(supabase, active.tenantId),
     getVaccinations(supabase, active.tenantId),
     getShoppingOrders(supabase, active.tenantId),
     getSpendSummary(supabase, active.tenantId),
