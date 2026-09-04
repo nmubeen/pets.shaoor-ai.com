@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Card, PetChip, StatTile } from "@/components/ui";
+import { Card, StatTile } from "@/components/ui";
 import { PlusIcon, StethoIcon, CartIcon } from "@/components/icons";
 import { requireActiveMembership } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
@@ -45,37 +45,6 @@ export default async function AppHomePage() {
         <StatTile num={String(tasksDue)} label="Tasks due" />
         <StatTile num={String(vaccinesDueSoon)} label="Vaccines due" />
         <StatTile num={String(roster.length)} label="Pets & habitats" />
-      </div>
-
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg">Your workspace</h2>
-          <Link href="/app/pets" className="text-sm text-primary hover:underline">
-            View all
-          </Link>
-        </div>
-        {roster.length === 0 ? (
-          <Card className="p-6 text-center text-sm text-muted">
-            No pets or habitats yet.{" "}
-            <Link href="/app/pets" className="text-primary hover:underline">
-              Add your first one
-            </Link>
-            .
-          </Card>
-        ) : (
-          <div className="flex flex-col gap-2.5">
-            {roster.map((r) => (
-              <PetChip
-                key={r.id}
-                name={r.name}
-                sub={r.subtitle}
-                color={r.color}
-                initials={r.initials}
-                photoUrl={r.photoUrl}
-              />
-            ))}
-          </div>
-        )}
       </div>
 
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">

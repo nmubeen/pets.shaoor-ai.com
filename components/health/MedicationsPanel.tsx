@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
 import { PlusIcon } from "@/components/icons";
-import { ScopePicker } from "@/components/scope/ScopePicker";
+import { PetPicker } from "@/components/scope/PetPicker";
 import { ProviderPicker } from "@/components/providers/ProviderPicker";
 import { addMedication, logMedicationDose, discontinueMedication } from "@/lib/actions/medications";
 import type { MedicationRow } from "@/lib/medications";
@@ -45,7 +45,7 @@ function AddMedicationForm({
   return (
     <Card className="p-5">
       <form action={handleSubmit} className="flex flex-col gap-3">
-        <ScopePicker roster={roster} />
+        <PetPicker roster={roster} />
         <label className="flex flex-col gap-1.5">
           <span className={label}>Medication</span>
           <input name="name" required className={field} placeholder="Heartworm prevention (NexGard)" />
@@ -142,11 +142,12 @@ export function MedicationsPanel({
   medications: MedicationRow[];
 }) {
   const [showForm, setShowForm] = useState(false);
+  const hasPets = roster.some((r) => r.kind === "pet");
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
-        {roster.length > 0 && (
+        {hasPets && (
           <button
             onClick={() => setShowForm((v) => !v)}
             className="inline-flex items-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition"

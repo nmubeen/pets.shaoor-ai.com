@@ -23,7 +23,11 @@ A Next.js (App Router) build of the marketing site and app shell described in
   squeezed on narrow screens; the marketing navbar gets the same treatment.
   Every form's 2-column field grid collapses to 1 column below `sm`, and
   every data table scrolls horizontally within its own card
-  (`overflow-x-auto`) instead of overflowing the page.
+  (`overflow-x-auto`) instead of overflowing the page. `/app` (the home
+  page) dropped its "Your workspace" pet-chip list — a straight repeat of
+  `/app/pets` — so it's a real dashboard now: stat tiles, recent health
+  events, recent shopping, and care tasks, nothing that duplicates another
+  page.
 - **Settings** — `/app/settings/billing` (real plan/usage from the DB —
   payment processing intentionally not wired up, see below) and
   `/app/settings/team` (real invites, owner-gated), matching §12.
@@ -54,8 +58,12 @@ A Next.js (App Router) build of the marketing site and app shell described in
   instead of initials; replacing or removing a photo cleans up the old
   Storage object.
 - **Health & vets** — `vet_visits`, `illnesses`, `vaccinations`,
-  `grooming_visits` tables with RLS, sharing the same polymorphic
-  pet/habitat scope as the roster tables (§03). `/app/health` has
+  `grooming_visits` tables with RLS, **pet-only** (`pet_id` required,
+  `0017_scope_rework.sql` dropped the `habitat_id` column entirely) — a
+  habitat doesn't really have "health" in the individual-creature sense
+  this module tracks, so every record names exactly one pet, no exceptions,
+  for clean per-animal tracking (`components/scope/PetPicker.tsx`).
+  `/app/health` has
   five tabs (Visits, Illnesses, Vaccinations, Grooming, Growth), each with a
   real log form (`lib/actions/health.ts`, `lib/health.ts`); the dashboard's
   "Recent health events" and "Vaccines due" tiles pull from the same data.
@@ -86,8 +94,8 @@ A Next.js (App Router) build of the marketing site and app shell described in
   its protocol has a `booster_interval_months` (e.g. the annual DHPP/Rabies
   booster), dated from the actual administered date — a series step with
   no booster interval (e.g. the last Bordetella dose) just completes with
-  nothing scheduled after it. A new `medications` table (same polymorphic
-  pet/habitat scope, optional prescribing provider) tracks ongoing
+  nothing scheduled after it. A new `medications` table (same pet-only
+  scope, optional prescribing provider) tracks ongoing
   courses on their own tab in `/app/health` — "Log dose" advances
   `next_due_date` by the medication's repeat interval (UTC-safe date math
   throughout, same pattern as care tasks), automatically flipping the
@@ -113,23 +121,37 @@ A Next.js (App Router) build of the marketing site and app shell described in
   copying the file reference alone would point at a file the new tenant's
   RLS correctly can't read) — add one per shop from `/app/providers` if
   wanted.
-- **Shopping & tasks** — `products`, `shopping_orders`, `care_tasks` tables
-  with RLS. Unlike health records, an order or task can be scoped to the
-  whole workspace, not just a pet/habitat (§03's "pet, or household"
-  scoping) — see `lib/scope.ts`. `/app/shopping` logs an order with
-  ordered/delivered dates, quantity + unit, an item URL (for online
-  orders), which shop it came from, and an optional item photo — the photo
-  belongs to the `product` (reused across every order of that item, not
-  re-uploaded each time), same private Storage pattern as roster photos.
-  An All/Pet/Habitat/Household filter (`lib/shopping.ts`); the dashboard's
-  "Care tasks" card lets you add and complete recurring tasks
-  (`lib/actions/tasks.ts`) — completing one that repeats immediately
-  schedules the next occurrence. "Spent · 30d" is a computed rollup across
+- **Shopping** — `products` and `shopping_orders` tables with RLS, plus a
+  many-to-many `shopping_order_scopes` join table (`0017_scope_rework.sql`)
+  — an order can now name *any combination* of pets and/or habitats (a
+  shared bag of litter for two cats, a filter for one tank, both at once),
+  not just one thing, or none (still means household-wide, same convention
+  as before, just now zero-or-*many* instead of zero-or-one). Picked via a
+  checklist (`components/scope/MultiScopePicker.tsx`) — a "Household"
+  toggle at the top clears/disables the rest, since it already covers
+  everyone. `/app/shopping` logs an order with ordered/delivered dates,
+  quantity + unit, an item URL (for online orders), which shop it came
+  from, and an optional item photo — the photo belongs to the `product`
+  (reused across every order of that item, not re-uploaded each time),
+  same private Storage pattern as roster photos. The All/Pet/Habitat/
+  Household filter now means "includes at least one of this kind" rather
+  than "is only this kind" (`lib/shopping.ts`), since one order can match
+  more than one filter. "Spent · 30d" is a computed rollup across
   shopping/vet/grooming costs rather than a separate expenses ledger, so
   nothing gets double-entered. Every currency amount across the app goes
   through one shared `lib/format.ts#formatCurrency` (Indian digit grouping,
   always 2 decimal places — `₹1,234.50`) instead of the five slightly
   different, decimal-dropping inline formatters this used to be.
+- **Care tasks** — `care_tasks` table with RLS, exactly one of pet/habitat
+  required (`0017_scope_rework.sql` tightened this from "pet, habitat, or
+  household" — the vague household catch-all is gone, so every task is
+  trackable against one specific thing). Habitat-level recurring tasks
+  (tank cleaning, water changes, auto-feeder refills) are just as valid a
+  target as a pet — habitats didn't lose anything here, only the
+  "household" option did. The dashboard's "Care tasks" card lets you add
+  and complete recurring tasks (`lib/actions/tasks.ts`) — completing one
+  that repeats immediately schedules the next occurrence, same pet/habitat
+  as the original.
 - **Gallery, comments & adoption profiles** — `media` and `comments`
   tables with RLS, plus a private Supabase Storage bucket (`media`, one
   bucket with `{tenant_id}/...` path prefixes per §06) with its own

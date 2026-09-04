@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { parseScopeOptional } from "@/lib/scope";
+import { parseScopeRequired } from "@/lib/scope";
 
 function str(formData: FormData, key: string): string | null {
   const v = formData.get(key);
@@ -15,6 +15,8 @@ function revalidateTasks() {
 }
 
 export async function addCareTask(tenantId: string, formData: FormData) {
+  const s = parseScopeRequired(str(formData, "scope"));
+  if ("error" in s) return s;
   const title = str(formData, "title");
   if (!title) return { error: "Title is required." };
 
@@ -28,7 +30,7 @@ export async function addCareTask(tenantId: string, formData: FormData) {
     due_date: str(formData, "due_date"),
     repeat_interval_days: repeatIntervalDays && repeatIntervalDays > 0 ? repeatIntervalDays : null,
     notes: str(formData, "notes"),
-    ...parseScopeOptional(str(formData, "scope")),
+    ...s,
   });
   if (error) return { error: error.message };
 

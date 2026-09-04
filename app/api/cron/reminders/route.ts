@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   const [{ data: dueVax }, { data: dueTasks }] = await Promise.all([
     supabase
       .from("vaccinations")
-      .select("id, tenant_id, pet_id, habitat_id, reason, status, due_date")
+      .select("id, tenant_id, pet_id, reason, status, due_date")
       .neq("status", "complete")
       .not("due_date", "is", null)
       .lte("due_date", horizon),
@@ -57,12 +57,15 @@ export async function GET(request: Request) {
     if (!owner?.invited_email) continue;
 
     const byId = new Map(roster.map((r) => [r.id, r.name]));
-    const who = (row: { pet_id: string | null; habitat_id: string | null }) =>
-      byId.get(row.pet_id ?? row.habitat_id ?? "") ?? "Unknown";
+    // Vaccinations are pet-only (0017_scope_rework.sql); care_tasks still
+    // have both pet_id and habitat_id (exactly one set).
+    const whoVax = (v: { pet_id: string }) => byId.get(v.pet_id) ?? "Unknown";
+    const whoTask = (t: { pet_id: string | null; habitat_id: string | null }) =>
+      byId.get(t.pet_id ?? t.habitat_id ?? "") ?? "Unknown";
 
     const items = [
-      ...vaxRows.map((v) => `<li>💉 <strong>${who(v)}</strong> — ${v.reason} (due ${v.due_date})</li>`),
-      ...taskRows.map((t) => `<li>📋 <strong>${who(t)}</strong> — ${t.title} (due ${t.due_date})</li>`),
+      ...vaxRows.map((v) => `<li>💉 <strong>${whoVax(v)}</strong> — ${v.reason} (due ${v.due_date})</li>`),
+      ...taskRows.map((t) => `<li>📋 <strong>${whoTask(t)}</strong> — ${t.title} (due ${t.due_date})</li>`),
     ].join("");
     const count = vaxRows.length + taskRows.length;
 

@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { parseScopeRequired } from "@/lib/scope";
 
 function str(formData: FormData, key: string): string | null {
   const v = formData.get(key);
@@ -15,8 +14,8 @@ function revalidateMedications() {
 }
 
 export async function addMedication(tenantId: string, formData: FormData) {
-  const s = parseScopeRequired(str(formData, "scope"));
-  if ("error" in s) return s;
+  const petId = str(formData, "pet_id");
+  if (!petId) return { error: "Choose which pet this is about." };
   const name = str(formData, "name");
   if (!name) return { error: "Medication name is required." };
 
@@ -30,6 +29,7 @@ export async function addMedication(tenantId: string, formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.from("medications").insert({
     tenant_id: tenantId,
+    pet_id: petId,
     provider_id: str(formData, "provider_id"),
     name,
     dosage: str(formData, "dosage"),
@@ -38,7 +38,6 @@ export async function addMedication(tenantId: string, formData: FormData) {
     end_date: str(formData, "end_date"),
     next_due_date: startDate,
     notes: str(formData, "notes"),
-    ...s,
   });
   if (error) return { error: error.message };
 

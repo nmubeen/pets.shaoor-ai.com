@@ -1,9 +1,12 @@
-// Shared helpers for the polymorphic pet_id/habitat_id scope used across
-// stat_entries, vet_visits, illnesses, vaccinations, grooming_visits,
-// medications (always exactly one — §03: "Habitats are peers of pets"), and
-// shopping_orders/care_tasks/media (zero or one — §03: "pet, or household",
-// where "household" means both null). There is no group scope option —
-// groups (a saved collection of pets) existed briefly and were removed.
+// Shared helpers for the polymorphic pet_id/habitat_id scope. Health
+// records (vet_visits, illnesses, vaccinations, grooming_visits,
+// medications) went pet-only (0017_scope_rework.sql) and no longer use
+// this — see lib/actions/health.ts. shopping_orders moved to a
+// many-to-many join table instead (lib/actions/shopping.ts) — an order
+// can now name any combination of pets/habitats, not just one. What's
+// left here: care_tasks (required — parseScopeRequired, always exactly
+// one pet or habitat, no household option) and media (optional —
+// parseScopeOptional, "household" means both null, still zero-or-one).
 import type { RosterKind } from "@/lib/database.types";
 
 export type ScopeFields = { pet_id: string | null; habitat_id: string | null };

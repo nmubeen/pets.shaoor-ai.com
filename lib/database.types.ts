@@ -14,9 +14,12 @@ export type ServiceProviderCategory = "vet" | "grooming" | "offline_shop" | "onl
 export type SpeciesGroup = "dog" | "cat" | "bird" | "reptile" | "fish" | "small_mammal" | "other";
 export type MedicationStatus = "active" | "completed" | "discontinued";
 
-// The polymorphic pet_id/habitat_id scope shared by stat_entries,
-// vet_visits, illnesses, vaccinations, grooming_visits, and medications
-// (§03) — exactly one is non-null, enforced by a DB check constraint.
+// The polymorphic pet_id/habitat_id scope — exactly one non-null, enforced
+// by a DB check constraint. Used only by stat_entries (dead/unused) and
+// care_tasks now — health records (vet_visits, illnesses, vaccinations,
+// grooming_visits, medications) went pet-only (0017_scope_rework.sql), and
+// shopping_orders moved to a many-to-many join table
+// (shopping_order_scopes, below) instead of this shape entirely.
 type Scope = {
   pet_id: string | null;
   habitat_id: string | null;
@@ -148,6 +151,7 @@ export interface Database {
         {
           id: string;
           tenant_id: string;
+          pet_id: string;
           provider_id: string | null;
           visit_date: string;
           reason: string;
@@ -155,26 +159,28 @@ export interface Database {
           weight_kg: number | null;
           notes: string | null;
           created_at: string;
-        } & Scope,
-        "tenant_id" | "reason"
+        },
+        "tenant_id" | "pet_id" | "reason"
       >;
       illnesses: Table<
         {
           id: string;
           tenant_id: string;
+          pet_id: string;
           reason: string;
           status: IllnessStatus;
           diagnosed_date: string;
           resolved_date: string | null;
           notes: string | null;
           created_at: string;
-        } & Scope,
-        "tenant_id" | "reason"
+        },
+        "tenant_id" | "pet_id" | "reason"
       >;
       vaccinations: Table<
         {
           id: string;
           tenant_id: string;
+          pet_id: string;
           protocol_id: string | null;
           reason: string;
           status: VaccinationStatus;
@@ -182,8 +188,8 @@ export interface Database {
           administered_date: string | null;
           notes: string | null;
           created_at: string;
-        } & Scope,
-        "tenant_id" | "reason"
+        },
+        "tenant_id" | "pet_id" | "reason"
       >;
       vaccine_protocols: Table<
         {
@@ -203,6 +209,7 @@ export interface Database {
         {
           id: string;
           tenant_id: string;
+          pet_id: string;
           provider_id: string | null;
           name: string;
           dosage: string | null;
@@ -213,13 +220,14 @@ export interface Database {
           status: MedicationStatus;
           notes: string | null;
           created_at: string;
-        } & Scope,
-        "tenant_id" | "name"
+        },
+        "tenant_id" | "pet_id" | "name"
       >;
       grooming_visits: Table<
         {
           id: string;
           tenant_id: string;
+          pet_id: string;
           provider_id: string | null;
           service: string;
           visit_date: string;
@@ -227,8 +235,8 @@ export interface Database {
           weight_kg: number | null;
           notes: string | null;
           created_at: string;
-        } & Scope,
-        "tenant_id" | "service"
+        },
+        "tenant_id" | "pet_id" | "service"
       >;
       products: Table<
         {
@@ -256,9 +264,21 @@ export interface Database {
           cost: number | null;
           notes: string | null;
           created_at: string;
-        } & Scope,
+        },
         "tenant_id" | "product_id"
       >;
+      shopping_order_scopes: Table<
+        {
+          id: string;
+          tenant_id: string;
+          order_id: string;
+          pet_id: string | null;
+          habitat_id: string | null;
+          created_at: string;
+        },
+        "tenant_id" | "order_id"
+      >;
+      // pet_id/habitat_id: exactly one required — see 0017_scope_rework.sql.
       care_tasks: Table<
         {
           id: string;

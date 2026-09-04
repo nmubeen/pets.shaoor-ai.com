@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
-import { ScopePicker } from "@/components/scope/ScopePicker";
+import { PetPicker } from "@/components/scope/PetPicker";
 import { ProviderPicker } from "@/components/providers/ProviderPicker";
 import { addVetVisit, addIllness, addVaccination, addGroomingVisit } from "@/lib/actions/health";
 import type { RosterItem } from "@/lib/roster";
@@ -54,7 +54,7 @@ export function LogHealthForm({
   return (
     <Card className="p-5">
       <form action={handleSubmit} className="flex flex-col gap-3">
-        <ScopePicker roster={roster} />
+        <PetPicker roster={roster} />
 
         {tab === "visits" && (
           <>

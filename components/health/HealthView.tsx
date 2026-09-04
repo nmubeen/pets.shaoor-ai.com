@@ -69,6 +69,7 @@ export function HealthView({
 }) {
   const [active, setActive] = useState<TabKey>("visits");
   const [showForm, setShowForm] = useState(false);
+  const pets = roster.filter((r) => r.kind === "pet");
 
   const rowsByTab: Record<HealthTabKey, HealthRow[]> = { visits, illnesses, vaccinations, grooming };
   const tab = TABS.find((t) => t.key === active)!;
@@ -98,7 +99,7 @@ export function HealthView({
 
   return (
     <div className="flex flex-col gap-6">
-      <Header roster={roster} tab={tab} showForm={showForm} setShowForm={setShowForm} />
+      <Header roster={pets} tab={tab} showForm={showForm} setShowForm={setShowForm} />
       <TabRow active={active} onChange={setActive} />
 
       {showForm && (
@@ -111,9 +112,9 @@ export function HealthView({
         />
       )}
 
-      {roster.length === 0 ? (
+      {pets.length === 0 ? (
         <Card className="p-6 text-center text-sm text-muted">
-          Add a pet or habitat first — health records are logged against your roster.
+          Add a pet first — health records are logged per pet.
         </Card>
       ) : rows.length === 0 ? (
         <Card className="p-6 text-center text-sm text-muted">Nothing logged here yet.</Card>
@@ -179,7 +180,7 @@ function Header({
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div>
         <h1 className="text-2xl mb-1">Health</h1>
-        <p className="text-sm text-muted">Workspace-wide · every pet and habitat</p>
+        <p className="text-sm text-muted">Workspace-wide · every pet</p>
       </div>
       {roster && roster.length > 0 && tab && setShowForm && (
         <button

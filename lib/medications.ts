@@ -1,8 +1,7 @@
+// Pet-only (0017_scope_rework.sql) — "who" is always pet_id.
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
-import { getRoster } from "@/lib/roster";
 import { getProviders } from "@/lib/providers";
-import { pickScopeId } from "@/lib/scope";
 
 export type MedicationRow = {
   id: string;
@@ -33,30 +32,27 @@ export async function getMedications(
   supabase: Awaited<ReturnType<typeof createClient>>,
   tenantId: string
 ): Promise<MedicationRow[]> {
-  const [{ data }, roster, providers] = await Promise.all([
+  const [{ data }, { data: pets }, providers] = await Promise.all([
     supabase
       .from("medications")
-      .select(
-        "id, pet_id, habitat_id, provider_id, name, dosage, frequency_days, end_date, next_due_date, status"
-      )
+      .select("id, pet_id, provider_id, name, dosage, frequency_days, end_date, next_due_date, status")
       .eq("tenant_id", tenantId)
       .neq("status", "discontinued")
       .order("next_due_date"),
-    getRoster(supabase, tenantId),
+    supabase.from("pets").select("id, name").eq("tenant_id", tenantId),
     getProviders(supabase, tenantId, ["vet"]),
   ]);
 
-  const byId = new Map(roster.map((r) => [r.id, r.name]));
+  const byId = new Map((pets ?? []).map((p) => [p.id, p.name]));
   const providerById = new Map(providers.map((p) => [p.id, p.name]));
 
   return (data ?? []).map((m) => {
-    const scopeId = pickScopeId(m);
     const { label, overdue } = dueLabelFor(m.next_due_date);
     return {
       id: m.id,
       name: m.name,
       dosage: m.dosage,
-      who: scopeId ? (byId.get(scopeId) ?? "Unknown") : "Household",
+      who: byId.get(m.pet_id) ?? "Unknown",
       frequencyDays: m.frequency_days,
       nextDueDate: m.next_due_date,
       nextDueLabel: label,

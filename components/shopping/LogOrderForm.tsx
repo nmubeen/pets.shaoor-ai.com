@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
-import { ScopePicker } from "@/components/scope/ScopePicker";
+import { MultiScopePicker } from "@/components/scope/MultiScopePicker";
 import { ProviderPicker } from "@/components/providers/ProviderPicker";
 import { addShoppingOrder } from "@/lib/actions/shopping";
 import type { RosterItem } from "@/lib/roster";
@@ -48,7 +48,7 @@ export function LogOrderForm({
           <input name="item" required className={field} placeholder="Grain-free kibble, 5kg" />
         </label>
 
-        <ScopePicker roster={roster} allowHousehold />
+        <MultiScopePicker roster={roster} />
 
         <ProviderPicker providers={providers} label="Bought from (optional)" />
 

@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { parseScopeRequired } from "@/lib/scope";
 import { getProtocols, dueDateFor } from "@/lib/protocols";
 
 function str(formData: FormData, key: string): string | null {
@@ -17,9 +16,10 @@ function num(formData: FormData, key: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** Reads the "scope" field a ScopePicker form always includes, formatted "kind:id". */
-function scope(formData: FormData) {
-  return parseScopeRequired(str(formData, "scope"));
+/** Health records are pet-only (0017_scope_rework.sql) — reads the PetPicker's plain "pet_id" field. */
+function requirePetId(formData: FormData): string | { error: string } {
+  const petId = str(formData, "pet_id");
+  return petId ?? { error: "Choose which pet this is about." };
 }
 
 function revalidateHealth() {
@@ -28,21 +28,21 @@ function revalidateHealth() {
 }
 
 export async function addVetVisit(tenantId: string, formData: FormData) {
-  const s = scope(formData);
-  if ("error" in s) return s;
+  const petId = requirePetId(formData);
+  if (typeof petId !== "string") return petId;
   const reason = str(formData, "reason");
   if (!reason) return { error: "Reason is required." };
 
   const supabase = await createClient();
   const { error } = await supabase.from("vet_visits").insert({
     tenant_id: tenantId,
+    pet_id: petId,
     provider_id: str(formData, "provider_id"),
     visit_date: str(formData, "visit_date") ?? new Date().toISOString().slice(0, 10),
     reason,
     cost: num(formData, "cost"),
     weight_kg: num(formData, "weight_kg"),
     notes: str(formData, "notes"),
-    ...s,
   });
   if (error) return { error: error.message };
 
@@ -51,19 +51,19 @@ export async function addVetVisit(tenantId: string, formData: FormData) {
 }
 
 export async function addIllness(tenantId: string, formData: FormData) {
-  const s = scope(formData);
-  if ("error" in s) return s;
+  const petId = requirePetId(formData);
+  if (typeof petId !== "string") return petId;
   const reason = str(formData, "reason");
   if (!reason) return { error: "Description is required." };
 
   const supabase = await createClient();
   const { error } = await supabase.from("illnesses").insert({
     tenant_id: tenantId,
+    pet_id: petId,
     reason,
     status: str(formData, "status") === "resolved" ? "resolved" : "active",
     diagnosed_date: str(formData, "diagnosed_date") ?? new Date().toISOString().slice(0, 10),
     notes: str(formData, "notes"),
-    ...s,
   });
   if (error) return { error: error.message };
 
@@ -72,8 +72,8 @@ export async function addIllness(tenantId: string, formData: FormData) {
 }
 
 export async function addVaccination(tenantId: string, formData: FormData) {
-  const s = scope(formData);
-  if ("error" in s) return s;
+  const petId = requirePetId(formData);
+  if (typeof petId !== "string") return petId;
   const reason = str(formData, "reason");
   if (!reason) return { error: "Vaccine name is required." };
 
@@ -83,12 +83,12 @@ export async function addVaccination(tenantId: string, formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.from("vaccinations").insert({
     tenant_id: tenantId,
+    pet_id: petId,
     reason,
     status: validStatus,
     due_date: str(formData, "due_date"),
     administered_date: validStatus === "complete" ? (str(formData, "due_date") ?? new Date().toISOString().slice(0, 10)) : null,
     notes: str(formData, "notes"),
-    ...s,
   });
   if (error) return { error: error.message };
 
@@ -184,7 +184,6 @@ export async function markVaccinationGiven(tenantId: string, vaccinationId: stri
       const { error: insertError } = await supabase.from("vaccinations").insert({
         tenant_id: tenantId,
         pet_id: vax.pet_id,
-        habitat_id: vax.habitat_id,
         protocol_id: vax.protocol_id,
         reason: vax.reason,
         status: "due",
@@ -199,21 +198,21 @@ export async function markVaccinationGiven(tenantId: string, vaccinationId: stri
 }
 
 export async function addGroomingVisit(tenantId: string, formData: FormData) {
-  const s = scope(formData);
-  if ("error" in s) return s;
+  const petId = requirePetId(formData);
+  if (typeof petId !== "string") return petId;
   const service = str(formData, "service");
   if (!service) return { error: "Service is required." };
 
   const supabase = await createClient();
   const { error } = await supabase.from("grooming_visits").insert({
     tenant_id: tenantId,
+    pet_id: petId,
     provider_id: str(formData, "provider_id"),
     service,
     visit_date: str(formData, "visit_date") ?? new Date().toISOString().slice(0, 10),
     cost: num(formData, "cost"),
     weight_kg: num(formData, "weight_kg"),
     notes: str(formData, "notes"),
-    ...s,
   });
   if (error) return { error: error.message };
 

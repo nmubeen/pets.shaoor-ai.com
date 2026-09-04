@@ -53,7 +53,7 @@ function AddTaskForm({ tenantId, roster, onDone }: { tenantId: string; roster: R
         <span className={label}>Task</span>
         <input name="title" required className={field} placeholder="Water change" />
       </label>
-      <ScopePicker roster={roster} allowHousehold />
+      <ScopePicker roster={roster} />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <label className="flex flex-col gap-1">
           <span className={label}>Due date</span>

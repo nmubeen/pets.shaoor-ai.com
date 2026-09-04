@@ -34,14 +34,19 @@ export function ShoppingView({
   const [scope, setScope] = useState<(typeof SCOPES)[number]["key"]>("all");
   const [showForm, setShowForm] = useState(false);
 
-  const filtered = scope === "all" ? orders : orders.filter((o) => o.scopeKind === scope);
+  const filtered =
+    scope === "all"
+      ? orders
+      : scope === "household"
+        ? orders.filter((o) => o.scopeKinds.length === 0)
+        : orders.filter((o) => o.scopeKinds.includes(scope));
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl mb-1">Shopping</h1>
-          <p className="text-sm text-muted">Orders and expenses, scoped to a pet, habitat, or the household</p>
+          <p className="text-sm text-muted">Orders and expenses — scope to any combination of pets and habitats, or the whole household</p>
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
@@ -131,7 +136,7 @@ export function ShoppingView({
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-muted whitespace-nowrap">{o.scope}</td>
+                  <td className="px-4 py-3 text-muted max-w-[200px]">{o.scope}</td>
                   <td className="px-4 py-3 text-muted whitespace-nowrap">{o.provider ?? "—"}</td>
                   <td className="px-4 py-3 text-muted whitespace-nowrap">{o.orderedDate}</td>
                   <td className="px-4 py-3 text-muted whitespace-nowrap">{o.deliveredDate ?? "—"}</td>

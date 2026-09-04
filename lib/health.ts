@@ -1,10 +1,9 @@
 // Fetches and formats health records for /app/health and the dashboard's
-// "Recent health events" widget. Each record's scope (pet/habitat) is
-// resolved to a display name via the roster (§03 — "who" is never split
-// across two tables, it's whichever one of pet_id/habitat_id is set).
+// "Recent health events" widget. Pet-only (0017_scope_rework.sql) — "who"
+// is always pet_id, resolved to a name directly against pets rather than
+// the full pet+habitat roster.
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
-import { getRoster } from "@/lib/roster";
 import { getProviders } from "@/lib/providers";
 import { formatCurrency } from "@/lib/format";
 
@@ -25,10 +24,9 @@ function fmtDate(iso: string): string {
 }
 
 async function whoResolver(supabase: Awaited<ReturnType<typeof createClient>>, tenantId: string) {
-  const roster = await getRoster(supabase, tenantId);
-  const byId = new Map(roster.map((r) => [r.id, r.name]));
-  return (row: { pet_id: string | null; habitat_id: string | null }) =>
-    byId.get(row.pet_id ?? row.habitat_id ?? "") ?? "Unknown";
+  const { data: pets } = await supabase.from("pets").select("id, name").eq("tenant_id", tenantId);
+  const byId = new Map((pets ?? []).map((p) => [p.id, p.name]));
+  return (petId: string) => byId.get(petId) ?? "Unknown";
 }
 
 async function providerResolver(supabase: Awaited<ReturnType<typeof createClient>>, tenantId: string) {
@@ -44,7 +42,7 @@ export async function getVetVisits(
   const [{ data }, who, provider] = await Promise.all([
     supabase
       .from("vet_visits")
-      .select("id, pet_id, habitat_id, provider_id, visit_date, reason, cost, notes")
+      .select("id, pet_id, provider_id, visit_date, reason, cost, notes")
       .eq("tenant_id", tenantId)
       .order("visit_date", { ascending: false }),
     whoResolver(supabase, tenantId),
@@ -55,7 +53,7 @@ export async function getVetVisits(
     id: v.id,
     date: fmtDate(v.visit_date),
     dateIso: v.visit_date,
-    who: who(v),
+    who: who(v.pet_id),
     reason: v.reason,
     provider: provider(v.provider_id),
     cost: formatCurrency(v.cost),
@@ -71,7 +69,7 @@ export async function getIllnesses(
   const [{ data }, who] = await Promise.all([
     supabase
       .from("illnesses")
-      .select("id, pet_id, habitat_id, diagnosed_date, reason, status, notes")
+      .select("id, pet_id, diagnosed_date, reason, status, notes")
       .eq("tenant_id", tenantId)
       .order("diagnosed_date", { ascending: false }),
     whoResolver(supabase, tenantId),
@@ -81,7 +79,7 @@ export async function getIllnesses(
     id: v.id,
     date: fmtDate(v.diagnosed_date),
     dateIso: v.diagnosed_date,
-    who: who(v),
+    who: who(v.pet_id),
     reason: v.reason,
     provider: null,
     cost: null,
@@ -97,7 +95,7 @@ export async function getVaccinations(
   const [{ data }, who] = await Promise.all([
     supabase
       .from("vaccinations")
-      .select("id, pet_id, habitat_id, due_date, administered_date, reason, status, notes")
+      .select("id, pet_id, due_date, administered_date, reason, status, notes")
       .eq("tenant_id", tenantId)
       .order("due_date", { ascending: false, nullsFirst: false }),
     whoResolver(supabase, tenantId),
@@ -109,7 +107,7 @@ export async function getVaccinations(
     id: v.id,
     date: fmtDate(v.administered_date ?? v.due_date ?? new Date().toISOString().slice(0, 10)),
     dateIso: v.administered_date ?? v.due_date ?? "",
-    who: who(v),
+    who: who(v.pet_id),
     reason: v.reason,
     provider: null,
     cost: null,
@@ -125,7 +123,7 @@ export async function getGroomingVisits(
   const [{ data }, who, provider] = await Promise.all([
     supabase
       .from("grooming_visits")
-      .select("id, pet_id, habitat_id, provider_id, visit_date, service, cost, notes")
+      .select("id, pet_id, provider_id, visit_date, service, cost, notes")
       .eq("tenant_id", tenantId)
       .order("visit_date", { ascending: false }),
     whoResolver(supabase, tenantId),
@@ -136,7 +134,7 @@ export async function getGroomingVisits(
     id: v.id,
     date: fmtDate(v.visit_date),
     dateIso: v.visit_date,
-    who: who(v),
+    who: who(v.pet_id),
     reason: v.service,
     provider: provider(v.provider_id),
     cost: formatCurrency(v.cost),

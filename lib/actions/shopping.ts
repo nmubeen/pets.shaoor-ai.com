@@ -2,8 +2,28 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { parseScopeOptional } from "@/lib/scope";
 import { uploadImage, removeImage } from "@/lib/storage";
+
+/**
+ * Parses MultiScopePicker's "scope_ids" checkboxes ("pet:<id>" /
+ * "habitat:<id>") into rows ready to insert into shopping_order_scopes.
+ * An empty result is valid and means household-wide — same convention as
+ * the old zero-or-one scope, just now zero-or-many.
+ */
+type ScopeRow = { pet_id: string | null; habitat_id: string | null };
+
+function parseMultiScope(formData: FormData): ScopeRow[] {
+  return formData
+    .getAll("scope_ids")
+    .filter((v): v is string => typeof v === "string")
+    .map((raw): ScopeRow | null => {
+      const [kind, id] = raw.split(":");
+      if (kind === "pet" && id) return { pet_id: id, habitat_id: null };
+      if (kind === "habitat" && id) return { pet_id: null, habitat_id: id };
+      return null;
+    })
+    .filter((v): v is ScopeRow => v !== null);
+}
 
 function str(formData: FormData, key: string): string | null {
   const v = formData.get(key);
@@ -60,20 +80,31 @@ export async function addShoppingOrder(tenantId: string, formData: FormData) {
     }
   }
 
-  const { error } = await supabase.from("shopping_orders").insert({
-    tenant_id: tenantId,
-    product_id: product.id,
-    provider_id: str(formData, "provider_id"),
-    order_date: str(formData, "order_date") ?? new Date().toISOString().slice(0, 10),
-    delivered_date: str(formData, "delivered_date"),
-    item_url: str(formData, "item_url"),
-    qty: num(formData, "qty"),
-    qty_unit: str(formData, "qty_unit"),
-    cost: num(formData, "cost"),
-    notes: str(formData, "notes"),
-    ...parseScopeOptional(str(formData, "scope")),
-  });
-  if (error) return { error: error.message };
+  const { data: order, error } = await supabase
+    .from("shopping_orders")
+    .insert({
+      tenant_id: tenantId,
+      product_id: product.id,
+      provider_id: str(formData, "provider_id"),
+      order_date: str(formData, "order_date") ?? new Date().toISOString().slice(0, 10),
+      delivered_date: str(formData, "delivered_date"),
+      item_url: str(formData, "item_url"),
+      qty: num(formData, "qty"),
+      qty_unit: str(formData, "qty_unit"),
+      cost: num(formData, "cost"),
+      notes: str(formData, "notes"),
+    })
+    .select("id")
+    .single();
+  if (error || !order) return { error: error?.message ?? "Could not save that order." };
+
+  const scopeRows = parseMultiScope(formData);
+  if (scopeRows.length > 0) {
+    const { error: scopeError } = await supabase
+      .from("shopping_order_scopes")
+      .insert(scopeRows.map((s) => ({ tenant_id: tenantId, order_id: order.id, ...s })));
+    if (scopeError) return { error: scopeError.message };
+  }
 
   revalidatePath("/app");
   revalidatePath("/app/shopping");

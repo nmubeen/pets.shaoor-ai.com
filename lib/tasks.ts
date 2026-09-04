@@ -39,12 +39,15 @@ export async function getOpenCareTasks(
   const byId = new Map(roster.map((r) => [r.id, r.name]));
 
   return (data ?? []).map((t) => {
+    // Always exactly one of pet_id/habitat_id — care_tasks dropped the
+    // "household" option (0017_scope_rework.sql), so pickScopeId always
+    // resolves to something.
     const scopeId = pickScopeId(t);
     const { label, overdue } = dueLabelFor(t.due_date);
     return {
       id: t.id,
       title: t.title,
-      who: scopeId ? (byId.get(scopeId) ?? "Unknown") : "Household",
+      who: byId.get(scopeId ?? "") ?? "Unknown",
       dueDate: t.due_date,
       dueLabel: label,
       overdue,
