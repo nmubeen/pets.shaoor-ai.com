@@ -10,17 +10,20 @@ const roles = ["caregiver", "viewer"];
 export function InviteForm({ tenantId }: { tenantId: string }) {
   const [role, setRole] = useState("caregiver");
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
   function handleSubmit(formData: FormData) {
     setError(null);
+    setWarning(null);
     startTransition(async () => {
       const result = await inviteMember(tenantId, formData);
       if (result?.error) {
         setError(result.error);
         return;
       }
+      if (result?.warning) setWarning(result.warning);
       router.refresh();
     });
   }
@@ -57,6 +60,7 @@ export function InviteForm({ tenantId }: { tenantId: string }) {
         </button>
       </div>
       {error && <p className="text-xs text-coral">{error}</p>}
+      {warning && <p className="text-xs text-coral">⚠ {warning}</p>}
     </form>
   );
 }

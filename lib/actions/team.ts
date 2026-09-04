@@ -37,9 +37,11 @@ export async function inviteMember(tenantId: string, formData: FormData) {
 
   // Best-effort — an invite that fails to notify by email is still a real
   // invite (the membership row exists, they can just sign in/up directly),
-  // so a delivery failure here shouldn't fail the whole action.
+  // so a delivery failure here shouldn't fail the whole action. It should,
+  // however, actually tell the person who sent it — silently swallowing
+  // the error left a real "no email arrived" case looking like success.
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://pets.shaoor-ai.com";
-  await sendEmail({
+  const { error: emailError } = await sendEmail({
     to: email,
     subject: `You've been invited to ${tenant?.name ?? "a workspace"} on Menagerie`,
     html: emailShell(
@@ -53,7 +55,13 @@ export async function inviteMember(tenantId: string, formData: FormData) {
   });
 
   revalidatePath("/app/settings/team");
-  return { error: null };
+  if (emailError) {
+    return {
+      error: null,
+      warning: `${email} was added, but the invite email couldn't be sent (${emailError}). Ask them to sign up at ${siteUrl}/signup with this email address instead.`,
+    };
+  }
+  return { error: null, warning: null };
 }
 
 export async function removeMember(tenantId: string, membershipId: string) {
