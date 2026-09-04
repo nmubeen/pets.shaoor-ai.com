@@ -29,7 +29,7 @@ export async function getOpenCareTasks(
   const [{ data }, roster] = await Promise.all([
     supabase
       .from("care_tasks")
-      .select("id, pet_id, group_id, habitat_id, title, due_date, repeat_interval_days")
+      .select("id, pet_id, habitat_id, title, due_date, repeat_interval_days")
       .eq("tenant_id", tenantId)
       .is("completed_at", null)
       .order("due_date", { ascending: true, nullsFirst: false }),

@@ -2,13 +2,11 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email";
 import { emailShell, emailButton } from "@/lib/email-templates";
+import { formatCurrency } from "@/lib/format";
 
 // The "weekly expense-summary email" from §06 of the design doc. Same cost
 // rollup as lib/shopping.ts's getSpendSummary (shopping + vet + grooming),
 // just over the last 7 days and across every tenant instead of one.
-function fmtInr(n: number): string {
-  return `₹${Math.round(n).toLocaleString("en-IN")}`;
-}
 
 export async function GET(request: Request) {
   const auth = request.headers.get("authorization");
@@ -49,11 +47,11 @@ export async function GET(request: Request) {
 
     const { error } = await sendEmail({
       to: owner.invited_email,
-      subject: `Your week in ${tenant?.name ?? "Menagerie"}: ${fmtInr(total)} spent`,
+      subject: `Your week in ${tenant?.name ?? "Menagerie"}: ${formatCurrency(total)} spent`,
       html: emailShell(
         "Weekly expense summary",
         `<p>Over the last 7 days, <strong>${tenant?.name ?? "your workspace"}</strong> spent
-           <strong style="font-size:20px;">${fmtInr(total)}</strong> across shopping, vet visits, and grooming.</p>
+           <strong style="font-size:20px;">${formatCurrency(total)}</strong> across shopping, vet visits, and grooming.</p>
          ${emailButton(`${siteUrl}/app/shopping`, "View shopping →")}`
       ),
     });

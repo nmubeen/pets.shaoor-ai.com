@@ -1,11 +1,14 @@
-// Merges pets, pet_groups, and habitats into one "roster" list for the
-// dashboard and /app/pets — they're peers in the schema (§03) but three
-// separate tables, so the merge happens here rather than as a DB view.
+// Merges pets and habitats into one "roster" list for the dashboard and
+// /app/pets — they're peers in the schema (§03) but two separate tables, so
+// the merge happens here rather than as a DB view. Groups are deliberately
+// NOT part of the roster since the 0015 redesign: a group is a saved
+// collection of existing pets (see lib/groups.ts), not a subject of its own
+// that health/shopping/tasks/media can be scoped to.
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
 import type { PetSex, SpeciesGroup } from "@/lib/database.types";
 
-/** Fields that only ever apply to kind: "pet" — null for groups/habitats. */
+/** Fields that only ever apply to kind: "pet" — null for habitats. */
 export type PetDetails = {
   breed: string | null;
   sex: PetSex;
@@ -23,13 +26,13 @@ export type PetDetails = {
 
 export type RosterItem = {
   id: string;
-  kind: "pet" | "group" | "habitat";
+  kind: "pet" | "habitat";
   name: string;
   subtitle: string;
   initials: string;
   color: string;
   createdAt: string;
-  species: string | null; // pet, group
+  species: string | null; // pet
   habitatType: string | null; // habitat
   capacityNote: string | null; // habitat
   photoPath: string | null; // raw storage path — for the edit form to replace/remove
@@ -78,14 +81,13 @@ export async function getRoster(
   supabase: Awaited<ReturnType<typeof createClient>>,
   tenantId: string
 ): Promise<RosterItem[]> {
-  const [pets, groups, habitats] = await Promise.all([
+  const [pets, habitats] = await Promise.all([
     supabase
       .from("pets")
       .select(
         "id,name,species,breed,sex,species_group,birth_date,life_stage,weight_kg,color,microchip_id,neutered,notes,is_adoptable,adoption_note,photo_path,created_at"
       )
       .eq("tenant_id", tenantId),
-    supabase.from("pet_groups").select("id,name,species,photo_path,created_at").eq("tenant_id", tenantId),
     supabase
       .from("habitats")
       .select("id,name,habitat_type,capacity_note,photo_path,created_at")
@@ -122,19 +124,6 @@ export async function getRoster(
         },
       };
     }),
-    ...(groups.data ?? []).map((g) => ({
-      id: g.id,
-      kind: "group" as const,
-      name: g.name,
-      subtitle: [g.species, "Group"].filter(Boolean).join(" · "),
-      initials: initialsFor(g.name),
-      createdAt: g.created_at,
-      species: g.species,
-      habitatType: null,
-      capacityNote: null,
-      photoPath: g.photo_path,
-      pet: null,
-    })),
     ...(habitats.data ?? []).map((h) => ({
       id: h.id,
       kind: "habitat" as const,

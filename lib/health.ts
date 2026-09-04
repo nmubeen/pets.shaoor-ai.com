@@ -1,11 +1,12 @@
 // Fetches and formats health records for /app/health and the dashboard's
-// "Recent health events" widget. Each record's scope (pet/group/habitat) is
+// "Recent health events" widget. Each record's scope (pet/habitat) is
 // resolved to a display name via the roster (§03 — "who" is never split
-// across three tables, it's whichever one of pet_id/group_id/habitat_id is set).
+// across two tables, it's whichever one of pet_id/habitat_id is set).
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
 import { getRoster } from "@/lib/roster";
 import { getProviders } from "@/lib/providers";
+import { formatCurrency } from "@/lib/format";
 
 export type HealthRow = {
   id: string;
@@ -23,16 +24,11 @@ function fmtDate(iso: string): string {
   return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { month: "short", day: "numeric" });
 }
 
-function fmtCost(value: number | null): string | null {
-  if (value === null) return null;
-  return `₹${Math.round(value).toLocaleString("en-IN")}`;
-}
-
 async function whoResolver(supabase: Awaited<ReturnType<typeof createClient>>, tenantId: string) {
   const roster = await getRoster(supabase, tenantId);
   const byId = new Map(roster.map((r) => [r.id, r.name]));
-  return (row: { pet_id: string | null; group_id: string | null; habitat_id: string | null }) =>
-    byId.get(row.pet_id ?? row.group_id ?? row.habitat_id ?? "") ?? "Unknown";
+  return (row: { pet_id: string | null; habitat_id: string | null }) =>
+    byId.get(row.pet_id ?? row.habitat_id ?? "") ?? "Unknown";
 }
 
 async function providerResolver(supabase: Awaited<ReturnType<typeof createClient>>, tenantId: string) {
@@ -48,7 +44,7 @@ export async function getVetVisits(
   const [{ data }, who, provider] = await Promise.all([
     supabase
       .from("vet_visits")
-      .select("id, pet_id, group_id, habitat_id, provider_id, visit_date, reason, cost, notes")
+      .select("id, pet_id, habitat_id, provider_id, visit_date, reason, cost, notes")
       .eq("tenant_id", tenantId)
       .order("visit_date", { ascending: false }),
     whoResolver(supabase, tenantId),
@@ -62,7 +58,7 @@ export async function getVetVisits(
     who: who(v),
     reason: v.reason,
     provider: provider(v.provider_id),
-    cost: fmtCost(v.cost),
+    cost: formatCurrency(v.cost),
     status: null,
     notes: v.notes,
   }));
@@ -75,7 +71,7 @@ export async function getIllnesses(
   const [{ data }, who] = await Promise.all([
     supabase
       .from("illnesses")
-      .select("id, pet_id, group_id, habitat_id, diagnosed_date, reason, status, notes")
+      .select("id, pet_id, habitat_id, diagnosed_date, reason, status, notes")
       .eq("tenant_id", tenantId)
       .order("diagnosed_date", { ascending: false }),
     whoResolver(supabase, tenantId),
@@ -101,7 +97,7 @@ export async function getVaccinations(
   const [{ data }, who] = await Promise.all([
     supabase
       .from("vaccinations")
-      .select("id, pet_id, group_id, habitat_id, due_date, administered_date, reason, status, notes")
+      .select("id, pet_id, habitat_id, due_date, administered_date, reason, status, notes")
       .eq("tenant_id", tenantId)
       .order("due_date", { ascending: false, nullsFirst: false }),
     whoResolver(supabase, tenantId),
@@ -129,7 +125,7 @@ export async function getGroomingVisits(
   const [{ data }, who, provider] = await Promise.all([
     supabase
       .from("grooming_visits")
-      .select("id, pet_id, group_id, habitat_id, provider_id, visit_date, service, cost, notes")
+      .select("id, pet_id, habitat_id, provider_id, visit_date, service, cost, notes")
       .eq("tenant_id", tenantId)
       .order("visit_date", { ascending: false }),
     whoResolver(supabase, tenantId),
@@ -143,7 +139,7 @@ export async function getGroomingVisits(
     who: who(v),
     reason: v.service,
     provider: provider(v.provider_id),
-    cost: fmtCost(v.cost),
+    cost: formatCurrency(v.cost),
     status: null,
     notes: v.notes,
   }));

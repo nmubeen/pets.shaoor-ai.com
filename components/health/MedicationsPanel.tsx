@@ -50,7 +50,7 @@ function AddMedicationForm({
           <span className={label}>Medication</span>
           <input name="name" required className={field} placeholder="Heartworm prevention (NexGard)" />
         </label>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5">
             <span className={label}>Dosage (optional)</span>
             <input name="dosage" className={field} placeholder="1 tablet" />
@@ -60,7 +60,7 @@ function AddMedicationForm({
             <input type="number" name="frequency_days" min="1" required defaultValue="30" className={field} />
           </label>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5">
             <span className={label}>Start date</span>
             <input type="date" name="start_date" className={field} defaultValue={new Date().toISOString().slice(0, 10)} />
@@ -164,7 +164,7 @@ export function MedicationsPanel({
       {medications.length === 0 ? (
         <Card className="p-6 text-center text-sm text-muted">No ongoing medications tracked.</Card>
       ) : (
-        <Card className="overflow-hidden">
+        <Card className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="bg-surface-2">

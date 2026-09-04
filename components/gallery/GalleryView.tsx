@@ -31,7 +31,7 @@ export function GalleryView({
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl mb-1">Gallery</h1>
-          <p className="text-sm text-muted">Photos and memories, tagged to a pet, group, habitat, or the household</p>
+          <p className="text-sm text-muted">Photos and memories, tagged to a pet, habitat, or the household</p>
         </div>
         {roster.length > 0 && (
           <button

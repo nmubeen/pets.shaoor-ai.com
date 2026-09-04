@@ -182,6 +182,18 @@ export const DropIcon = (p: IconProps) => (
   </svg>
 );
 
+export const MenuIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 6h16M4 12h16M4 18h16" />
+  </svg>
+);
+
+export const CloseIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M6 6l12 12M18 6 6 18" />
+  </svg>
+);
+
 export const ScissorsIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <circle cx="6" cy="6" r="2.2" />

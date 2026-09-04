@@ -103,7 +103,7 @@ export function HealthView({
       ) : rows.length === 0 ? (
         <Card className="p-6 text-center text-sm text-muted">Nothing logged here yet.</Card>
       ) : (
-        <Card className="overflow-hidden">
+        <Card className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="bg-surface-2">

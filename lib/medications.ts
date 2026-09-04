@@ -37,7 +37,7 @@ export async function getMedications(
     supabase
       .from("medications")
       .select(
-        "id, pet_id, group_id, habitat_id, provider_id, name, dosage, frequency_days, end_date, next_due_date, status"
+        "id, pet_id, habitat_id, provider_id, name, dosage, frequency_days, end_date, next_due_date, status"
       )
       .eq("tenant_id", tenantId)
       .neq("status", "discontinued")

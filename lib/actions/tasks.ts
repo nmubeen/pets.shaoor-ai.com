@@ -72,7 +72,6 @@ export async function completeCareTask(tenantId: string, taskId: string) {
       repeat_interval_days: task.repeat_interval_days,
       notes: task.notes,
       pet_id: task.pet_id,
-      group_id: task.group_id,
       habitat_id: task.habitat_id,
     });
     if (insertError) return { error: insertError.message };

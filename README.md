@@ -15,7 +15,15 @@ A Next.js (App Router) build of the marketing site and app shell described in
   atomically at signup.
 - **App shell** — `/app`, `/app/pets`, `/app/health`, `/app/shopping`,
   `/app/gallery`, `/app/providers`, with a sidebar workspace switcher,
-  trial-countdown header, and sign-out — all backed by real data.
+  trial-countdown header, and sign-out — all backed by real data. Responsive
+  down to phone widths: the sidebar becomes a fixed slide-out drawer behind
+  a hamburger button below the `md` breakpoint (`components/app-shell/
+  AppShell.tsx` holds the shared open/close state; `Sidebar`/`Topbar` stay
+  presentational) instead of the fixed 220px column that used to just get
+  squeezed on narrow screens; the marketing navbar gets the same treatment.
+  Every form's 2-column field grid collapses to 1 column below `sm`, and
+  every data table scrolls horizontally within its own card
+  (`overflow-x-auto`) instead of overflowing the page.
 - **Settings** — `/app/settings/billing` (real plan/usage from the DB —
   payment processing intentionally not wired up, see below) and
   `/app/settings/team` (real invites, owner-gated), matching §12.
@@ -28,24 +36,39 @@ A Next.js (App Router) build of the marketing site and app shell described in
   and a `handle_new_user` trigger that creates the workspace + owner
   membership + trial subscription on signup and reconciles pending invites
   by email. See `supabase/migrations/`.
-- **Core records** — `pets`, `pet_groups`, `habitats` tables with RLS,
-  Server Actions to add *and edit* them (`lib/actions/roster.ts`), and a
-  merged "roster" view (`lib/roster.ts`) powering the dashboard, `/app/pets`,
-  and onboarding. A pet record captures breed, sex, birth date, life stage,
-  weight, color/markings, microchip ID, spay/neuter status, and notes —
-  `/app/pets` shows a computed age from birth date and has a real "Edit"
-  affordance on every card. Onboarding stays deliberately quick (name/
-  species/life stage only — "add now, fill in details later"); the full
-  field set lives on `/app/pets`. Every pet, group, and habitat can also
-  carry a display photo (`photo_path`, uploaded straight into the same
-  private "media" Storage bucket the gallery uses, under
+- **Core records** — `pets` and `habitats` tables with RLS, Server Actions
+  to add, edit, *and delete* them (`lib/actions/roster.ts` — delete cascades
+  every health/shopping/task/media row scoped to that pet or habitat at the
+  DB level, plus best-effort cleanup of its Storage photos; the UI always
+  confirms first), and a merged "roster" view (`lib/roster.ts`) powering the
+  dashboard, `/app/pets`, and onboarding. A pet record captures breed, sex,
+  birth date, life stage, weight, color/markings, microchip ID, spay/neuter
+  status, and notes — `/app/pets` shows a computed age from birth date and
+  has real "Edit" and "Delete" affordances on every card. Onboarding stays
+  deliberately quick (name/species/life stage only — "add now, fill in
+  details later"); the full field set lives on `/app/pets`. Every pet and
+  habitat can also carry a display photo (`photo_path`, uploaded straight
+  into the same private "media" Storage bucket the gallery uses, under
   `{tenant_id}/avatars/...` — see `lib/storage.ts`, shared with
   `lib/actions/gallery.ts`) — shown wherever its avatar circle appears
   instead of initials; replacing or removing a photo cleans up the old
   Storage object.
+- **Groups** — deliberately *not* a peer of pets/habitats (that was the
+  original §03 design; migration `0015_groups_redesign.sql` reworked it
+  after real usage showed it wrong). A group is now a saved, named
+  collection of 2+ *existing* pets (e.g. "Adult cats", "Kittens") via a
+  `pet_group_members` join table — a pet can belong to any number of
+  groups, and a group is never itself the subject of a health record, an
+  order, or a photo (it dropped out of the `pet_id`/`habitat_id` scope
+  used everywhere else — see `lib/scope.ts`). Managed from a "Groups"
+  section on `/app/pets` (`lib/groups.ts`, `lib/actions/groups.ts`,
+  `components/groups/GroupsPanel.tsx`) — create/edit lets you name the
+  group, give it a photo, and check off member pets from the workspace's
+  full pet list; deleting a group only removes the saved grouping; the
+  member pets are untouched.
 - **Health & vets** — `vet_visits`, `illnesses`, `vaccinations`,
   `grooming_visits` tables with RLS, sharing the same polymorphic
-  pet/group/habitat scope as the roster tables (§03). `/app/health` has
+  pet/habitat scope as the roster tables (§03). `/app/health` has
   four tabs (Visits, Illnesses, Vaccinations, Grooming), each with a real
   log form (`lib/actions/health.ts`, `lib/health.ts`); the dashboard's
   "Recent health events" and "Vaccines due" tiles pull from the same data.
@@ -68,7 +91,7 @@ A Next.js (App Router) build of the marketing site and app shell described in
   booster), dated from the actual administered date — a series step with
   no booster interval (e.g. the last Bordetella dose) just completes with
   nothing scheduled after it. A new `medications` table (same polymorphic
-  pet/group/habitat scope, optional prescribing provider) tracks ongoing
+  pet/habitat scope, optional prescribing provider) tracks ongoing
   courses on their own tab in `/app/health` — "Log dose" advances
   `next_due_date` by the medication's repeat interval (UTC-safe date math
   throughout, same pattern as care tasks), automatically flipping the
@@ -96,18 +119,21 @@ A Next.js (App Router) build of the marketing site and app shell described in
   wanted.
 - **Shopping & tasks** — `products`, `shopping_orders`, `care_tasks` tables
   with RLS. Unlike health records, an order or task can be scoped to the
-  whole workspace, not just a pet/group/habitat (§03's "pet, group, or
-  household" scoping) — see `lib/scope.ts`. `/app/shopping` logs an order
-  with ordered/delivered dates, quantity + unit, an item URL (for online
+  whole workspace, not just a pet/habitat (§03's "pet, or household"
+  scoping) — see `lib/scope.ts`. `/app/shopping` logs an order with
+  ordered/delivered dates, quantity + unit, an item URL (for online
   orders), which shop it came from, and an optional item photo — the photo
   belongs to the `product` (reused across every order of that item, not
   re-uploaded each time), same private Storage pattern as roster photos.
-  An All/Pet/Group/Habitat/Household filter (`lib/shopping.ts`); the
-  dashboard's "Care tasks" card lets you add and complete recurring tasks
+  An All/Pet/Habitat/Household filter (`lib/shopping.ts`); the dashboard's
+  "Care tasks" card lets you add and complete recurring tasks
   (`lib/actions/tasks.ts`) — completing one that repeats immediately
   schedules the next occurrence. "Spent · 30d" is a computed rollup across
   shopping/vet/grooming costs rather than a separate expenses ledger, so
-  nothing gets double-entered.
+  nothing gets double-entered. Every currency amount across the app goes
+  through one shared `lib/format.ts#formatCurrency` (Indian digit grouping,
+  always 2 decimal places — `₹1,234.50`) instead of the five slightly
+  different, decimal-dropping inline formatters this used to be.
 - **Gallery, comments & adoption profiles** — `media` and `comments`
   tables with RLS, plus a private Supabase Storage bucket (`media`, one
   bucket with `{tenant_id}/...` path prefixes per §06) with its own

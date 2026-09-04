@@ -3,6 +3,7 @@ import { RazorpayCheckout } from "@/components/billing/RazorpayCheckout";
 import { CancelSubscriptionButton } from "@/components/billing/CancelSubscriptionButton";
 import { requireActiveMembership } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
+import { formatCurrency } from "@/lib/format";
 
 function fmtDate(iso: string | null) {
   if (!iso) return null;
@@ -47,9 +48,9 @@ export default async function BillingPage() {
             </div>
             <div className="text-xs text-muted mt-1">
               {isTrialing
-                ? `Ends ${fmtDate(active.trialEndsAt)}${price ? ` · then ₹${price}/mo` : ""} · no card required`
+                ? `Ends ${fmtDate(active.trialEndsAt)}${price ? ` · then ${formatCurrency(price)}/mo` : ""} · no card required`
                 : price
-                  ? `₹${price}/mo`
+                  ? `${formatCurrency(price)}/mo`
                   : "Contact sales for pricing"}
             </div>
           </div>

@@ -7,20 +7,16 @@ import { LogOrderForm } from "@/components/shopping/LogOrderForm";
 import type { ShoppingOrderRow, SpendSummary } from "@/lib/shopping";
 import type { RosterItem } from "@/lib/roster";
 import type { Provider } from "@/lib/providers";
+import { formatCurrency } from "@/lib/format";
 
 const SCOPES = [
   { key: "all", label: "All" },
   { key: "pet", label: "Pet" },
-  { key: "group", label: "Group" },
   { key: "habitat", label: "Habitat" },
   { key: "household", label: "Household" },
 ] as const;
 
 const th = "text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line whitespace-nowrap";
-
-function fmtInr(n: number): string {
-  return `₹${Math.round(n).toLocaleString("en-IN")}`;
-}
 
 export function ShoppingView({
   tenantId,
@@ -45,7 +41,7 @@ export function ShoppingView({
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl mb-1">Shopping</h1>
-          <p className="text-sm text-muted">Orders and expenses, scoped to a pet, group, habitat, or the household</p>
+          <p className="text-sm text-muted">Orders and expenses, scoped to a pet, habitat, or the household</p>
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
@@ -78,7 +74,7 @@ export function ShoppingView({
 
       <div className="grid md:grid-cols-3 gap-4">
         <Card className="p-4">
-          <div className="font-mono font-semibold text-xl">{fmtInr(summary.spentLast30d)}</div>
+          <div className="font-mono font-semibold text-xl">{formatCurrency(summary.spentLast30d)}</div>
           <div className="text-[.66rem] uppercase text-muted mt-1">Spent · 30d (shopping + health)</div>
         </Card>
         <Card className="p-4">
@@ -87,7 +83,7 @@ export function ShoppingView({
         </Card>
         <Card className="p-4">
           <div className="font-mono font-semibold text-xl">
-            {summary.avgOrder !== null ? fmtInr(summary.avgOrder) : "—"}
+            {summary.avgOrder !== null ? formatCurrency(summary.avgOrder) : "—"}
           </div>
           <div className="text-[.66rem] uppercase text-muted mt-1">Avg. order · 30d</div>
         </Card>

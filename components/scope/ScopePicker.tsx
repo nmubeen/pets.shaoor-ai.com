@@ -17,7 +17,7 @@ export function ScopePicker({ roster, allowHousehold = false }: { roster: Roster
       >
         {!allowHousehold && (
           <option value="" disabled>
-            Choose a pet, group, or habitat
+            Choose a pet or habitat
           </option>
         )}
         {allowHousehold && <option value="household">🏠 Household</option>}

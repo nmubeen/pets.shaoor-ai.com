@@ -183,7 +183,6 @@ export async function markVaccinationGiven(tenantId: string, vaccinationId: stri
       const { error: insertError } = await supabase.from("vaccinations").insert({
         tenant_id: tenantId,
         pet_id: vax.pet_id,
-        group_id: vax.group_id,
         habitat_id: vax.habitat_id,
         protocol_id: vax.protocol_id,
         reason: vax.reason,

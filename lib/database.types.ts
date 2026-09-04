@@ -6,7 +6,7 @@ export type WorkspaceType = "household" | "organization";
 export type MembershipRole = "owner" | "caregiver" | "viewer";
 export type MembershipStatus = "invited" | "active" | "removed";
 export type SubscriptionStatus = "trialing" | "active" | "past_due" | "canceled";
-export type RosterKind = "pet" | "group" | "habitat";
+export type RosterKind = "pet" | "habitat";
 export type IllnessStatus = "active" | "resolved";
 export type VaccinationStatus = "due" | "scheduled" | "complete";
 export type PetSex = "male" | "female" | "unknown";
@@ -14,12 +14,14 @@ export type ServiceProviderCategory = "vet" | "grooming" | "offline_shop" | "onl
 export type SpeciesGroup = "dog" | "cat" | "bird" | "reptile" | "fish" | "small_mammal" | "other";
 export type MedicationStatus = "active" | "completed" | "discontinued";
 
-// The polymorphic pet_id/group_id/habitat_id scope shared by stat_entries,
-// vet_visits, illnesses, vaccinations, and grooming_visits (§03) — exactly
-// one is non-null, enforced by a DB check constraint.
+// The polymorphic pet_id/habitat_id scope shared by stat_entries,
+// vet_visits, illnesses, vaccinations, grooming_visits, and medications
+// (§03) — exactly one is non-null, enforced by a DB check constraint.
+// Groups used to be a third scope option here; per the 0015 redesign a
+// group is a saved collection of pets, not a subject of its own, so it's
+// never a scope target — see pet_group_members below.
 type Scope = {
   pet_id: string | null;
-  group_id: string | null;
   habitat_id: string | null;
 };
 
@@ -86,7 +88,6 @@ export interface Database {
         {
           id: string;
           tenant_id: string;
-          group_id: string | null;
           name: string;
           species: string;
           breed: string | null;
@@ -111,12 +112,20 @@ export interface Database {
           id: string;
           tenant_id: string;
           name: string;
-          species: string | null;
-          notes: string | null;
           photo_path: string | null;
           created_at: string;
         },
         "tenant_id" | "name"
+      >;
+      pet_group_members: Table<
+        {
+          id: string;
+          tenant_id: string;
+          group_id: string;
+          pet_id: string;
+          created_at: string;
+        },
+        "tenant_id" | "group_id" | "pet_id"
       >;
       habitats: Table<
         {

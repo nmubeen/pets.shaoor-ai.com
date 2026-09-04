@@ -2,10 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { Card, Avatar } from "@/components/ui";
-import { addPet, addGroup, addHabitat, updatePet, updateGroup, updateHabitat } from "@/lib/actions/roster";
+import { addPet, addHabitat, updatePet, updateHabitat } from "@/lib/actions/roster";
 import type { RosterItem } from "@/lib/roster";
 
-type Kind = "pet" | "group" | "habitat";
+type Kind = "pet" | "habitat";
 
 const field = "bg-paper border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary transition";
 const label = "text-[.68rem] uppercase tracking-[.05em] text-muted";
@@ -36,14 +36,10 @@ export function AddRosterForm({
         mode === "edit" && initial
           ? kind === "pet"
             ? (fd: FormData) => updatePet(tenantId, initial.id, fd)
-            : kind === "group"
-              ? (fd: FormData) => updateGroup(tenantId, initial.id, fd)
-              : (fd: FormData) => updateHabitat(tenantId, initial.id, fd)
+            : (fd: FormData) => updateHabitat(tenantId, initial.id, fd)
           : kind === "pet"
             ? (fd: FormData) => addPet(tenantId, fd)
-            : kind === "group"
-              ? (fd: FormData) => addGroup(tenantId, fd)
-              : (fd: FormData) => addHabitat(tenantId, fd);
+            : (fd: FormData) => addHabitat(tenantId, fd);
 
       const result = await action(formData);
       if (result?.error) {
@@ -60,7 +56,7 @@ export function AddRosterForm({
     <Card className="p-5">
       {mode === "add" && (
         <div className="flex gap-2 mb-4">
-          {(["pet", "group", "habitat"] as const).map((k) => (
+          {(["pet", "habitat"] as const).map((k) => (
             <button
               key={k}
               type="button"
@@ -71,7 +67,7 @@ export function AddRosterForm({
                   : "bg-transparent text-muted border-line hover:text-ink"
               }`}
             >
-              {k === "pet" ? "Individual pet" : k === "group" ? "Group" : "Habitat"}
+              {k === "pet" ? "Individual pet" : "Habitat"}
             </button>
           ))}
         </div>
@@ -85,7 +81,7 @@ export function AddRosterForm({
             required
             defaultValue={initial?.name}
             className={field}
-            placeholder={kind === "habitat" ? "The Reef Tank" : kind === "group" ? "Nova & Comet" : "Simba"}
+            placeholder={kind === "habitat" ? "The Reef Tank" : "Simba"}
           />
         </label>
 
@@ -140,7 +136,7 @@ export function AddRosterForm({
               </select>
             </label>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Breed (optional)</span>
                 <input name="breed" defaultValue={pet?.breed ?? ""} className={field} placeholder="Persian" />
@@ -155,7 +151,7 @@ export function AddRosterForm({
               </label>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Birth date (optional)</span>
                 <input type="date" name="birth_date" defaultValue={pet?.birthDate ?? ""} className={field} />
@@ -171,7 +167,7 @@ export function AddRosterForm({
               </label>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Weight, kg (optional)</span>
                 <input
@@ -198,7 +194,7 @@ export function AddRosterForm({
               </label>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Color / markings (optional)</span>
                 <input name="color" defaultValue={pet?.color ?? ""} className={field} placeholder="Cream & white" />

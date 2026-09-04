@@ -52,7 +52,7 @@ export function LogOrderForm({
 
         <ProviderPicker providers={providers} label="Bought from (optional)" />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5">
             <span className={label}>Ordered date</span>
             <input
@@ -68,7 +68,7 @@ export function LogOrderForm({
           </label>
         </div>
 
-        <div className="grid grid-cols-[1fr_1fr_1fr] gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr] gap-3">
           <label className="flex flex-col gap-1.5">
             <span className={label}>Qty (optional)</span>
             <input type="number" name="qty" min="0" step="0.01" className={field} placeholder="1" />

@@ -7,6 +7,7 @@ import type { createClient } from "@/lib/supabase/server";
 import { getRoster } from "@/lib/roster";
 import { pickScopeId } from "@/lib/scope";
 import { getProviders } from "@/lib/providers";
+import { formatCurrency } from "@/lib/format";
 
 export type ShoppingOrderRow = {
   id: string;
@@ -18,7 +19,7 @@ export type ShoppingOrderRow = {
   imageUrl: string | null;
   qtyLabel: string | null;
   scope: string;
-  scopeKind: "pet" | "group" | "habitat" | "household";
+  scopeKind: "pet" | "habitat" | "household";
   provider: string | null;
   cost: string | null;
   costValue: number | null;
@@ -28,11 +29,6 @@ const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
 function fmtDate(iso: string): string {
   return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { month: "short", day: "numeric" });
-}
-
-function fmtCost(value: number | null): string | null {
-  if (value === null) return null;
-  return `₹${Math.round(value).toLocaleString("en-IN")}`;
 }
 
 function fmtQty(qty: number | null, unit: string | null): string | null {
@@ -48,7 +44,7 @@ export async function getShoppingOrders(
     supabase
       .from("shopping_orders")
       .select(
-        "id, pet_id, group_id, habitat_id, provider_id, order_date, delivered_date, item_url, qty, qty_unit, cost, products(name, image_path)"
+        "id, pet_id, habitat_id, provider_id, order_date, delivered_date, item_url, qty, qty_unit, cost, products(name, image_path)"
       )
       .eq("tenant_id", tenantId)
       .order("order_date", { ascending: false }),
@@ -84,7 +80,7 @@ export async function getShoppingOrders(
       scope: rosterItem?.name ?? (scopeId ? "Unknown" : "Household"),
       scopeKind: rosterItem?.kind ?? "household",
       provider: o.provider_id ? (providerById.get(o.provider_id) ?? null) : null,
-      cost: fmtCost(o.cost),
+      cost: formatCurrency(o.cost),
       costValue: o.cost,
     };
   });

@@ -33,9 +33,14 @@ const settingsNav = [
 export function Sidebar({
   active,
   memberships,
+  mobileOpen = false,
+  onNavigate,
 }: {
   active: ActiveMembership;
   memberships: ActiveMembership[];
+  /** Below the md breakpoint, the sidebar is a fixed drawer instead of a static column. */
+  mobileOpen?: boolean;
+  onNavigate?: () => void;
 }) {
   const pathname = usePathname();
   const [switcherOpen, setSwitcherOpen] = useState(false);
@@ -44,7 +49,11 @@ export function Sidebar({
     href === "/app" ? pathname === "/app" : pathname.startsWith(href);
 
   return (
-    <aside className="w-[220px] flex-none bg-primary text-primary-ink flex flex-col min-h-screen">
+    <aside
+      className={`w-[220px] flex-none bg-primary text-primary-ink flex flex-col min-h-screen fixed inset-y-0 left-0 z-40 transition-transform duration-200 md:static md:translate-x-0 ${
+        mobileOpen ? "translate-x-0" : "-translate-x-full"
+      }`}
+    >
       <div className="px-4 pt-5 pb-4 relative">
         <Link href="/app" className="flex items-center gap-2 font-serif font-semibold text-base opacity-95 mb-4">
           <PawIcon />
@@ -81,6 +90,7 @@ export function Sidebar({
             <Link
               key={item.href}
               href={item.href}
+              onClick={onNavigate}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition ${
                 isNavActive ? "bg-white/15 opacity-100" : "opacity-72 hover:opacity-100 hover:bg-white/10"
               }`}
@@ -100,6 +110,7 @@ export function Sidebar({
             <Link
               key={item.href}
               href={item.href}
+              onClick={onNavigate}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition ${
                 isNavActive ? "bg-white/15 opacity-100" : "opacity-72 hover:opacity-100 hover:bg-white/10"
               }`}

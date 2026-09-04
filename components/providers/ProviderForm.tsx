@@ -77,7 +77,7 @@ export function ProviderForm({
         </label>
 
         {!isOnlineShop && (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="flex flex-col gap-1.5">
               <span className={label}>Phone (optional)</span>
               <input name="phone" defaultValue={initial?.phone ?? ""} className={field} />

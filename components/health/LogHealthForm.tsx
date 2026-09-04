@@ -63,7 +63,7 @@ export function LogHealthForm({
               <input name="reason" required className={field} placeholder="Wellness check" />
             </label>
             <ProviderPicker providers={providers} label="Vet / hospital (optional)" />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Date</span>
                 <input type="date" name="visit_date" className={field} defaultValue={new Date().toISOString().slice(0, 10)} />
@@ -82,7 +82,7 @@ export function LogHealthForm({
               <span className={label}>Description</span>
               <input name="reason" required className={field} placeholder="Ear infection" />
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Diagnosed</span>
                 <input type="date" name="diagnosed_date" className={field} defaultValue={new Date().toISOString().slice(0, 10)} />
@@ -104,7 +104,7 @@ export function LogHealthForm({
               <span className={label}>Vaccine</span>
               <input name="reason" required className={field} placeholder="2nd booster (FVRCP)" />
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Due / administered date</span>
                 <input type="date" name="due_date" className={field} defaultValue={new Date().toISOString().slice(0, 10)} />
@@ -128,7 +128,7 @@ export function LogHealthForm({
               <input name="service" required className={field} placeholder="Bath & trim" />
             </label>
             <ProviderPicker providers={providers} label="Grooming center (optional)" />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Date</span>
                 <input type="date" name="visit_date" className={field} defaultValue={new Date().toISOString().slice(0, 10)} />

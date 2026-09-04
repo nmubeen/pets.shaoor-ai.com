@@ -7,10 +7,7 @@ import { getVetVisits, getVaccinations } from "@/lib/health";
 import { getShoppingOrders, getSpendSummary } from "@/lib/shopping";
 import { getOpenCareTasks } from "@/lib/tasks";
 import { TasksCard } from "@/components/tasks/TasksCard";
-
-function fmtInr(n: number): string {
-  return `₹${Math.round(n).toLocaleString("en-IN")}`;
-}
+import { formatCurrency } from "@/lib/format";
 
 export default async function AppHomePage() {
   const { supabase, active } = await requireActiveMembership();
@@ -44,7 +41,7 @@ export default async function AppHomePage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatTile num={fmtInr(summary.spentLast30d)} label="Spent · 30d" />
+        <StatTile num={formatCurrency(summary.spentLast30d) ?? "—"} label="Spent · 30d" />
         <StatTile num={String(tasksDue)} label="Tasks due" />
         <StatTile num={String(vaccinesDueSoon)} label="Vaccines due" />
         <StatTile num={String(roster.length)} label="Pets & habitats" />

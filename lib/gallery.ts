@@ -30,7 +30,7 @@ export async function getMediaItems(
   const [{ data }, roster, { data: comments }] = await Promise.all([
     supabase
       .from("media")
-      .select("id, pet_id, group_id, habitat_id, storage_path, caption, created_at")
+      .select("id, pet_id, habitat_id, storage_path, caption, created_at")
       .eq("tenant_id", tenantId)
       .order("created_at", { ascending: false }),
     getRoster(supabase, tenantId),

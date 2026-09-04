@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BellIcon, SearchIcon } from "@/components/icons";
+import { BellIcon, SearchIcon, MenuIcon } from "@/components/icons";
 import { signOut } from "@/lib/actions/tenant";
 
 function trialLabel(trialEndsAt: string | null): string | null {
@@ -12,17 +12,24 @@ function trialLabel(trialEndsAt: string | null): string | null {
 export function Topbar({
   trialEndsAt,
   userInitials,
+  onMenuClick,
 }: {
   trialEndsAt: string | null;
   userInitials: string;
+  onMenuClick?: () => void;
 }) {
   const trial = trialLabel(trialEndsAt);
 
   return (
-    <div className="h-14 flex-none border-b border-line bg-surface flex items-center justify-between px-6 gap-4">
-      <div className="flex items-center gap-2 text-sm text-muted flex-1 max-w-sm">
-        <SearchIcon className="text-[1.05em]" />
-        <span className="text-[.85rem]">Search pets, visits, orders…</span>
+    <div className="h-14 flex-none border-b border-line bg-surface flex items-center justify-between px-4 sm:px-6 gap-4">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <button onClick={onMenuClick} className="text-muted hover:text-ink transition md:hidden flex-none" aria-label="Open menu">
+          <MenuIcon className="text-[1.2em]" />
+        </button>
+        <div className="hidden sm:flex items-center gap-2 text-sm text-muted max-w-sm">
+          <SearchIcon className="text-[1.05em]" />
+          <span className="text-[.85rem]">Search pets, visits, orders…</span>
+        </div>
       </div>
       <div className="flex items-center gap-4">
         {trial && (
