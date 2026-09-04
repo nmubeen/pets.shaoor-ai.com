@@ -1,19 +1,29 @@
 import Link from "next/link";
 import { Card, PetChip, StatTile } from "@/components/ui";
 import { PlusIcon, StethoIcon, CartIcon } from "@/components/icons";
-import { shoppingOrders } from "@/lib/mock-data";
 import { requireActiveMembership } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
 import { getVetVisits, getVaccinations } from "@/lib/health";
+import { getShoppingOrders, getSpendSummary } from "@/lib/shopping";
+import { getOpenCareTasks } from "@/lib/tasks";
+import { TasksCard } from "@/components/tasks/TasksCard";
+
+function fmtInr(n: number): string {
+  return `₹${Math.round(n).toLocaleString("en-IN")}`;
+}
 
 export default async function AppHomePage() {
   const { supabase, active } = await requireActiveMembership();
-  const [roster, visits, vaccinations] = await Promise.all([
+  const [roster, visits, vaccinations, orders, summary, tasks] = await Promise.all([
     getRoster(supabase, active.tenantId),
     getVetVisits(supabase, active.tenantId),
     getVaccinations(supabase, active.tenantId),
+    getShoppingOrders(supabase, active.tenantId),
+    getSpendSummary(supabase, active.tenantId),
+    getOpenCareTasks(supabase, active.tenantId),
   ]);
   const vaccinesDueSoon = vaccinations.filter((v) => v.status !== "Complete").length;
+  const tasksDue = tasks.filter((t) => t.overdue).length;
 
   return (
     <div className="flex flex-col gap-8">
@@ -34,8 +44,8 @@ export default async function AppHomePage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatTile num="₹2,140" label="Spent · 30d" />
-        <StatTile num="3" label="Tasks due" />
+        <StatTile num={fmtInr(summary.spentLast30d)} label="Spent · 30d" />
+        <StatTile num={String(tasksDue)} label="Tasks due" />
         <StatTile num={String(vaccinesDueSoon)} label="Vaccines due" />
         <StatTile num={String(roster.length)} label="Pets & habitats" />
       </div>
@@ -64,7 +74,7 @@ export default async function AppHomePage() {
         )}
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
         <Card className="p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 font-semibold text-sm">
@@ -111,22 +121,33 @@ export default async function AppHomePage() {
               See all
             </Link>
           </div>
-          <p className="text-xs text-muted mb-3">Sample data — shopping tracking ships in a later phase.</p>
-          <div className="flex flex-col divide-y divide-line">
-            {shoppingOrders.slice(0, 3).map((o, i) => (
-              <div key={i} className="flex items-center justify-between py-2.5 text-sm">
-                <div>
-                  <div className="font-medium">{o.item}</div>
-                  <div className="text-xs text-muted">{o.scope}</div>
+          {orders.length === 0 ? (
+            <p className="text-sm text-muted">
+              No orders logged yet —{" "}
+              <Link href="/app/shopping" className="text-primary hover:underline">
+                log one
+              </Link>
+              .
+            </p>
+          ) : (
+            <div className="flex flex-col divide-y divide-line">
+              {orders.slice(0, 3).map((o) => (
+                <div key={o.id} className="flex items-center justify-between py-2.5 text-sm">
+                  <div>
+                    <div className="font-medium">{o.item}</div>
+                    <div className="text-xs text-muted">{o.scope}</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted">{o.date}</span>
+                    <span className="font-mono text-xs">{o.cost ?? "—"}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted">{o.date}</span>
-                  <span className="font-mono text-xs">{o.cost}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </Card>
+
+        <TasksCard tenantId={active.tenantId} roster={roster} tasks={tasks} />
       </div>
     </div>
   );

@@ -189,6 +189,42 @@ export interface Database {
         } & Scope,
         "tenant_id" | "service"
       >;
+      products: Table<
+        {
+          id: string;
+          tenant_id: string;
+          name: string;
+          category: string | null;
+          notes: string | null;
+          created_at: string;
+        },
+        "tenant_id" | "name"
+      >;
+      shopping_orders: Table<
+        {
+          id: string;
+          tenant_id: string;
+          product_id: string;
+          order_date: string;
+          cost: number | null;
+          notes: string | null;
+          created_at: string;
+        } & Scope,
+        "tenant_id" | "product_id"
+      >;
+      care_tasks: Table<
+        {
+          id: string;
+          tenant_id: string;
+          title: string;
+          due_date: string | null;
+          repeat_interval_days: number | null;
+          completed_at: string | null;
+          notes: string | null;
+          created_at: string;
+        } & Scope,
+        "tenant_id" | "title"
+      >;
     };
     Functions: {
       accept_pending_invites: {

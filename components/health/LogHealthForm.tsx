@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
-import { ScopePicker } from "@/components/health/ScopePicker";
+import { ScopePicker } from "@/components/scope/ScopePicker";
 import { addVetVisit, addIllness, addVaccination, addGroomingVisit } from "@/lib/actions/health";
 import type { RosterItem } from "@/lib/roster";
 

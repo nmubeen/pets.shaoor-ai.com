@@ -1,13 +1,7 @@
-// Sample data still standing in for the phases not yet built (shopping,
-// gallery — §05/§06 of the roadmap). Tenancy, auth, pets/groups/habitats,
-// and health records are real now — see lib/tenant.ts, lib/roster.ts,
-// lib/health.ts.
-
-export const shoppingOrders = [
-  { date: "Aug 30", item: "Grain-free kibble, 5kg", scope: "Household", cost: "₹1,850" },
-  { date: "Aug 22", item: "Reef salt mix", scope: "The Reef Tank", cost: "₹1,100" },
-  { date: "Aug 14", item: "Kitten wet food, 24pk", scope: "Nova & Comet", cost: "₹960" },
-];
+// Sample data still standing in for the phase not yet built (gallery —
+// §06 of the roadmap). Tenancy, auth, pets/groups/habitats, health
+// records, and shopping/tasks are real now — see lib/tenant.ts,
+// lib/roster.ts, lib/health.ts, lib/shopping.ts, lib/tasks.ts.
 
 export const galleryItems = [
   { id: 1, caption: "Simba on the windowsill", pet: "Simba", color: "var(--accent)" },

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import type { RosterKind } from "@/lib/database.types";
+import { parseScopeRequired } from "@/lib/scope";
 
 function str(formData: FormData, key: string): string | null {
   const v = formData.get(key);
@@ -17,20 +17,8 @@ function num(formData: FormData, key: string): number | null {
 }
 
 /** Reads the "scope" field a ScopePicker form always includes, formatted "kind:id". */
-function scope(
-  formData: FormData
-): { pet_id: string | null; group_id: string | null; habitat_id: string | null } | { error: string } {
-  const raw = str(formData, "scope");
-  const [kind, id] = raw?.split(":") ?? [];
-  if (!kind || !id || !["pet", "group", "habitat"].includes(kind)) {
-    return { error: "Choose who this is about." };
-  }
-  const rosterKind = kind as RosterKind;
-  return {
-    pet_id: rosterKind === "pet" ? id : null,
-    group_id: rosterKind === "group" ? id : null,
-    habitat_id: rosterKind === "habitat" ? id : null,
-  };
+function scope(formData: FormData) {
+  return parseScopeRequired(str(formData, "scope"));
 }
 
 function revalidateHealth() {

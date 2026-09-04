@@ -11,10 +11,10 @@ A Next.js (App Router) build of the marketing site and app shell described in
   `/login`, and `/onboarding/pets`, matching §10. Real Supabase Auth
   (email + password); a database trigger creates the tenant, owner
   membership, and trial subscription row atomically at signup.
-- **App shell** — `/app`, `/app/pets`, `/app/health`, with a sidebar
-  workspace switcher, trial-countdown header, and sign-out — all backed by
-  real tenant/roster/health data. `/app/shopping` and `/app/gallery` still
-  render sample data from `lib/mock-data.ts` (Phases 5–6, not yet built).
+- **App shell** — `/app`, `/app/pets`, `/app/health`, `/app/shopping`, with
+  a sidebar workspace switcher, trial-countdown header, and sign-out — all
+  backed by real data. `/app/gallery` still renders sample data from
+  `lib/mock-data.ts` (Phase 6, not yet built).
 - **Settings** — `/app/settings/billing` (real plan/usage from the DB —
   payment processing intentionally not wired up, see below) and
   `/app/settings/team` (real invites, owner-gated), matching §12.
@@ -37,6 +37,16 @@ A Next.js (App Router) build of the marketing site and app shell described in
   four tabs (Visits, Illnesses, Vaccinations, Grooming), each with a real
   log form (`lib/actions/health.ts`, `lib/health.ts`); the dashboard's
   "Recent health events" and "Vaccines due" tiles pull from the same data.
+- **Shopping & tasks** — `products`, `shopping_orders`, `care_tasks` tables
+  with RLS. Unlike health records, an order or task can be scoped to the
+  whole workspace, not just a pet/group/habitat (§03's "pet, group, or
+  household" scoping) — see `lib/scope.ts`. `/app/shopping` has a real
+  log-order form and an All/Pet/Group/Habitat/Household filter
+  (`lib/shopping.ts`); the dashboard's "Care tasks" card lets you add and
+  complete recurring tasks (`lib/actions/tasks.ts`) — completing one that
+  repeats immediately schedules the next occurrence. "Spent · 30d" is a
+  computed rollup across shopping/vet/grooming costs rather than a separate
+  expenses ledger, so nothing gets double-entered.
 
 **Billing (§05) is scaffolded but intentionally disconnected**: `plans`
 (seeded) and `subscriptions` tables exist, and the Stripe Checkout/Portal/
@@ -73,8 +83,7 @@ proper SMTP provider (Resend/Postmark/SendGrid) belongs under Authentication
 
 ## What's not built yet
 
-Phases 5–6 of the roadmap (§13): shopping orders/care tasks/expense
-reporting, and gallery media/comments/public adoption profiles.
-`/app/shopping` and `/app/gallery` still render the original sample data
-from `lib/mock-data.ts`. Payment processing (Stripe) is scaffolded but not
-wired up — see above.
+Phase 6 of the roadmap (§13): gallery media, comments, and Rescue & Shelter
+public adoption profiles. `/app/gallery` still renders the original sample
+data from `lib/mock-data.ts`. Payment processing (Stripe) is scaffolded but
+not wired up — see above.
