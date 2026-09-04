@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
-import { ScopePicker } from "@/components/scope/ScopePicker";
+import { MultiScopePicker } from "@/components/scope/MultiScopePicker";
 import { uploadMedia } from "@/lib/actions/gallery";
 import type { RosterItem } from "@/lib/roster";
 
@@ -52,7 +52,17 @@ export function UploadForm({
           />
         </label>
 
-        <ScopePicker roster={roster} allowHousehold />
+        <MultiScopePicker roster={roster} />
+
+        <label className="flex flex-col gap-1.5">
+          <span className={label}>Clicked date</span>
+          <input
+            type="date"
+            name="clicked_date"
+            className={field}
+            defaultValue={new Date().toISOString().slice(0, 10)}
+          />
+        </label>
 
         <label className="flex flex-col gap-1.5">
           <span className={label}>Caption (optional)</span>

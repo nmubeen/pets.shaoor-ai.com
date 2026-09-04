@@ -10,6 +10,9 @@ import { deleteMedia } from "@/lib/actions/gallery";
 import type { MediaItem } from "@/lib/gallery";
 import type { RosterItem } from "@/lib/roster";
 
+const FILTER_ALL = "all";
+const FILTER_HOUSEHOLD = "household";
+
 export function GalleryView({
   tenantId,
   roster,
@@ -21,17 +24,24 @@ export function GalleryView({
 }) {
   const [showUpload, setShowUpload] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [filter, setFilter] = useState(FILTER_ALL);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
   const open = media.find((m) => m.id === openId) ?? null;
+  const filtered =
+    filter === FILTER_ALL
+      ? media
+      : filter === FILTER_HOUSEHOLD
+        ? media.filter((m) => m.scopeIds.length === 0)
+        : media.filter((m) => m.scopeIds.includes(filter));
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl mb-1">Gallery</h1>
-          <p className="text-sm text-muted">Photos and memories, tagged to a pet, habitat, or the household</p>
+          <p className="text-sm text-muted">Photos and memories — newest clicked date first</p>
         </div>
         {roster.length > 0 && (
           <button
@@ -44,13 +54,34 @@ export function GalleryView({
         )}
       </div>
 
+      {media.length > 0 && (
+        <label className="flex flex-col gap-1.5 max-w-xs">
+          <span className="text-[.68rem] uppercase tracking-[.05em] text-muted">Whose gallery</span>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="bg-paper border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary transition"
+          >
+            <option value={FILTER_ALL}>All photos</option>
+            <option value={FILTER_HOUSEHOLD}>🏠 Household (untagged)</option>
+            {roster.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
       {showUpload && <UploadForm tenantId={tenantId} roster={roster} onDone={() => setShowUpload(false)} />}
 
       {media.length === 0 ? (
         <Card className="p-6 text-center text-sm text-muted">No photos yet — upload the first one.</Card>
+      ) : filtered.length === 0 ? (
+        <Card className="p-6 text-center text-sm text-muted">No photos here yet.</Card>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {media.map((item) => (
+          {filtered.map((item) => (
             <button
               key={item.id}
               onClick={() => setOpenId(item.id)}
@@ -68,7 +99,7 @@ export function GalleryView({
               </div>
               <div className="text-xs font-medium truncate">{item.caption || item.who}</div>
               <div className="text-[.68rem] text-muted truncate">
-                {item.who}
+                {item.who} · {item.clickedDate}
                 {item.commentCount > 0 && ` · ${item.commentCount} comment${item.commentCount === 1 ? "" : "s"}`}
               </div>
             </button>
@@ -90,7 +121,9 @@ export function GalleryView({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="font-semibold text-sm">{open.caption || open.who}</div>
-                <div className="text-xs text-muted">{open.who}</div>
+                <div className="text-xs text-muted">
+                  {open.who} · {open.clickedDate}
+                </div>
               </div>
               <button
                 disabled={pending}

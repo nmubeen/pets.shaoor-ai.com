@@ -1,12 +1,12 @@
 // Shared helpers for the polymorphic pet_id/habitat_id scope. Health
 // records (visits, illnesses, vaccinations, medications) went pet-only
 // (0017_scope_rework.sql) and no longer use this — see
-// lib/actions/health.ts. shopping_orders moved to a
-// many-to-many join table instead (lib/actions/shopping.ts) — an order
-// can now name any combination of pets/habitats, not just one. What's
-// left here: care_tasks (required — parseScopeRequired, always exactly
-// one pet or habitat, no household option) and media (optional —
-// parseScopeOptional, "household" means both null, still zero-or-one).
+// lib/actions/health.ts. shopping_orders and media both moved to a
+// many-to-many join table instead (lib/actions/shopping.ts,
+// lib/actions/gallery.ts) — an order or photo can now name any
+// combination of pets/habitats, not just one, via MultiScopePicker. What's
+// left here: care_tasks — required, parseScopeRequired, always exactly one
+// pet or habitat, no household option.
 import type { RosterKind } from "@/lib/database.types";
 
 export type ScopeFields = { pet_id: string | null; habitat_id: string | null };
@@ -25,14 +25,6 @@ export function parseScopeRequired(raw: string | null): ScopeFields | { error: s
   if (!kind || !id || !["pet", "habitat"].includes(kind)) {
     return { error: "Choose who this is about." };
   }
-  return fromKindId(kind, id);
-}
-
-/** Same, but "household" (or nothing) is valid and means all-null (tenant-wide). */
-export function parseScopeOptional(raw: string | null): ScopeFields {
-  if (!raw || raw === "household") return { pet_id: null, habitat_id: null };
-  const [kind, id] = raw.split(":");
-  if (!kind || !id) return { pet_id: null, habitat_id: null };
   return fromKindId(kind, id);
 }
 

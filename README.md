@@ -180,9 +180,10 @@ A Next.js (App Router) build of the marketing site and app shell described in
   shared bag of litter for two cats, a filter for one tank, both at once),
   not just one thing, or none (still means household-wide, same convention
   as before, just now zero-or-*many* instead of zero-or-one). Picked via a
-  checklist (`components/scope/MultiScopePicker.tsx`) — a "Household"
-  toggle at the top clears/disables the rest, since it already covers
-  everyone. `/app/shopping` logs an order with ordered/delivered dates,
+  checklist (`components/scope/MultiScopePicker.tsx`, shared with Gallery
+  below) — no explicit "Household" toggle (removed; selecting nothing is
+  already household-wide, so a dedicated checkbox for that was redundant).
+  `/app/shopping` logs an order with ordered/delivered dates,
   quantity + unit, an item URL (for online orders), which shop it came
   from, and an optional item photo — the photo belongs to the `product`
   (reused across every order of that item, not re-uploaded each time),
@@ -208,9 +209,22 @@ A Next.js (App Router) build of the marketing site and app shell described in
 - **Gallery, comments & adoption profiles** — `media` and `comments`
   tables with RLS, plus a private Supabase Storage bucket (`media`, one
   bucket with `{tenant_id}/...` path prefixes per §06) with its own
-  `storage.objects` policies scoped the same way. `/app/gallery` has a
-  real upload form (photo + caption + scope) and a per-photo comment
-  thread. Rescue & Shelter workspaces can list an individual pet for
+  `storage.objects` policies scoped the same way. Scope went many-to-many
+  here too (`media_scopes`, `0023_gallery_multiscope_clicked_date.sql`,
+  same shape and `MultiScopePicker` as Shopping) — a photo can tag any
+  combination of pets/habitats (a shot of two cats together tags both),
+  not just one. Deleting a pet or habitat only removes *its* tag from a
+  photo (cascades away on its own) — the photo itself is never deleted by
+  that anymore, since it may still be tagged to something else, or was
+  always meant to be untagged/household. Every photo also carries a
+  `clicked_date` — the date it was actually *taken*, separate from
+  `created_at` (when it was uploaded), since backfilling old photos
+  shouldn't make them sort as new — `/app/gallery` always sorts newest
+  clicked date first, and a "Whose gallery" filter (`GalleryView.tsx`)
+  narrows the grid to one pet/habitat (or an "untagged" bucket) at a time.
+  `/app/gallery` has a real upload form (photo + caption + clicked date +
+  scope) and a per-photo comment thread. Rescue & Shelter workspaces can
+  list an individual pet for
   adoption (`is_adoptable`, `adoption_note` on `pets`) — an additive public
   RLS policy makes just that pet (and its tenant's name) readable with no
   auth, surfaced at `/adopt` and `/adopt/[petId]`. Photos themselves stay

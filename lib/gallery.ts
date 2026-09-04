@@ -1,15 +1,23 @@
 // Fetches gallery media (with signed URLs — the "media" Storage bucket is
 // private, per §06 of the design doc) and comments for /app/gallery.
+// Scope went many-to-many in 0023_gallery_multiscope_clicked_date.sql
+// (media_scopes) — a photo can tag any combination of pets/habitats, so
+// "who" is a list here instead of a single lookup, same shape as
+// lib/shopping.ts's getShoppingOrders. Always sorted by clicked_date (the
+// date the photo was actually taken, not when it was uploaded), newest
+// first.
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
 import { getRoster } from "@/lib/roster";
-import { pickScopeId } from "@/lib/scope";
 
 export type MediaItem = {
   id: string;
   url: string | null;
   caption: string | null;
   who: string;
+  scopeIds: string[];
+  clickedDate: string;
+  clickedDateIso: string;
   createdAt: string;
   commentCount: number;
 };
@@ -23,22 +31,36 @@ export type CommentItem = {
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60; // 1 hour
 
+function fmtDate(iso: string): string {
+  return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" });
+}
+
 export async function getMediaItems(
   supabase: Awaited<ReturnType<typeof createClient>>,
   tenantId: string
 ): Promise<MediaItem[]> {
-  const [{ data }, roster, { data: comments }] = await Promise.all([
+  const [{ data }, { data: scopeRows }, roster, { data: comments }] = await Promise.all([
     supabase
       .from("media")
-      .select("id, pet_id, habitat_id, storage_path, caption, created_at")
+      .select("id, storage_path, caption, clicked_date, created_at")
       .eq("tenant_id", tenantId)
-      .order("created_at", { ascending: false }),
+      .order("clicked_date", { ascending: false }),
+    supabase.from("media_scopes").select("media_id, pet_id, habitat_id").eq("tenant_id", tenantId),
     getRoster(supabase, tenantId),
     supabase.from("comments").select("media_id").eq("tenant_id", tenantId),
   ]);
 
   const byId = new Map(roster.map((r) => [r.id, r.name]));
   const items = data ?? [];
+
+  const scopesByMedia = new Map<string, string[]>();
+  for (const row of scopeRows ?? []) {
+    const scopeId = row.pet_id ?? row.habitat_id;
+    if (!scopeId) continue;
+    const list = scopesByMedia.get(row.media_id) ?? [];
+    list.push(scopeId);
+    scopesByMedia.set(row.media_id, list);
+  }
 
   const commentCounts = new Map<string, number>();
   for (const c of comments ?? []) {
@@ -54,12 +76,16 @@ export async function getMediaItems(
   const urlByPath = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
 
   return items.map((m) => {
-    const scopeId = pickScopeId(m);
+    const scopeIds = scopesByMedia.get(m.id) ?? [];
+    const names = scopeIds.map((id) => byId.get(id) ?? "Unknown");
     return {
       id: m.id,
       url: urlByPath.get(m.storage_path) ?? null,
       caption: m.caption,
-      who: scopeId ? (byId.get(scopeId) ?? "Unknown") : "Household",
+      who: names.length > 0 ? names.join(", ") : "Household",
+      scopeIds,
+      clickedDate: fmtDate(m.clicked_date),
+      clickedDateIso: m.clicked_date,
       createdAt: m.created_at,
       commentCount: commentCounts.get(m.id) ?? 0,
     };

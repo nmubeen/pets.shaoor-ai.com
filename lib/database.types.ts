@@ -325,6 +325,9 @@ export interface Database {
         } & Scope,
         "tenant_id" | "title"
       >;
+      // Moved to a many-to-many join table (media_scopes, below) instead of
+      // the shared pet_id/habitat_id Scope shape (0023_gallery_multiscope_clicked_date.sql)
+      // — a photo can tag any combination of pets/habitats, not just one.
       media: Table<
         {
           id: string;
@@ -332,9 +335,21 @@ export interface Database {
           storage_path: string;
           caption: string | null;
           uploaded_by: string | null;
+          clicked_date: string;
           created_at: string;
-        } & Scope,
+        },
         "tenant_id" | "storage_path"
+      >;
+      media_scopes: Table<
+        {
+          id: string;
+          tenant_id: string;
+          media_id: string;
+          pet_id: string | null;
+          habitat_id: string | null;
+          created_at: string;
+        },
+        "tenant_id" | "media_id"
       >;
       comments: Table<
         {

@@ -2,13 +2,28 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { parseScopeOptional } from "@/lib/scope";
 import { getComments, type CommentItem } from "@/lib/gallery";
 import { uploadImage, removeImage } from "@/lib/storage";
 
 function str(formData: FormData, key: string): string | null {
   const v = formData.get(key);
   return typeof v === "string" && v.trim().length > 0 ? v.trim() : null;
+}
+
+type ScopeRow = { pet_id: string | null; habitat_id: string | null };
+
+/** Parses MultiScopePicker's "scope_ids" checkboxes — same shape as lib/actions/shopping.ts's parseMultiScope. */
+function parseMultiScope(formData: FormData): ScopeRow[] {
+  return formData
+    .getAll("scope_ids")
+    .filter((v): v is string => typeof v === "string")
+    .map((raw): ScopeRow | null => {
+      const [kind, id] = raw.split(":");
+      if (kind === "pet" && id) return { pet_id: id, habitat_id: null };
+      if (kind === "habitat" && id) return { pet_id: null, habitat_id: id };
+      return null;
+    })
+    .filter((v): v is ScopeRow => v !== null);
 }
 
 export async function uploadMedia(tenantId: string, formData: FormData) {
@@ -23,16 +38,28 @@ export async function uploadMedia(tenantId: string, formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { error } = await supabase.from("media").insert({
-    tenant_id: tenantId,
-    storage_path: path,
-    caption: str(formData, "caption"),
-    uploaded_by: user?.id ?? null,
-    ...parseScopeOptional(str(formData, "scope")),
-  });
-  if (error) {
+  const { data: media, error } = await supabase
+    .from("media")
+    .insert({
+      tenant_id: tenantId,
+      storage_path: path,
+      caption: str(formData, "caption"),
+      clicked_date: str(formData, "clicked_date") ?? new Date().toISOString().slice(0, 10),
+      uploaded_by: user?.id ?? null,
+    })
+    .select("id")
+    .single();
+  if (error || !media) {
     await removeImage(supabase, path);
-    return { error: error.message };
+    return { error: error?.message ?? "Could not save that photo." };
+  }
+
+  const scopeRows = parseMultiScope(formData);
+  if (scopeRows.length > 0) {
+    const { error: scopeError } = await supabase
+      .from("media_scopes")
+      .insert(scopeRows.map((s) => ({ tenant_id: tenantId, media_id: media.id, ...s })));
+    if (scopeError) return { error: scopeError.message };
   }
 
   revalidatePath("/app/gallery");

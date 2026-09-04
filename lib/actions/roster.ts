@@ -133,25 +133,24 @@ export async function updatePet(tenantId: string, petId: string, formData: FormD
 }
 
 /**
- * Deletes a pet. Every health/shopping/task/media row scoped to it cascades
- * away at the DB level (on delete cascade); this also best-effort cleans up
- * the Storage objects that would otherwise leak (the pet's own display
- * photo, plus any gallery photos scoped to it — those rows disappear via
- * cascade, but their files in the "media" bucket wouldn't without this).
+ * Deletes a pet. Every health/shopping/task row scoped to it cascades away
+ * at the DB level (on delete cascade); this also best-effort cleans up the
+ * pet's own display photo, which would otherwise leak in Storage. Gallery
+ * photos are handled differently: a photo can now be tagged to more than
+ * one pet/habitat (media_scopes, 0023_gallery_multiscope_clicked_date.sql),
+ * so deleting a pet only removes *its* tag (cascades away on its own) —
+ * the photo itself stays, since it may still be tagged to something else
+ * (or was always meant to be untagged/household).
  */
 export async function deletePet(tenantId: string, petId: string) {
   const supabase = await createClient();
 
-  const [{ data: pet }, { data: mediaRows }] = await Promise.all([
-    supabase.from("pets").select("photo_path").eq("id", petId).eq("tenant_id", tenantId).maybeSingle(),
-    supabase.from("media").select("storage_path").eq("tenant_id", tenantId).eq("pet_id", petId),
-  ]);
+  const { data: pet } = await supabase.from("pets").select("photo_path").eq("id", petId).eq("tenant_id", tenantId).maybeSingle();
 
   const { error } = await supabase.from("pets").delete().eq("id", petId).eq("tenant_id", tenantId);
   if (error) return { error: error.message };
 
   await removeImage(supabase, pet?.photo_path ?? null);
-  await Promise.all((mediaRows ?? []).map((m) => removeImage(supabase, m.storage_path)));
 
   revalidateRoster();
   return { error: null };
@@ -203,16 +202,12 @@ export async function updateHabitat(tenantId: string, habitatId: string, formDat
 export async function deleteHabitat(tenantId: string, habitatId: string) {
   const supabase = await createClient();
 
-  const [{ data: habitat }, { data: mediaRows }] = await Promise.all([
-    supabase.from("habitats").select("photo_path").eq("id", habitatId).eq("tenant_id", tenantId).maybeSingle(),
-    supabase.from("media").select("storage_path").eq("tenant_id", tenantId).eq("habitat_id", habitatId),
-  ]);
+  const { data: habitat } = await supabase.from("habitats").select("photo_path").eq("id", habitatId).eq("tenant_id", tenantId).maybeSingle();
 
   const { error } = await supabase.from("habitats").delete().eq("id", habitatId).eq("tenant_id", tenantId);
   if (error) return { error: error.message };
 
   await removeImage(supabase, habitat?.photo_path ?? null);
-  await Promise.all((mediaRows ?? []).map((m) => removeImage(supabase, m.storage_path)));
 
   revalidateRoster();
   return { error: null };
