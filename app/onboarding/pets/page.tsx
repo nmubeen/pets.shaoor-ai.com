@@ -1,15 +1,13 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { AuthShell } from "@/components/marketing/AuthShell";
-import { Btn, PetChip } from "@/components/ui";
-import { PlusIcon } from "@/components/icons";
-import { pets } from "@/lib/mock-data";
+import { PetChip } from "@/components/ui";
+import { AddRosterPanel } from "@/components/roster/AddRosterPanel";
+import { requireActiveMembership } from "@/lib/tenant";
+import { getRoster } from "@/lib/roster";
+import { FinishSetupButton } from "@/components/roster/FinishSetupButton";
 
-export default function OnboardingPetsPage() {
-  const router = useRouter();
-  const [added] = useState(pets.slice(0, 2));
+export default async function OnboardingPetsPage() {
+  const { supabase, active } = await requireActiveMembership();
+  const roster = await getRoster(supabase, active.tenantId);
 
   return (
     <AuthShell
@@ -18,27 +16,17 @@ export default function OnboardingPetsPage() {
       subtitle="Add as many pets and habitats as you like — you can always edit this later."
     >
       <div className="flex flex-col gap-2.5">
-        {added.map((p) => (
-          <PetChip
-            key={p.id}
-            name={p.name}
-            sub={p.species}
-            color={p.color}
-            initials={p.initials}
-          />
+        {roster.map((r) => (
+          <PetChip key={r.id} name={r.name} sub={r.subtitle} color={r.color} initials={r.initials} />
         ))}
-        <button
-          type="button"
-          className="flex items-center justify-center gap-2 text-sm text-muted border border-dashed border-line rounded-lg px-3.5 py-3 hover:text-ink hover:border-primary transition"
-        >
-          <PlusIcon className="w-[.9em] h-[.9em]" />
-          Add another pet or habitat
-        </button>
+        <AddRosterPanel
+          tenantId={active.tenantId}
+          triggerLabel="Add another pet or habitat"
+          triggerClassName="flex items-center justify-center gap-2 text-sm text-muted border border-dashed border-line rounded-lg px-3.5 py-3 hover:text-ink hover:border-primary transition"
+        />
       </div>
 
-      <Btn onClick={() => router.push("/app")} className="w-full justify-center mt-6">
-        Finish setup →
-      </Btn>
+      <FinishSetupButton />
       <p className="text-xs text-muted text-center mt-3">
         Groups and habitats are peers of individual pets — add a tank or a
         litter the same way you&rsquo;d add one animal.

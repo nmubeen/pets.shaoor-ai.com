@@ -1,14 +1,19 @@
-"use client";
-
-import { useState } from "react";
 import { Card, Pill } from "@/components/ui";
-import { PlusIcon } from "@/components/icons";
-import { team } from "@/lib/mock-data";
+import { InviteForm } from "@/components/team/InviteForm";
+import { RemoveMemberButton } from "@/components/team/RemoveMemberButton";
+import { requireActiveMembership } from "@/lib/tenant";
 
-const roles = ["caregiver", "viewer"];
+export default async function TeamPage() {
+  const { supabase, active } = await requireActiveMembership();
 
-export default function TeamPage() {
-  const [role, setRole] = useState("caregiver");
+  const { data: members } = await supabase
+    .from("memberships")
+    .select("id, invited_email, role, status")
+    .eq("tenant_id", active.tenantId)
+    .neq("status", "removed")
+    .order("created_at");
+
+  const isOwner = active.role === "owner";
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
@@ -19,39 +24,25 @@ export default function TeamPage() {
 
       <Card className="p-5">
         <div className="flex flex-col divide-y divide-line mb-5">
-          {team.map((m) => (
-            <div key={m.email} className="flex items-center justify-between py-2.5 text-sm">
-              <span>{m.email}</span>
+          {(members ?? []).map((m) => (
+            <div key={m.id} className="flex items-center justify-between py-2.5 text-sm">
+              <span>{m.invited_email}</span>
               <div className="flex items-center gap-2">
                 <Pill>{m.role}</Pill>
-                {m.status && <Pill dotColor="var(--accent)">{m.status}</Pill>}
+                {m.status === "invited" && <Pill dotColor="var(--accent)">pending</Pill>}
+                {isOwner && m.role !== "owner" && (
+                  <RemoveMemberButton tenantId={active.tenantId} membershipId={m.id} />
+                )}
               </div>
             </div>
           ))}
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2.5">
-          <input
-            type="email"
-            placeholder="Invite by email"
-            className="flex-1 bg-paper border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary transition"
-          />
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="bg-paper border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary transition"
-          >
-            {roles.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-          <button className="inline-flex items-center justify-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition whitespace-nowrap">
-            <PlusIcon className="w-[.9em] h-[.9em]" />
-            Send invite
-          </button>
-        </div>
+        {isOwner ? (
+          <InviteForm tenantId={active.tenantId} />
+        ) : (
+          <p className="text-xs text-muted">Only the workspace owner can invite or remove people.</p>
+        )}
       </Card>
 
       <Card className="p-5">

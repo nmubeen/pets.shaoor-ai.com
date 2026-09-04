@@ -1,16 +1,21 @@
 import Link from "next/link";
 import { Card, PetChip, StatTile } from "@/components/ui";
 import { PlusIcon, StethoIcon, CartIcon } from "@/components/icons";
-import { pets, healthVisits, shoppingOrders, workspace } from "@/lib/mock-data";
+import { healthVisits, shoppingOrders } from "@/lib/mock-data";
+import { requireActiveMembership } from "@/lib/tenant";
+import { getRoster } from "@/lib/roster";
 
-export default function AppHomePage() {
+export default async function AppHomePage() {
+  const { supabase, active } = await requireActiveMembership();
+  const roster = await getRoster(supabase, active.tenantId);
+
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl mb-1">Good evening</h1>
           <p className="text-sm text-muted">
-            {workspace.name} · {pets.length} pets &amp; habitats tracked
+            {active.tenantName} · {roster.length} pet{roster.length === 1 ? "" : "s"} &amp; habitats tracked
           </p>
         </div>
         <Link
@@ -26,28 +31,31 @@ export default function AppHomePage() {
         <StatTile num="₹2,140" label="Spent · 30d" />
         <StatTile num="3" label="Tasks due" />
         <StatTile num="1" label="Vaccine due soon" />
-        <StatTile num={String(pets.length)} label="Pets & habitats" />
+        <StatTile num={String(roster.length)} label="Pets & habitats" />
       </div>
 
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg">Your household</h2>
+          <h2 className="text-lg">Your workspace</h2>
           <Link href="/app/pets" className="text-sm text-primary hover:underline">
             View all
           </Link>
         </div>
-        <div className="flex flex-col gap-2.5">
-          {pets.map((p) => (
-            <PetChip
-              key={p.id}
-              name={p.name}
-              sub={p.note}
-              color={p.color}
-              initials={p.initials}
-              badge={p.badge}
-            />
-          ))}
-        </div>
+        {roster.length === 0 ? (
+          <Card className="p-6 text-center text-sm text-muted">
+            No pets or habitats yet.{" "}
+            <Link href="/app/pets" className="text-primary hover:underline">
+              Add your first one
+            </Link>
+            .
+          </Card>
+        ) : (
+          <div className="flex flex-col gap-2.5">
+            {roster.map((r) => (
+              <PetChip key={r.id} name={r.name} sub={r.subtitle} color={r.color} initials={r.initials} />
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
@@ -61,6 +69,7 @@ export default function AppHomePage() {
               See all
             </Link>
           </div>
+          <p className="text-xs text-muted mb-3">Sample data — health logging ships in a later phase.</p>
           <div className="flex flex-col divide-y divide-line">
             {healthVisits.slice(0, 3).map((v, i) => (
               <div key={i} className="flex items-center justify-between py-2.5 text-sm">
@@ -87,6 +96,7 @@ export default function AppHomePage() {
               See all
             </Link>
           </div>
+          <p className="text-xs text-muted mb-3">Sample data — shopping tracking ships in a later phase.</p>
           <div className="flex flex-col divide-y divide-line">
             {shoppingOrders.slice(0, 3).map((o, i) => (
               <div key={i} className="flex items-center justify-between py-2.5 text-sm">

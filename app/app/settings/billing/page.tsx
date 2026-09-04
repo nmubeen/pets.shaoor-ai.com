@@ -1,27 +1,69 @@
 import { Card, Badge } from "@/components/ui";
-import { workspace, pets } from "@/lib/mock-data";
+import { UpgradeButton, ManageInPortalButton } from "@/components/billing/BillingActions";
+import { requireActiveMembership } from "@/lib/tenant";
+import { getRoster } from "@/lib/roster";
 
-export default function BillingPage() {
+function fmtDate(iso: string | null) {
+  if (!iso) return null;
+  return new Date(iso).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+}
+
+export default async function BillingPage() {
+  const { supabase, active } = await requireActiveMembership();
+
+  const [{ data: plan }, { data: subscription }, roster, { count: seatCount }] = await Promise.all([
+    supabase.from("plans").select("*").eq("code", active.planCode).maybeSingle(),
+    supabase.from("subscriptions").select("*").eq("tenant_id", active.tenantId).maybeSingle(),
+    getRoster(supabase, active.tenantId),
+    supabase
+      .from("memberships")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", active.tenantId)
+      .eq("status", "active"),
+  ]);
+
+  const isOwner = active.role === "owner";
+  const isTrialing = subscription?.status === "trialing" && active.trialEndsAt;
+  const price = plan?.price_monthly_inr;
+
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
       <div>
         <h1 className="text-2xl mb-1">Billing</h1>
-        <p className="text-sm text-muted">{workspace.name} · owner: you</p>
+        <p className="text-sm text-muted">{active.tenantName} · your role: {active.role}</p>
       </div>
 
       <Card className="p-5">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <div className="flex items-center gap-2 font-semibold text-base">
-              {workspace.plan} <Badge tone="trial">trial</Badge>
+              {plan?.name ?? active.planCode}
+              {isTrialing && <Badge tone="trial">trial</Badge>}
+              {subscription?.status === "past_due" && <Badge tone="due">past due</Badge>}
             </div>
             <div className="text-xs text-muted mt-1">
-              Ends {workspace.trialEndsOn} · then ₹799/mo
+              {isTrialing
+                ? `Ends ${fmtDate(active.trialEndsAt)}${price ? ` · then ₹${price}/mo` : ""}`
+                : price
+                  ? `₹${price}/mo`
+                  : "Contact sales for pricing"}
             </div>
           </div>
-          <button className="bg-primary text-primary-ink text-sm font-semibold px-4 py-2.5 rounded-lg hover:brightness-110 transition">
-            Add card
-          </button>
+          {isOwner &&
+            (subscription?.stripe_customer_id ? (
+              <ManageInPortalButton
+                tenantId={active.tenantId}
+                className="bg-primary text-primary-ink text-sm font-semibold px-4 py-2.5 rounded-lg hover:brightness-110 transition"
+              />
+            ) : (
+              <UpgradeButton
+                tenantId={active.tenantId}
+                planCode={active.planCode === "litter" ? "household" : active.planCode}
+                className="bg-primary text-primary-ink text-sm font-semibold px-4 py-2.5 rounded-lg hover:brightness-110 transition"
+              >
+                Add card
+              </UpgradeButton>
+            ))}
         </div>
       </Card>
 
@@ -30,22 +72,33 @@ export default function BillingPage() {
         <div className="flex flex-col divide-y divide-line">
           <div className="flex justify-between py-2.5 text-sm">
             <span className="text-muted">Pets used</span>
-            <span className="font-mono">{pets.length} of unlimited</span>
+            <span className="font-mono">
+              {roster.length} of {plan?.pet_limit ?? "unlimited"}
+            </span>
           </div>
           <div className="flex justify-between py-2.5 text-sm">
             <span className="text-muted">Seats used</span>
-            <span className="font-mono">2 of unlimited</span>
+            <span className="font-mono">
+              {seatCount ?? 0} of {plan?.seat_limit ?? "unlimited"}
+            </span>
           </div>
           <div className="flex justify-between py-2.5 text-sm">
             <span className="text-muted">Locations</span>
-            <span className="font-mono">1 of 3</span>
+            <span className="font-mono">1 of {plan?.location_limit ?? "unlimited"}</span>
           </div>
         </div>
       </Card>
 
-      <button className="self-start text-sm text-muted border border-line rounded-lg px-4 py-2.5 hover:text-ink hover:bg-surface-2 transition">
-        Manage in Stripe portal →
-      </button>
+      {isOwner && subscription?.stripe_customer_id && (
+        <ManageInPortalButton
+          tenantId={active.tenantId}
+          className="self-start text-sm text-muted border border-line rounded-lg px-4 py-2.5 hover:text-ink hover:bg-surface-2 transition"
+        />
+      )}
+
+      {!isOwner && (
+        <p className="text-xs text-muted">Only the workspace owner can manage billing.</p>
+      )}
 
       <p className="text-xs text-muted">
         Subscription changes, invoices, and cancellation all happen through
