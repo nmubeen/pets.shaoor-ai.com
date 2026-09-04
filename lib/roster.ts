@@ -12,6 +12,9 @@ export type RosterItem = {
   initials: string;
   color: string;
   createdAt: string;
+  // Adoption profile fields — only ever set for kind: "pet" (§02, org tier).
+  isAdoptable: boolean;
+  adoptionNote: string | null;
 };
 
 const COLORS = [
@@ -37,7 +40,7 @@ export async function getRoster(
   const [pets, groups, habitats] = await Promise.all([
     supabase
       .from("pets")
-      .select("id,name,species,life_stage,created_at")
+      .select("id,name,species,life_stage,is_adoptable,adoption_note,created_at")
       .eq("tenant_id", tenantId),
     supabase.from("pet_groups").select("id,name,species,created_at").eq("tenant_id", tenantId),
     supabase
@@ -54,6 +57,8 @@ export async function getRoster(
       subtitle: [p.species, p.life_stage].filter(Boolean).join(" · "),
       initials: initialsFor(p.name),
       createdAt: p.created_at,
+      isAdoptable: p.is_adoptable,
+      adoptionNote: p.adoption_note,
     })),
     ...(groups.data ?? []).map((g) => ({
       id: g.id,
@@ -62,6 +67,8 @@ export async function getRoster(
       subtitle: [g.species, "Group"].filter(Boolean).join(" · "),
       initials: initialsFor(g.name),
       createdAt: g.created_at,
+      isAdoptable: false,
+      adoptionNote: null,
     })),
     ...(habitats.data ?? []).map((h) => ({
       id: h.id,
@@ -70,6 +77,8 @@ export async function getRoster(
       subtitle: ["Habitat", h.habitat_type, h.capacity_note].filter(Boolean).join(" · "),
       initials: initialsFor(h.name),
       createdAt: h.created_at,
+      isAdoptable: false,
+      adoptionNote: null,
     })),
   ];
 

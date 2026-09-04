@@ -7,13 +7,14 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import type { MembershipRole } from "@/lib/database.types";
+import type { MembershipRole, WorkspaceType } from "@/lib/database.types";
 
 const ACTIVE_TENANT_COOKIE = "menagerie_active_tenant";
 
 export type ActiveMembership = {
   tenantId: string;
   tenantName: string;
+  workspaceType: WorkspaceType;
   planCode: string;
   trialEndsAt: string | null;
   role: MembershipRole;
@@ -46,19 +47,25 @@ export async function requireActiveMembership(): Promise<{
 
   const { data: rows } = await supabase
     .from("memberships")
-    .select("tenant_id, role, tenants(name, plan_code, trial_ends_at)")
+    .select("tenant_id, role, tenants(name, workspace_type, plan_code, trial_ends_at)")
     .eq("user_id", user.id)
     .eq("status", "active");
 
+  type TenantJoin = { name: string; workspace_type: WorkspaceType; plan_code: string; trial_ends_at: string | null };
+
   const memberships: ActiveMembership[] = (rows ?? [])
     .filter((r) => r.tenants)
-    .map((r) => ({
-      tenantId: r.tenant_id,
-      tenantName: (r.tenants as unknown as { name: string }).name,
-      planCode: (r.tenants as unknown as { plan_code: string }).plan_code,
-      trialEndsAt: (r.tenants as unknown as { trial_ends_at: string | null }).trial_ends_at,
-      role: r.role,
-    }));
+    .map((r) => {
+      const t = r.tenants as unknown as TenantJoin;
+      return {
+        tenantId: r.tenant_id,
+        tenantName: t.name,
+        workspaceType: t.workspace_type,
+        planCode: t.plan_code,
+        trialEndsAt: t.trial_ends_at,
+        role: r.role,
+      };
+    });
 
   if (memberships.length === 0) {
     redirect("/signup");

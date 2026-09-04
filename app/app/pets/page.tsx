@@ -1,11 +1,13 @@
 import { Card, Avatar } from "@/components/ui";
 import { AddRosterPanel } from "@/components/roster/AddRosterPanel";
+import { AdoptionToggle } from "@/components/pets/AdoptionToggle";
 import { requireActiveMembership } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
 
 export default async function PetsPage() {
   const { supabase, active } = await requireActiveMembership();
   const roster = await getRoster(supabase, active.tenantId);
+  const isOrg = active.workspaceType === "organization";
 
   return (
     <div className="flex flex-col gap-6">
@@ -30,6 +32,16 @@ export default async function PetsPage() {
               <div className="font-semibold text-base">{r.name}</div>
               <div className="text-xs text-muted mt-0.5">{r.subtitle}</div>
             </div>
+            {isOrg && r.kind === "pet" && (
+              <div className="border-t border-line pt-3">
+                <AdoptionToggle
+                  tenantId={active.tenantId}
+                  petId={r.id}
+                  isAdoptable={r.isAdoptable}
+                  adoptionNote={r.adoptionNote}
+                />
+              </div>
+            )}
           </Card>
         ))}
         {roster.length === 0 && (

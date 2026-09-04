@@ -2,19 +2,19 @@
 
 A Next.js (App Router) build of the marketing site and app shell described in
 `design-doc.html`, now wired to a real multi-tenant Supabase backend per
-§04–§08 of the design doc.
+§04, §07, §08 of the design doc — the full roadmap (§13) is built.
 
 ## What's here
 
-- **Marketing** — `/` (landing) and `/pricing`, matching §09.
+- **Marketing** — `/` (landing) and `/pricing`, matching §09. Public
+  **adoption directory** at `/adopt` and `/adopt/[petId]` (§02, org tier).
 - **Auth & onboarding** — `/signup` (create a workspace + account),
   `/login`, and `/onboarding/pets`, matching §10. Real Supabase Auth
   (email + password); a database trigger creates the tenant, owner
   membership, and trial subscription row atomically at signup.
-- **App shell** — `/app`, `/app/pets`, `/app/health`, `/app/shopping`, with
-  a sidebar workspace switcher, trial-countdown header, and sign-out — all
-  backed by real data. `/app/gallery` still renders sample data from
-  `lib/mock-data.ts` (Phase 6, not yet built).
+- **App shell** — `/app`, `/app/pets`, `/app/health`, `/app/shopping`,
+  `/app/gallery`, with a sidebar workspace switcher, trial-countdown
+  header, and sign-out — all backed by real data.
 - **Settings** — `/app/settings/billing` (real plan/usage from the DB —
   payment processing intentionally not wired up, see below) and
   `/app/settings/team` (real invites, owner-gated), matching §12.
@@ -47,6 +47,17 @@ A Next.js (App Router) build of the marketing site and app shell described in
   repeats immediately schedules the next occurrence. "Spent · 30d" is a
   computed rollup across shopping/vet/grooming costs rather than a separate
   expenses ledger, so nothing gets double-entered.
+- **Gallery, comments & adoption profiles** — `media` and `comments`
+  tables with RLS, plus a private Supabase Storage bucket (`media`, one
+  bucket with `{tenant_id}/...` path prefixes per §06) with its own
+  `storage.objects` policies scoped the same way. `/app/gallery` has a
+  real upload form (photo + caption + scope) and a per-photo comment
+  thread. Rescue & Shelter workspaces can list an individual pet for
+  adoption (`is_adoptable`, `adoption_note` on `pets`) — an additive public
+  RLS policy makes just that pet (and its tenant's name) readable with no
+  auth, surfaced at `/adopt` and `/adopt/[petId]`. Photos themselves stay
+  private (no service-role key configured to safely sign public URLs), so
+  public profiles are text-only for now.
 
 **Billing (§05) is scaffolded but intentionally disconnected**: `plans`
 (seeded) and `subscriptions` tables exist, and the Stripe Checkout/Portal/
@@ -54,6 +65,12 @@ webhook routes (`app/api/stripe/*`, `lib/stripe.ts`) are written and build
 cleanly, but the billing page doesn't call them — no payment processing is
 live. The 14-day trial and its downgrade-to-Litter (`/api/cron/trial-expiry`)
 are DB-only and work with no card ever required.
+
+**Also deferred**: surfacing Menagerie subscriptions in the shared
+`shaoor-ai.com/admin/subscriptions` control plane (like `construct.shaoor-ai.com`
+already does) — investigated, genuinely a bigger cross-repo task with an open
+design question (self-serve trial vs. admin-gated activation), paused to
+finish this roadmap first.
 
 ## Local setup
 
@@ -83,7 +100,7 @@ proper SMTP provider (Resend/Postmark/SendGrid) belongs under Authentication
 
 ## What's not built yet
 
-Phase 6 of the roadmap (§13): gallery media, comments, and Rescue & Shelter
-public adoption profiles. `/app/gallery` still renders the original sample
-data from `lib/mock-data.ts`. Payment processing (Stripe) is scaffolded but
-not wired up — see above.
+Payment processing (Stripe) and the shared admin control-plane integration —
+both scaffolded/investigated but intentionally paused, see above. Every
+product phase from the roadmap (§13, phases 1–6) is otherwise implemented
+and verified end-to-end against the live Supabase project.

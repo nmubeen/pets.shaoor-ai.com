@@ -87,6 +87,8 @@ export interface Database {
           species: string;
           life_stage: string | null;
           notes: string | null;
+          is_adoptable: boolean;
+          adoption_note: string | null;
           created_at: string;
         },
         "tenant_id" | "name" | "species"
@@ -224,6 +226,28 @@ export interface Database {
           created_at: string;
         } & Scope,
         "tenant_id" | "title"
+      >;
+      media: Table<
+        {
+          id: string;
+          tenant_id: string;
+          storage_path: string;
+          caption: string | null;
+          uploaded_by: string | null;
+          created_at: string;
+        } & Scope,
+        "tenant_id" | "storage_path"
+      >;
+      comments: Table<
+        {
+          id: string;
+          tenant_id: string;
+          media_id: string;
+          author_id: string | null;
+          body: string;
+          created_at: string;
+        },
+        "tenant_id" | "media_id" | "body"
       >;
     };
     Functions: {

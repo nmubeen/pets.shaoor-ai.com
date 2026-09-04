@@ -1,16 +1,8 @@
-// Sample data still standing in for the phase not yet built (gallery —
-// §06 of the roadmap). Tenancy, auth, pets/groups/habitats, health
-// records, and shopping/tasks are real now — see lib/tenant.ts,
-// lib/roster.ts, lib/health.ts, lib/shopping.ts, lib/tasks.ts.
-
-export const galleryItems = [
-  { id: 1, caption: "Simba on the windowsill", pet: "Simba", color: "var(--accent)" },
-  { id: 2, caption: "Nova & Comet's first zoomies", pet: "Nova & Comet", color: "var(--coral)" },
-  { id: 3, caption: "New coral frag placed", pet: "The Reef Tank", color: "var(--trial)" },
-  { id: 4, caption: "Vet visit, all clear", pet: "Simba", color: "var(--accent)" },
-  { id: 5, caption: "Kittens vs. the cat tree", pet: "Nova & Comet", color: "var(--coral)" },
-  { id: 6, caption: "Water change day", pet: "The Reef Tank", color: "var(--trial)" },
-];
+// The pricing tiers here are still the only "mock data" left in the app —
+// static marketing copy for the public /pricing page, not a stand-in for a
+// backend. Every other domain (tenancy, auth, pets/groups/habitats, health,
+// shopping/tasks, gallery/comments) is real now — see lib/tenant.ts,
+// lib/roster.ts, lib/health.ts, lib/shopping.ts, lib/tasks.ts, lib/gallery.ts.
 
 export const tiers = [
   {
