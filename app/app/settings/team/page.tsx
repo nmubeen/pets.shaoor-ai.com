@@ -1,6 +1,7 @@
 import { Card, Pill } from "@/components/ui";
 import { InviteForm } from "@/components/team/InviteForm";
 import { RemoveMemberButton } from "@/components/team/RemoveMemberButton";
+import { ResendInviteButton } from "@/components/team/ResendInviteButton";
 import { requireActiveMembership } from "@/lib/tenant";
 
 export default async function TeamPage() {
@@ -30,6 +31,9 @@ export default async function TeamPage() {
               <div className="flex items-center gap-2">
                 <Pill>{m.role}</Pill>
                 {m.status === "invited" && <Pill dotColor="var(--accent)">pending</Pill>}
+                {isOwner && m.status === "invited" && (
+                  <ResendInviteButton tenantId={active.tenantId} membershipId={m.id} />
+                )}
                 {isOwner && m.role !== "owner" && (
                   <RemoveMemberButton tenantId={active.tenantId} membershipId={m.id} />
                 )}
