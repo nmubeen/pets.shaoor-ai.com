@@ -1,35 +1,48 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { AuthShell } from "@/components/marketing/AuthShell";
 import { Btn } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 
-export default function LoginPage() {
-  const router = useRouter();
+export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
     setLoading(false);
     if (error) {
       setError(error.message);
       return;
     }
-    router.push("/app");
-    router.refresh();
+    setSent(true);
+  }
+
+  if (sent) {
+    return (
+      <AuthShell
+        step={1}
+        title="Check your email"
+        subtitle={`If an account exists for ${email}, a password reset link is on its way.`}
+      >
+        <Btn href="/login" className="w-full justify-center">
+          Back to sign in →
+        </Btn>
+      </AuthShell>
+    );
   }
 
   return (
-    <AuthShell step={1} title="Welcome back" subtitle="Sign in to your workspace.">
+    <AuthShell step={1} title="Reset your password" subtitle="We'll email you a link to set a new one.">
       <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
         <label className="flex flex-col gap-1.5">
           <span className="text-[.68rem] uppercase tracking-[.05em] text-muted">Email</span>
@@ -42,32 +55,15 @@ export default function LoginPage() {
             placeholder="you@example.com"
           />
         </label>
-        <label className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[.68rem] uppercase tracking-[.05em] text-muted">Password</span>
-            <a href="/forgot-password" className="text-[.68rem] text-primary hover:underline">
-              Forgot password?
-            </a>
-          </div>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="bg-paper border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary transition"
-            placeholder="••••••••"
-          />
-        </label>
 
         {error && <p className="text-xs text-coral">{error}</p>}
 
         <Btn type="submit" className="w-full justify-center mt-1">
-          {loading ? "Signing in…" : "Sign in →"}
+          {loading ? "Sending…" : "Send reset link →"}
         </Btn>
         <p className="text-xs text-muted text-center">
-          New here?{" "}
-          <a href="/signup" className="text-primary hover:underline">
-            Start a free trial
+          <a href="/login" className="text-primary hover:underline">
+            Back to sign in
           </a>
         </p>
       </form>

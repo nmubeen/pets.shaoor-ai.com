@@ -9,9 +9,10 @@ A Next.js (App Router) build of the marketing site and app shell described in
 - **Marketing** — `/` (landing) and `/pricing`, matching §09. Public
   **adoption directory** at `/adopt` and `/adopt/[petId]` (§02, org tier).
 - **Auth & onboarding** — `/signup` (create a workspace + account),
-  `/login`, and `/onboarding/pets`, matching §10. Real Supabase Auth
-  (email + password); a database trigger creates the tenant, owner
-  membership, and trial subscription row atomically at signup.
+  `/login`, `/forgot-password` / `/reset-password`, and `/onboarding/pets`,
+  matching §10. Real Supabase Auth (email + password); a database trigger
+  creates the tenant, owner membership, and trial subscription row
+  atomically at signup.
 - **App shell** — `/app`, `/app/pets`, `/app/health`, `/app/shopping`,
   `/app/gallery`, `/app/providers`, with a sidebar workspace switcher,
   trial-countdown header, and sign-out — all backed by real data.
@@ -132,6 +133,44 @@ already does) — investigated, genuinely a bigger cross-repo task with an open
 design question (self-serve trial vs. admin-gated activation), paused to
 finish this roadmap first.
 
+### Transactional email — Zeptomail
+
+`pets.shaoor-ai.com` is verified as its own domain in Zeptomail (isolated
+sending reputation from any other shaoor-ai.com product using the same
+Zeptomail account). Two separate things use it:
+
+- **Our own emails** (`lib/email.ts`, `lib/email-templates.ts`) — team
+  invites (`lib/actions/team.ts`'s `inviteMember` now actually notifies the
+  invitee, which it never did before) and the two cron digests the design
+  doc's §06 "Jobs" section promised but nothing sent until now:
+  `/api/cron/reminders` (nightly vaccination/care-task digest) and
+  `/api/cron/expense-summary` (weekly spend rollup), both added to
+  `vercel.json`. `sendEmail()` soft-fails (logs and returns an error
+  instead of throwing) when `ZEPTOMAIL_API_TOKEN` isn't set, so none of
+  this blocks the action/cron it's attached to — verified live: an invite
+  still writes its `memberships` row correctly with no token configured.
+- **Supabase Auth's own emails** (confirmation, password reset) go through
+  Supabase's *SMTP* relay instead — a separate credential set (Zeptomail's
+  SMTP host/user/pass, not the API token) entered directly in
+  Authentication → Settings → SMTP Settings in the Supabase dashboard, a
+  step outside what I can reach via API.
+- `/forgot-password` + `/reset-password` are new — a real "forgot
+  password" flow didn't exist before.
+
+**Not yet verified**: needs `ZEPTOMAIL_API_TOKEN` (for our own emails) and
+the SMTP credentials entered in the Supabase dashboard (for Auth's), plus
+`SUPABASE_SECRET_KEY` for the two new cron routes' admin client — same
+already-known gap the Razorpay webhook has. Once `Confirm email` is
+re-enabled with real SMTP behind it, real signups start requiring email
+confirmation again (currently off for local-dev convenience per an earlier
+step).
+
+Vercel Cron note: this project now has 3 cron entries
+(`trial-expiry`/`reminders`/`expense-summary`). Vercel's Hobby (free) tier
+has historically limited both cron frequency (daily minimum) and the
+*number* of cron jobs per project — worth checking your plan's current
+limits before deploying in case one needs consolidating or a Pro upgrade.
+
 ## Local setup
 
 ```bash
@@ -154,15 +193,16 @@ expose.
 
 For local testing without email deliverability issues, turn off
 **Authentication → Sign In / Providers → Email → Confirm email** — Supabase's
-default shared email sender is rate-limited and not meant for real use; a
-proper SMTP provider (Resend/Postmark/SendGrid) belongs under Authentication
-→ Settings → SMTP Settings before going live.
+default shared email sender is rate-limited and not meant for real use.
+Zeptomail (see below) is the real provider for both Supabase Auth's SMTP
+relay and the app's own emails; re-enable `Confirm email` once its SMTP
+credentials are in place.
 
 ## What's not built yet
 
-Live Razorpay verification (blocked on your account's API keys, see above)
-and the shared admin control-plane integration (`shaoor-ai.com/admin/
-subscriptions`) — investigated, genuinely a bigger cross-repo task with an
-open design question, intentionally paused. Every product phase from the
-roadmap (§13, phases 1–6) is otherwise implemented and verified end-to-end
-against the live Supabase project.
+Live Razorpay and live Zeptomail verification (both blocked on API
+credentials, see above) and the shared admin control-plane integration
+(`shaoor-ai.com/admin/subscriptions`) — investigated, genuinely a bigger
+cross-repo task with an open design question, intentionally paused. Every
+product phase from the roadmap (§13, phases 1–6) is otherwise implemented
+and verified end-to-end against the live Supabase project.
