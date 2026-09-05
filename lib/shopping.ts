@@ -17,17 +17,22 @@ export type ShoppingOrderRow = {
   orderedDate: string;
   orderedDateIso: string;
   deliveredDate: string | null;
+  deliveredDateIso: string | null;
   item: string;
   itemUrl: string | null;
   imageUrl: string | null;
   qtyLabel: string | null;
+  qty: number | null;
+  qtyUnit: string | null;
   scope: string;
   scopeIds: string[];
   /** Which kinds of target this order includes — empty means household-wide. */
   scopeKinds: ("pet" | "habitat")[];
   provider: string | null;
+  providerId: string | null;
   cost: string | null;
   costValue: number | null;
+  notes: string | null;
 };
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
@@ -48,7 +53,7 @@ export async function getShoppingOrders(
   const [{ data }, { data: scopeRows }, roster, providers] = await Promise.all([
     supabase
       .from("shopping_orders")
-      .select("id, provider_id, order_date, delivered_date, item_url, qty, qty_unit, cost, products(name, image_path)")
+      .select("id, provider_id, order_date, delivered_date, item_url, qty, qty_unit, cost, notes, products(name, image_path)")
       .eq("tenant_id", tenantId)
       .order("order_date", { ascending: false }),
     supabase.from("shopping_order_scopes").select("order_id, pet_id, habitat_id").eq("tenant_id", tenantId),
@@ -87,16 +92,21 @@ export async function getShoppingOrders(
       orderedDate: fmtDate(o.order_date),
       orderedDateIso: o.order_date,
       deliveredDate: o.delivered_date ? fmtDate(o.delivered_date) : null,
+      deliveredDateIso: o.delivered_date,
       item: product?.name ?? "Unknown item",
       itemUrl: o.item_url,
       imageUrl: product?.image_path ? (urlByPath.get(product.image_path) ?? null) : null,
       qtyLabel: fmtQty(o.qty, o.qty_unit),
+      qty: o.qty,
+      qtyUnit: o.qty_unit,
       scope: names.length > 0 ? names.join(", ") : "Household",
       scopeIds: scopes.map((s) => s.id),
       scopeKinds: [...new Set(scopes.map((s) => s.kind))],
       provider: o.provider_id ? (providerById.get(o.provider_id) ?? null) : null,
+      providerId: o.provider_id,
       cost: formatCurrency(o.cost),
       costValue: o.cost,
+      notes: o.notes,
     };
   });
 }

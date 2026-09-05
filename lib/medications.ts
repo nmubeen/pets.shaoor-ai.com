@@ -5,15 +5,19 @@ import { getProviders } from "@/lib/providers";
 
 export type MedicationRow = {
   id: string;
+  petId: string;
   name: string;
   dosage: string | null;
   who: string;
   frequencyDays: number;
+  startDate: string;
   nextDueDate: string;
   nextDueLabel: string;
   overdue: boolean;
   endDate: string | null;
   provider: string | null;
+  providerId: string | null;
+  notes: string | null;
   status: "active" | "completed" | "discontinued";
 };
 
@@ -35,7 +39,7 @@ export async function getMedications(
   const [{ data }, { data: pets }, providers] = await Promise.all([
     supabase
       .from("medications")
-      .select("id, pet_id, provider_id, name, dosage, frequency_days, end_date, next_due_date, status")
+      .select("id, pet_id, provider_id, name, dosage, frequency_days, start_date, end_date, next_due_date, notes, status")
       .eq("tenant_id", tenantId)
       .neq("status", "discontinued")
       .order("next_due_date"),
@@ -50,15 +54,19 @@ export async function getMedications(
     const { label, overdue } = dueLabelFor(m.next_due_date);
     return {
       id: m.id,
+      petId: m.pet_id,
       name: m.name,
       dosage: m.dosage,
       who: byId.get(m.pet_id) ?? "Unknown",
       frequencyDays: m.frequency_days,
+      startDate: m.start_date,
       nextDueDate: m.next_due_date,
       nextDueLabel: label,
       overdue,
       endDate: m.end_date,
       provider: m.provider_id ? (providerById.get(m.provider_id) ?? null) : null,
+      providerId: m.provider_id,
+      notes: m.notes,
       status: m.status,
     };
   });

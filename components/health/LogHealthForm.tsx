@@ -4,15 +4,21 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
 import { PetPicker } from "@/components/scope/PetPicker";
-import { addIllness, addVaccination } from "@/lib/actions/health";
+import { addIllness, addVaccination, updateIllness, updateVaccination } from "@/lib/actions/health";
 import type { RosterItem } from "@/lib/roster";
+import type { HealthRow } from "@/lib/health";
 
 /** Visits get their own dedicated form (components/health/VisitForm.tsx) — richer than these two, which stay simple single-event logs. */
 export type HealthTabKey = "illnesses" | "vaccinations";
 
-const ACTIONS = {
+const ADD_ACTIONS = {
   illnesses: addIllness,
   vaccinations: addVaccination,
+} as const;
+
+const UPDATE_ACTIONS = {
+  illnesses: updateIllness,
+  vaccinations: updateVaccination,
 } as const;
 
 const field = "bg-paper border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary transition";
@@ -23,11 +29,14 @@ export function LogHealthForm({
   tenantId,
   roster,
   onDone,
+  editing,
 }: {
   tab: HealthTabKey;
   tenantId: string;
   roster: RosterItem[];
   onDone: () => void;
+  /** Present when editing an existing row instead of logging a new one. */
+  editing?: HealthRow;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -36,7 +45,9 @@ export function LogHealthForm({
   function handleSubmit(formData: FormData) {
     setError(null);
     startTransition(async () => {
-      const result = await ACTIONS[tab](tenantId, formData);
+      const result = editing
+        ? await UPDATE_ACTIONS[tab](tenantId, editing.id, formData)
+        : await ADD_ACTIONS[tab](tenantId, formData);
       if (result?.error) {
         setError(result.error);
         return;
@@ -49,22 +60,27 @@ export function LogHealthForm({
   return (
     <Card className="p-5">
       <form action={handleSubmit} className="flex flex-col gap-3">
-        <PetPicker roster={roster} />
+        <PetPicker roster={roster} defaultValue={editing?.petId} />
 
         {tab === "illnesses" && (
           <>
             <label className="flex flex-col gap-1.5">
               <span className={label}>Description</span>
-              <input name="reason" required className={field} placeholder="Ear infection" />
+              <input name="reason" required defaultValue={editing?.reason} className={field} placeholder="Ear infection" />
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Diagnosed</span>
-                <input type="date" name="diagnosed_date" className={field} defaultValue={new Date().toISOString().slice(0, 10)} />
+                <input
+                  type="date"
+                  name="diagnosed_date"
+                  className={field}
+                  defaultValue={editing?.dateIso ?? new Date().toISOString().slice(0, 10)}
+                />
               </label>
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Status</span>
-                <select name="status" className={field} defaultValue="active">
+                <select name="status" className={field} defaultValue={editing?.statusRaw ?? "active"}>
                   <option value="active">Active</option>
                   <option value="resolved">Resolved</option>
                 </select>
@@ -77,16 +93,21 @@ export function LogHealthForm({
           <>
             <label className="flex flex-col gap-1.5">
               <span className={label}>Vaccine</span>
-              <input name="reason" required className={field} placeholder="2nd booster (FVRCP)" />
+              <input name="reason" required defaultValue={editing?.reason} className={field} placeholder="2nd booster (FVRCP)" />
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Due / administered date</span>
-                <input type="date" name="due_date" className={field} defaultValue={new Date().toISOString().slice(0, 10)} />
+                <input
+                  type="date"
+                  name="due_date"
+                  className={field}
+                  defaultValue={editing?.dueDateIso ?? new Date().toISOString().slice(0, 10)}
+                />
               </label>
               <label className="flex flex-col gap-1.5">
                 <span className={label}>Status</span>
-                <select name="status" className={field} defaultValue="due">
+                <select name="status" className={field} defaultValue={editing?.statusRaw ?? "due"}>
                   <option value="due">Due</option>
                   <option value="scheduled">Scheduled</option>
                   <option value="complete">Complete</option>
@@ -98,7 +119,7 @@ export function LogHealthForm({
 
         <label className="flex flex-col gap-1.5">
           <span className={label}>Notes (optional)</span>
-          <input name="notes" className={field} placeholder="" />
+          <input name="notes" defaultValue={editing?.notes ?? ""} className={field} placeholder="" />
         </label>
 
         {error && <p className="text-xs text-coral">{error}</p>}

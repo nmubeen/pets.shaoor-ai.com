@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
 import { PlusIcon } from "@/components/icons";
 import { LogOrderForm } from "@/components/shopping/LogOrderForm";
+import { deleteShoppingOrder } from "@/lib/actions/shopping";
 import type { ShoppingOrderRow, SpendSummary } from "@/lib/shopping";
 import type { RosterItem } from "@/lib/roster";
 import type { Provider } from "@/lib/providers";
+import type { MembershipRole } from "@/lib/database.types";
 import { formatCurrency } from "@/lib/format";
 
 const SCOPES = [
@@ -18,21 +21,50 @@ const SCOPES = [
 
 const th = "text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line whitespace-nowrap";
 
+function OrderActions({ tenantId, orderId, onEdit }: { tenantId: string; orderId: string; onEdit: () => void }) {
+  const [pending, startTransition] = useTransition();
+  const router = useRouter();
+  return (
+    <div className="flex items-center gap-2">
+      <button onClick={onEdit} className="text-xs text-muted hover:text-ink border border-line rounded-md px-2 py-1 transition">
+        Edit
+      </button>
+      <button
+        disabled={pending}
+        onClick={() =>
+          startTransition(async () => {
+            if (!confirm("Delete this order?")) return;
+            await deleteShoppingOrder(tenantId, orderId);
+            router.refresh();
+          })
+        }
+        className="text-xs text-muted hover:text-coral border border-line rounded-md px-2 py-1 transition disabled:opacity-60"
+      >
+        {pending ? "…" : "Delete"}
+      </button>
+    </div>
+  );
+}
+
 export function ShoppingView({
   tenantId,
+  role,
   roster,
   providers,
   orders,
   summary,
 }: {
   tenantId: string;
+  role: MembershipRole;
   roster: RosterItem[];
   providers: Provider[];
   orders: ShoppingOrderRow[];
   summary: SpendSummary;
 }) {
+  const canWrite = role === "owner" || role === "caregiver";
   const [scope, setScope] = useState<(typeof SCOPES)[number]["key"]>("all");
   const [showForm, setShowForm] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<ShoppingOrderRow | null>(null);
 
   const filtered =
     scope === "all"
@@ -48,13 +80,18 @@ export function ShoppingView({
           <h1 className="text-2xl mb-1">Shopping</h1>
           <p className="text-sm text-muted">Orders and expenses — scope to any combination of pets and habitats, or the whole household</p>
         </div>
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          className="inline-flex items-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition"
-        >
-          <PlusIcon className="w-[.9em] h-[.9em]" />
-          Log an order
-        </button>
+        {canWrite && (
+          <button
+            onClick={() => {
+              setShowForm((v) => !v);
+              setEditingOrder(null);
+            }}
+            className="inline-flex items-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition"
+          >
+            <PlusIcon className="w-[.9em] h-[.9em]" />
+            Log an order
+          </button>
+        )}
       </div>
 
       <div className="flex gap-1.5 flex-wrap">
@@ -73,8 +110,17 @@ export function ShoppingView({
         ))}
       </div>
 
-      {showForm && (
-        <LogOrderForm tenantId={tenantId} roster={roster} providers={providers} onDone={() => setShowForm(false)} />
+      {(showForm || editingOrder) && (
+        <LogOrderForm
+          tenantId={tenantId}
+          roster={roster}
+          providers={providers}
+          editing={editingOrder ?? undefined}
+          onDone={() => {
+            setShowForm(false);
+            setEditingOrder(null);
+          }}
+        />
       )}
 
       <div className="grid md:grid-cols-3 gap-4">
@@ -107,6 +153,7 @@ export function ShoppingView({
                 <th className={th}>Ordered</th>
                 <th className={th}>Delivered</th>
                 <th className={th}>Cost</th>
+                {canWrite && <th className={th}></th>}
               </tr>
             </thead>
             <tbody>
@@ -141,6 +188,18 @@ export function ShoppingView({
                   <td className="px-4 py-3 text-muted whitespace-nowrap">{o.orderedDate}</td>
                   <td className="px-4 py-3 text-muted whitespace-nowrap">{o.deliveredDate ?? "—"}</td>
                   <td className="px-4 py-3 font-mono whitespace-nowrap">{o.cost ?? "—"}</td>
+                  {canWrite && (
+                    <td className="px-4 py-3">
+                      <OrderActions
+                        tenantId={tenantId}
+                        orderId={o.id}
+                        onEdit={() => {
+                          setEditingOrder(o);
+                          setShowForm(false);
+                        }}
+                      />
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

@@ -9,16 +9,20 @@ import type { RosterItem } from "@/lib/roster";
  *
  * Uncontrolled by default; pass `value` + `onChange` (VisitForm does, to
  * filter its species-scoped service suggestions as the pet selection
- * changes) to make it controlled instead.
+ * changes) to make it controlled instead. Pass `defaultValue` alone
+ * (uncontrolled) to pre-select a pet without needing controlled state —
+ * used when editing an existing record.
  */
 export function PetPicker({
   roster,
   value,
   onChange,
+  defaultValue,
 }: {
   roster: RosterItem[];
   value?: string;
   onChange?: (petId: string) => void;
+  defaultValue?: string;
 }) {
   const pets = roster.filter((r) => r.kind === "pet");
   const controlled = value !== undefined;
@@ -28,7 +32,7 @@ export function PetPicker({
       <select
         name="pet_id"
         required
-        {...(controlled ? { value } : { defaultValue: "" })}
+        {...(controlled ? { value } : { defaultValue: defaultValue ?? "" })}
         onChange={onChange ? (e) => onChange(e.target.value) : undefined}
         className="bg-paper border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary transition"
       >

@@ -110,3 +110,74 @@ export async function addShoppingOrder(tenantId: string, formData: FormData) {
   revalidatePath("/app/shopping");
   return { error: null };
 }
+
+/**
+ * Edits an order's own fields and its scope (who it's for) — replaces
+ * shopping_order_scopes wholesale rather than diffing, same "clear and
+ * re-insert" approach the add path uses for a fresh set. Re-runs
+ * findOrCreateProduct on the item name, same as add — editing the name to
+ * match a different existing product re-points this order at it (the
+ * product catalog is shared/reusable, same "type it, it resolves" design
+ * as logging a new order).
+ */
+export async function updateShoppingOrder(tenantId: string, orderId: string, formData: FormData) {
+  const item = str(formData, "item");
+  if (!item) return { error: "Item name is required." };
+
+  const supabase = await createClient();
+  const product = await findOrCreateProduct(supabase, tenantId, item);
+  if (!product) return { error: "Could not save that item." };
+
+  const imageFile = formData.get("image");
+  if (imageFile instanceof File && imageFile.size > 0) {
+    const { path, error: uploadError } = await uploadImage(supabase, tenantId, "products", imageFile);
+    if (uploadError) return { error: uploadError };
+    if (path) {
+      await removeImage(supabase, product.imagePath);
+      await supabase.from("products").update({ image_path: path }).eq("id", product.id);
+    }
+  }
+
+  const { error } = await supabase
+    .from("shopping_orders")
+    .update({
+      product_id: product.id,
+      provider_id: str(formData, "provider_id"),
+      order_date: str(formData, "order_date") ?? new Date().toISOString().slice(0, 10),
+      delivered_date: str(formData, "delivered_date"),
+      item_url: str(formData, "item_url"),
+      qty: num(formData, "qty"),
+      qty_unit: str(formData, "qty_unit"),
+      cost: num(formData, "cost"),
+      notes: str(formData, "notes"),
+    })
+    .eq("id", orderId)
+    .eq("tenant_id", tenantId);
+  if (error) return { error: error.message };
+
+  const { error: clearError } = await supabase.from("shopping_order_scopes").delete().eq("order_id", orderId).eq("tenant_id", tenantId);
+  if (clearError) return { error: clearError.message };
+
+  const scopeRows = parseMultiScope(formData);
+  if (scopeRows.length > 0) {
+    const { error: scopeError } = await supabase
+      .from("shopping_order_scopes")
+      .insert(scopeRows.map((s) => ({ tenant_id: tenantId, order_id: orderId, ...s })));
+    if (scopeError) return { error: scopeError.message };
+  }
+
+  revalidatePath("/app");
+  revalidatePath("/app/shopping");
+  return { error: null };
+}
+
+/** Deletes an order. shopping_order_scopes cascades away; the shared product row (and its photo) stays — it may still be referenced by other orders. */
+export async function deleteShoppingOrder(tenantId: string, orderId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("shopping_orders").delete().eq("id", orderId).eq("tenant_id", tenantId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/app");
+  revalidatePath("/app/shopping");
+  return { error: null };
+}

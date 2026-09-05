@@ -9,13 +9,18 @@ import { formatCurrency } from "@/lib/format";
 
 export type HealthRow = {
   id: string;
+  petId: string;
   date: string;
   dateIso: string;
+  /** Raw due_date for vaccinations — separate from `dateIso` (which prefers administered_date) since editing acts on due_date, matching the add form. Null for illnesses. */
+  dueDateIso: string | null;
   who: string;
   reason: string;
   provider: string | null;
   cost: string | null;
   status: string | null;
+  /** Raw enum value ('active'/'resolved' or 'due'/'scheduled'/'complete') — `status` above is the display label. */
+  statusRaw: string | null;
   notes: string | null;
 };
 
@@ -24,11 +29,13 @@ export type VisitLineItem = { name: string; cost: string | null };
 
 export type VisitRow = {
   id: string;
+  petId: string;
   date: string;
   dateIso: string;
   who: string;
   reason: string;
   provider: string | null;
+  providerId: string | null;
   /** Consulting doctor — the facility (provider) is fixed, who saw the pet can vary visit to visit. */
   doctor: string | null;
   weightKg: number | null;
@@ -95,11 +102,13 @@ export async function getVisits(
 
   return (visits ?? []).map((v) => ({
     id: v.id,
+    petId: v.pet_id,
     date: fmtDate(v.visit_date),
     dateIso: v.visit_date,
     who: who(v.pet_id),
     reason: v.reason,
     provider: provider(v.provider_id),
+    providerId: v.provider_id,
     doctor: v.vet_name,
     weightKg: v.weight_kg,
     notes: v.notes,
@@ -124,13 +133,16 @@ export async function getIllnesses(
 
   return (data ?? []).map((v) => ({
     id: v.id,
+    petId: v.pet_id,
     date: fmtDate(v.diagnosed_date),
     dateIso: v.diagnosed_date,
+    dueDateIso: null,
     who: who(v.pet_id),
     reason: v.reason,
     provider: null,
     cost: null,
     status: v.status === "resolved" ? "Resolved" : "Active",
+    statusRaw: v.status,
     notes: v.notes,
   }));
 }
@@ -161,13 +173,16 @@ export async function getVaccinations(
 
   return (data ?? []).map((v) => ({
     id: v.id,
+    petId: v.pet_id,
     date: fmtDate(v.administered_date ?? v.due_date ?? new Date().toISOString().slice(0, 10)),
     dateIso: v.administered_date ?? v.due_date ?? "",
+    dueDateIso: v.due_date,
     who: who(v.pet_id),
     reason: v.reason,
     provider: null,
     cost: formatCurrency(v.cost),
     status: statusLabel[v.status] ?? v.status,
+    statusRaw: v.status,
     notes: v.notes,
   }));
 }

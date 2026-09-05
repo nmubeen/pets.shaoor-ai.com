@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
 import { PlusIcon } from "@/components/icons";
 import { PetPicker } from "@/components/scope/PetPicker";
+import { PetFilterSelect } from "@/components/health/PetFilterSelect";
 import { ProviderPicker } from "@/components/providers/ProviderPicker";
-import { addMedication, logMedicationDose, discontinueMedication } from "@/lib/actions/medications";
+import { addMedication, updateMedication, logMedicationDose, discontinueMedication, deleteMedication } from "@/lib/actions/medications";
 import type { MedicationRow } from "@/lib/medications";
 import type { RosterItem } from "@/lib/roster";
 import type { Provider } from "@/lib/providers";
@@ -14,16 +15,18 @@ import type { Provider } from "@/lib/providers";
 const field = "bg-paper border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary transition";
 const label = "text-[.68rem] uppercase tracking-[.05em] text-muted";
 
-function AddMedicationForm({
+function MedicationForm({
   tenantId,
   roster,
   providers,
   onDone,
+  editing,
 }: {
   tenantId: string;
   roster: RosterItem[];
   providers: Provider[];
   onDone: () => void;
+  editing?: MedicationRow;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -32,7 +35,9 @@ function AddMedicationForm({
   function handleSubmit(formData: FormData) {
     setError(null);
     startTransition(async () => {
-      const result = await addMedication(tenantId, formData);
+      const result = editing
+        ? await updateMedication(tenantId, editing.id, formData)
+        : await addMedication(tenantId, formData);
       if (result?.error) {
         setError(result.error);
         return;
@@ -45,35 +50,47 @@ function AddMedicationForm({
   return (
     <Card className="p-5">
       <form action={handleSubmit} className="flex flex-col gap-3">
-        <PetPicker roster={roster} />
+        <PetPicker roster={roster} defaultValue={editing?.petId} />
         <label className="flex flex-col gap-1.5">
           <span className={label}>Medication</span>
-          <input name="name" required className={field} placeholder="Heartworm prevention (NexGard)" />
+          <input name="name" required defaultValue={editing?.name} className={field} placeholder="Heartworm prevention (NexGard)" />
         </label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5">
             <span className={label}>Dosage (optional)</span>
-            <input name="dosage" className={field} placeholder="1 tablet" />
+            <input name="dosage" defaultValue={editing?.dosage ?? ""} className={field} placeholder="1 tablet" />
           </label>
           <label className="flex flex-col gap-1.5">
             <span className={label}>Repeats every (days)</span>
-            <input type="number" name="frequency_days" min="1" required defaultValue="30" className={field} />
+            <input
+              type="number"
+              name="frequency_days"
+              min="1"
+              required
+              defaultValue={editing?.frequencyDays ?? 30}
+              className={field}
+            />
           </label>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5">
             <span className={label}>Start date</span>
-            <input type="date" name="start_date" className={field} defaultValue={new Date().toISOString().slice(0, 10)} />
+            <input
+              type="date"
+              name="start_date"
+              className={field}
+              defaultValue={editing?.startDate ?? new Date().toISOString().slice(0, 10)}
+            />
           </label>
           <label className="flex flex-col gap-1.5">
             <span className={label}>End date (optional — blank = ongoing)</span>
-            <input type="date" name="end_date" className={field} />
+            <input type="date" name="end_date" className={field} defaultValue={editing?.endDate ?? ""} />
           </label>
         </div>
-        <ProviderPicker providers={providers} label="Prescribed by (optional)" />
+        <ProviderPicker providers={providers} label="Prescribed by (optional)" defaultValue={editing?.providerId} />
         <label className="flex flex-col gap-1.5">
           <span className={label}>Notes (optional)</span>
-          <input name="notes" className={field} />
+          <input name="notes" defaultValue={editing?.notes ?? ""} className={field} />
         </label>
 
         {error && <p className="text-xs text-coral">{error}</p>}
@@ -84,7 +101,7 @@ function AddMedicationForm({
             disabled={pending}
             className="inline-flex items-center justify-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition disabled:opacity-60"
           >
-            {pending ? "Saving…" : "Add medication"}
+            {pending ? "Saving…" : editing ? "Save changes" : "Add medication"}
           </button>
           <button type="button" onClick={onDone} className="text-xs text-muted hover:text-ink">
             Cancel
@@ -95,12 +112,20 @@ function AddMedicationForm({
   );
 }
 
-function MedicationActions({ tenantId, medicationId }: { tenantId: string; medicationId: string }) {
+function MedicationActions({
+  tenantId,
+  medicationId,
+  onEdit,
+}: {
+  tenantId: string;
+  medicationId: string;
+  onEdit: () => void;
+}) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
   return (
-    <div className="flex items-center gap-3 flex-none">
+    <div className="flex items-center gap-2 flex-none flex-wrap">
       <button
         disabled={pending}
         onClick={() =>
@@ -112,6 +137,9 @@ function MedicationActions({ tenantId, medicationId }: { tenantId: string; medic
         className="text-xs text-muted hover:text-good border border-line rounded-md px-2 py-1 transition disabled:opacity-60"
       >
         {pending ? "…" : "Log dose"}
+      </button>
+      <button onClick={onEdit} className="text-xs text-muted hover:text-ink border border-line rounded-md px-2 py-1 transition">
+        Edit
       </button>
       <button
         disabled={pending}
@@ -126,30 +154,51 @@ function MedicationActions({ tenantId, medicationId }: { tenantId: string; medic
       >
         Discontinue
       </button>
+      <button
+        disabled={pending}
+        onClick={() =>
+          startTransition(async () => {
+            if (!confirm("Delete this medication entirely? This removes it, not just its future doses.")) return;
+            await deleteMedication(tenantId, medicationId);
+            router.refresh();
+          })
+        }
+        className="text-xs text-muted hover:text-coral transition disabled:opacity-60"
+      >
+        Delete
+      </button>
     </div>
   );
 }
 
 export function MedicationsPanel({
   tenantId,
+  canWrite,
   roster,
   vetProviders,
   medications,
 }: {
   tenantId: string;
+  canWrite: boolean;
   roster: RosterItem[];
   vetProviders: Provider[];
   medications: MedicationRow[];
 }) {
   const [showForm, setShowForm] = useState(false);
+  const [editingMed, setEditingMed] = useState<MedicationRow | null>(null);
+  const [petFilter, setPetFilter] = useState("all");
   const hasPets = roster.some((r) => r.kind === "pet");
+  const filtered = petFilter === "all" ? medications : medications.filter((m) => m.petId === petFilter);
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
-        {hasPets && (
+        {canWrite && hasPets && (
           <button
-            onClick={() => setShowForm((v) => !v)}
+            onClick={() => {
+              setShowForm((v) => !v);
+              setEditingMed(null);
+            }}
             className="inline-flex items-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition"
           >
             <PlusIcon className="w-[.9em] h-[.9em]" />
@@ -158,11 +207,22 @@ export function MedicationsPanel({
         )}
       </div>
 
-      {showForm && (
-        <AddMedicationForm tenantId={tenantId} roster={roster} providers={vetProviders} onDone={() => setShowForm(false)} />
+      <PetFilterSelect roster={roster} value={petFilter} onChange={setPetFilter} />
+
+      {(showForm || editingMed) && (
+        <MedicationForm
+          tenantId={tenantId}
+          roster={roster}
+          providers={vetProviders}
+          editing={editingMed ?? undefined}
+          onDone={() => {
+            setShowForm(false);
+            setEditingMed(null);
+          }}
+        />
       )}
 
-      {medications.length === 0 ? (
+      {filtered.length === 0 ? (
         <Card className="p-6 text-center text-sm text-muted">No ongoing medications tracked.</Card>
       ) : (
         <Card className="overflow-x-auto">
@@ -172,11 +232,11 @@ export function MedicationsPanel({
                 <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line">Who</th>
                 <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line">Medication</th>
                 <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line">Next due</th>
-                <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line"></th>
+                {canWrite && <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line"></th>}
               </tr>
             </thead>
             <tbody>
-              {medications.map((m) => (
+              {filtered.map((m) => (
                 <tr key={m.id} className="border-b border-line last:border-none">
                   <td className="px-4 py-3 font-medium">{m.who}</td>
                   <td className="px-4 py-3">
@@ -185,9 +245,18 @@ export function MedicationsPanel({
                     {m.provider && <div className="text-xs text-muted mt-0.5">{m.provider}</div>}
                   </td>
                   <td className={`px-4 py-3 ${m.overdue ? "text-coral" : "text-muted"}`}>{m.nextDueLabel}</td>
-                  <td className="px-4 py-3">
-                    <MedicationActions tenantId={tenantId} medicationId={m.id} />
-                  </td>
+                  {canWrite && (
+                    <td className="px-4 py-3">
+                      <MedicationActions
+                        tenantId={tenantId}
+                        medicationId={m.id}
+                        onEdit={() => {
+                          setEditingMed(m);
+                          setShowForm(false);
+                        }}
+                      />
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

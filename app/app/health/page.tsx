@@ -37,6 +37,7 @@ export default async function HealthPage() {
   return (
     <HealthView
       tenantId={active.tenantId}
+      role={active.role}
       roster={roster}
       visitProviders={visitProviders}
       vetProviders={vetProviders}

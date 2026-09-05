@@ -17,6 +17,7 @@ export default async function ShoppingPage() {
   return (
     <ShoppingView
       tenantId={active.tenantId}
+      role={active.role}
       roster={roster}
       providers={providers}
       orders={orders}

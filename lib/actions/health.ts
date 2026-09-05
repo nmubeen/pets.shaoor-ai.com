@@ -393,3 +393,120 @@ export async function markVaccinationGiven(tenantId: string, vaccinationId: stri
   revalidateHealth();
   return { error: null };
 }
+
+/**
+ * Edits a visit's top-level fields only (pet, reason, provider, doctor,
+ * date, weight, notes) — its services and vaccinations-given line items
+ * stay exactly as originally logged. Re-deriving those on edit would mean
+ * re-running reminder scheduling (upsertServiceReminder) and the
+ * due-vaccination matching (recordVaccinationGiven) against whatever the
+ * form now says, which risks silently corrupting care-task/vaccination
+ * schedule state that's moved on since the visit was logged. Delete and
+ * re-log the visit if a line item itself needs to change.
+ */
+export async function updateVisit(tenantId: string, visitId: string, formData: FormData) {
+  const petId = requirePetId(formData);
+  if (typeof petId !== "string") return petId;
+  const reason = str(formData, "reason");
+  if (!reason) return { error: "Reason is required." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("visits")
+    .update({
+      pet_id: petId,
+      provider_id: str(formData, "provider_id"),
+      vet_name: str(formData, "vet_name"),
+      visit_date: str(formData, "visit_date") ?? new Date().toISOString().slice(0, 10),
+      reason,
+      weight_kg: num(formData, "weight_kg"),
+      notes: str(formData, "notes"),
+    })
+    .eq("id", visitId)
+    .eq("tenant_id", tenantId);
+  if (error) return { error: error.message };
+
+  revalidateHealth();
+  return { error: null };
+}
+
+/** Deletes a visit. visit_services cascades away; any vaccination given during it just loses the visit_id link (on delete set null) — its own record (and history) stays intact. */
+export async function deleteVisit(tenantId: string, visitId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("visits").delete().eq("id", visitId).eq("tenant_id", tenantId);
+  if (error) return { error: error.message };
+
+  revalidateHealth();
+  return { error: null };
+}
+
+export async function updateIllness(tenantId: string, illnessId: string, formData: FormData) {
+  const petId = requirePetId(formData);
+  if (typeof petId !== "string") return petId;
+  const reason = str(formData, "reason");
+  if (!reason) return { error: "Description is required." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("illnesses")
+    .update({
+      pet_id: petId,
+      reason,
+      status: str(formData, "status") === "resolved" ? "resolved" : "active",
+      diagnosed_date: str(formData, "diagnosed_date") ?? new Date().toISOString().slice(0, 10),
+      notes: str(formData, "notes"),
+    })
+    .eq("id", illnessId)
+    .eq("tenant_id", tenantId);
+  if (error) return { error: error.message };
+
+  revalidateHealth();
+  return { error: null };
+}
+
+export async function deleteIllness(tenantId: string, illnessId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("illnesses").delete().eq("id", illnessId).eq("tenant_id", tenantId);
+  if (error) return { error: error.message };
+
+  revalidateHealth();
+  return { error: null };
+}
+
+export async function updateVaccination(tenantId: string, vaccinationId: string, formData: FormData) {
+  const petId = requirePetId(formData);
+  if (typeof petId !== "string") return petId;
+  const reason = str(formData, "reason");
+  if (!reason) return { error: "Vaccine name is required." };
+
+  const status = str(formData, "status");
+  const validStatus = status === "scheduled" || status === "complete" ? status : "due";
+  const dueDate = str(formData, "due_date");
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("vaccinations")
+    .update({
+      pet_id: petId,
+      reason,
+      status: validStatus,
+      due_date: dueDate,
+      administered_date: validStatus === "complete" ? (dueDate ?? new Date().toISOString().slice(0, 10)) : null,
+      notes: str(formData, "notes"),
+    })
+    .eq("id", vaccinationId)
+    .eq("tenant_id", tenantId);
+  if (error) return { error: error.message };
+
+  revalidateHealth();
+  return { error: null };
+}
+
+export async function deleteVaccination(tenantId: string, vaccinationId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("vaccinations").delete().eq("id", vaccinationId).eq("tenant_id", tenantId);
+  if (error) return { error: error.message };
+
+  revalidateHealth();
+  return { error: null };
+}

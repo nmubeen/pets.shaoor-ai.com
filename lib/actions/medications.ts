@@ -91,3 +91,51 @@ export async function discontinueMedication(tenantId: string, medicationId: stri
   revalidateMedications();
   return { error: null };
 }
+
+/**
+ * Edits a medication's own details — name, dosage, frequency, dates,
+ * provider, notes. Deliberately leaves next_due_date untouched: it's
+ * independent dosing progress (advanced by logMedicationDose), not
+ * something correcting a typo in the medication name should reset.
+ */
+export async function updateMedication(tenantId: string, medicationId: string, formData: FormData) {
+  const petId = str(formData, "pet_id");
+  if (!petId) return { error: "Choose which pet this is about." };
+  const name = str(formData, "name");
+  if (!name) return { error: "Medication name is required." };
+
+  const frequencyDays = Number(str(formData, "frequency_days") ?? "1");
+  if (!Number.isFinite(frequencyDays) || frequencyDays < 1) {
+    return { error: "Frequency must be at least 1 day." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("medications")
+    .update({
+      pet_id: petId,
+      provider_id: str(formData, "provider_id"),
+      name,
+      dosage: str(formData, "dosage"),
+      frequency_days: frequencyDays,
+      start_date: str(formData, "start_date") ?? new Date().toISOString().slice(0, 10),
+      end_date: str(formData, "end_date"),
+      notes: str(formData, "notes"),
+    })
+    .eq("id", medicationId)
+    .eq("tenant_id", tenantId);
+  if (error) return { error: error.message };
+
+  revalidateMedications();
+  return { error: null };
+}
+
+/** Removes a medication entirely — distinct from discontinueMedication, which stops tracking it but keeps it visible in history until a status filter is added. */
+export async function deleteMedication(tenantId: string, medicationId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("medications").delete().eq("id", medicationId).eq("tenant_id", tenantId);
+  if (error) return { error: error.message };
+
+  revalidateMedications();
+  return { error: null };
+}
