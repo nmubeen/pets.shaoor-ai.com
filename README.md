@@ -115,6 +115,31 @@ A Next.js (App Router) build of the marketing site and app shell described in
   dependency for one simple plot) — independent of `pets.weight_kg`, which
   stays a separate, manually-set "current weight" snapshot, never
   auto-synced from visit history.
+- **Edit/Delete on every Health and Shopping entry, and a pet filter
+  everywhere in Health** — visits, illnesses, vaccinations, medications,
+  and shopping orders all gained real Edit and Delete actions
+  (`lib/actions/health.ts`, `lib/actions/medications.ts`,
+  `lib/actions/shopping.ts`), gated to owner/caregiver
+  (`menagerie.can_write_tenant()`'s actual RLS boundary — the buttons
+  themselves were previously ungated everywhere on these two pages, so a
+  viewer could see and click "Log a visit" and have it silently fail
+  against RLS; hiding them now matches what actually works, not just a
+  new restriction). A visit's edit is deliberately scoped to its own
+  top-level fields (pet, reason, provider, doctor, date, weight, notes) —
+  not its services/vaccinations-given line items, which stay exactly as
+  logged, since re-deriving those on edit would mean re-running reminder
+  scheduling and due-vaccination matching against whatever the form now
+  says; delete and re-log the visit if a line item itself needs to
+  change. Medication's Delete is a real removal, distinct from the
+  existing Discontinue (a status flip that keeps history). Editing a
+  shopping order replaces its `shopping_order_scopes` wholesale (clear +
+  re-insert), same pattern the add path already used; deleting one
+  cascades its scopes but leaves the shared product (and its photo)
+  alone, since another order may still reference it. The pet-narrowing
+  filter Growth already had (`components/health/GrowthPanel.tsx`) is now
+  a shared `PetFilterSelect` ("All pets" + one option per pet) on Visits,
+  Illnesses, Vaccinations, and Medications too, which previously showed
+  every pet mixed together with no way to narrow the list.
 - **Predictive vaccination scheduling, medications & Settings → Care** —
   beyond passive record-keeping: `pets.species` (dog/cat/bird/reptile/fish/
   small_mammal/other — required; see Core records above for the rename
