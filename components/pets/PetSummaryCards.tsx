@@ -1,10 +1,11 @@
 import { Card } from "@/components/ui";
+import { CheckIcon } from "@/components/icons";
 import type { RosterItem } from "@/lib/roster";
 
-function CardBody({ r }: { r: RosterItem }) {
+function CardBody({ r, selected }: { r: RosterItem; selected: boolean }) {
   return (
     <>
-      <div className="w-full aspect-[4/3]">
+      <div className="w-full aspect-[4/3] relative">
         {r.photoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={r.photoUrl} alt={r.name} className="w-full h-full object-cover" />
@@ -15,6 +16,11 @@ function CardBody({ r }: { r: RosterItem }) {
           >
             {r.initials}
           </div>
+        )}
+        {selected && (
+          <span className="absolute top-1.5 right-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-ink shadow">
+            <CheckIcon className="w-3 h-3" strokeWidth={3} />
+          </span>
         )}
       </div>
       <div className="p-3">
@@ -45,24 +51,29 @@ export function PetSummaryCards({
 }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-      {pets.map((r) =>
-        onSelect ? (
+      {pets.map((r) => {
+        const isSelected = selectedId === r.id;
+        return onSelect ? (
           <button
             key={r.id}
             type="button"
             onClick={() => onSelect(r.id)}
-            className="text-left rounded-[10px]"
+            className="text-left rounded-[10px] transition"
           >
-            <Card className={`p-0 overflow-hidden ${selectedId === r.id ? "ring-2 ring-primary" : ""}`}>
-              <CardBody r={r} />
+            <Card
+              className={`p-0 overflow-hidden transition ${
+                isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-paper shadow-md" : "opacity-85 hover:opacity-100"
+              }`}
+            >
+              <CardBody r={r} selected={isSelected} />
             </Card>
           </button>
         ) : (
           <Card key={r.id} className="p-0 overflow-hidden">
-            <CardBody r={r} />
+            <CardBody r={r} selected={false} />
           </Card>
-        )
-      )}
+        );
+      })}
     </div>
   );
 }

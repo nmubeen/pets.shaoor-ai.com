@@ -30,10 +30,11 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 /**
- * Read-only, mobile-first one-pager: a short narration for every pet,
- * then tap a card to see that pet's full basic-details + Visits/
- * Illnesses/Vaccinations/Medications/Growth summary below. Deliberately
- * a single-column stack throughout, not HealthView's multi-tab layout —
+ * Read-only, mobile-first one-pager: pet cards up top (tap one to select
+ * it — the selected card gets a check badge + ring), a narration for
+ * just that pet, then its full basic-details + Visits/Illnesses/
+ * Vaccinations/Medications/Growth summary below. Deliberately a
+ * single-column stack throughout, not HealthView's multi-tab layout —
  * this is meant to be handed to (or opened by) someone on a phone, in
  * one scroll, not navigated tab by tab.
  */
@@ -57,19 +58,18 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
         <p className="text-sm text-muted">{tenantName} · read-only summary</p>
       </div>
 
-      <Card className="p-4 flex flex-col gap-2.5">
-        {summaries.map((s) => (
-          <p key={s.pet.id} className="text-sm">
-            {s.narration}
-          </p>
-        ))}
-      </Card>
-
       <PetSummaryCards
         pets={summaries.map((s) => s.pet)}
         selectedId={selected?.pet.id}
         onSelect={setSelectedId}
       />
+
+      {selected && (
+        <Card className="p-4">
+          <div className={sectionLabel}>{selected.pet.name} — Summary</div>
+          <p className="text-sm">{selected.narration}</p>
+        </Card>
+      )}
 
       {selected && (
         <div className="flex flex-col gap-4">

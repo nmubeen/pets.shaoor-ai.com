@@ -73,17 +73,22 @@ A Next.js (App Router) build of the marketing site and app shell described in
     `/app/pending` is always reachable regardless of role — otherwise a
     commercially-blocked restricted-role user would bounce forever
     between their role's redirect and the pending redirect.
-  - **`/app/vet-view`** (new) — a read-only, mobile-first one-pager: a
-    short deterministic-template narration per pet at the top (e.g. "Bella
-    is a 3 yr old female Labrador (Dog). 4 visits logged, most recent
-    12-Aug-2026. 1 vaccination due (Rabies). On 1 medication (Heartworm
-    prevention)." — `lib/vet-view.ts`'s `buildVetSummaries`, built from
-    the exact same tenant-wide fetchers `/app/health` already uses,
-    grouped by pet the same way `lib/pet-links.ts` does; no AI/LLM call,
-    this codebase has no AI integration), then a tappable card grid
+  - **`/app/vet-view`** (new) — a read-only, mobile-first one-pager, cards
+    first: a tappable pet-card grid at the top
     (`components/pets/PetSummaryCards.tsx`, shared with Social's own
     read-only `/app/pets` view — no Edit/Delete/health-links, just photo +
-    name + subtitle) to pick a pet, then that pet's full basic-details
+    name + subtitle), with the selected card visibly marked (a check
+    badge over its photo plus a ring, not just a subtle border — easy to
+    tell at a glance which pet the page below is about). Below that, a
+    "Summary" card holds just the *selected* pet's short
+    deterministic-template narration (e.g. "Bella is a 3 yr old female
+    Labrador (Dog). 4 visits logged, most recent 12-Aug-2026. 1
+    vaccination due (Rabies). On 1 medication (Heartworm prevention)." —
+    `lib/vet-view.ts`'s `buildVetSummaries`, built from the exact same
+    tenant-wide fetchers `/app/health` already uses, grouped by pet the
+    same way `lib/pet-links.ts` does; no AI/LLM call, this codebase has no
+    AI integration) — switching the selected card swaps this card's text,
+    it doesn't show every pet stacked. Then that pet's full basic-details
     plus Visits/Illnesses/Vaccinations/Medications/Growth below (the
     Growth chart reuses `GrowthPanel`'s exported `WeightChart` directly,
     skipping its own redundant pet-selector). Reachable by every role from
