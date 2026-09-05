@@ -93,6 +93,7 @@ export async function addShoppingOrder(tenantId: string, formData: FormData) {
       qty_unit: str(formData, "qty_unit"),
       cost: num(formData, "cost"),
       notes: str(formData, "notes"),
+      category: str(formData, "category"),
     })
     .select("id")
     .single();
@@ -150,6 +151,7 @@ export async function updateShoppingOrder(tenantId: string, orderId: string, for
       qty_unit: str(formData, "qty_unit"),
       cost: num(formData, "cost"),
       notes: str(formData, "notes"),
+      category: str(formData, "category"),
     })
     .eq("id", orderId)
     .eq("tenant_id", tenantId);

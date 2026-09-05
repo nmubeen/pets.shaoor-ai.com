@@ -299,6 +299,8 @@ export interface Database {
           qty_unit: string | null;
           cost: number | null;
           notes: string | null;
+          /** Free text, not an enum — see lib/shopping-categories.ts for why. */
+          category: string | null;
           created_at: string;
         },
         "tenant_id" | "product_id"

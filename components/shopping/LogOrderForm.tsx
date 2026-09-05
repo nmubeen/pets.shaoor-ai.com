@@ -6,6 +6,7 @@ import { Card } from "@/components/ui";
 import { MultiScopePicker } from "@/components/scope/MultiScopePicker";
 import { ProviderPicker } from "@/components/providers/ProviderPicker";
 import { addShoppingOrder, updateShoppingOrder } from "@/lib/actions/shopping";
+import { SHOPPING_CATEGORIES } from "@/lib/shopping-categories";
 import type { RosterItem } from "@/lib/roster";
 import type { Provider } from "@/lib/providers";
 import type { ShoppingOrderRow } from "@/lib/shopping";
@@ -52,6 +53,18 @@ export function LogOrderForm({
         <label className="flex flex-col gap-1.5">
           <span className={label}>Item</span>
           <input name="item" required defaultValue={editing?.item} className={field} placeholder="Grain-free kibble, 5kg" />
+        </label>
+
+        <label className="flex flex-col gap-1.5">
+          <span className={label}>Category (optional)</span>
+          <select name="category" defaultValue={editing?.category ?? ""} className={field}>
+            <option value="">No category</option>
+            {SHOPPING_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
         </label>
 
         <MultiScopePicker roster={roster} initialSelectedIds={editing?.scopeIds} />

@@ -555,6 +555,21 @@ A Next.js (App Router) build of the marketing site and app shell described in
   through one shared `lib/format.ts#formatCurrency` (Indian digit grouping,
   always 2 decimal places — `₹1,234.50`) instead of the five slightly
   different, decimal-dropping inline formatters this used to be.
+- **Shopping: order category** — a `category` field on each order,
+  optional, picked from a `<select>` dropdown in `LogOrderForm` and shown
+  as its own column in the orders table. `shopping_orders.category`
+  (`0030_shopping_order_category.sql`) is a plain nullable text column,
+  deliberately *not* a Postgres enum like `service_providers.category` —
+  that one needs its own migration (and, per Postgres's own rule, a
+  *separate* one from anything that uses the new value in the same
+  transaction) every time a category is added. The option list instead
+  lives in application code (`lib/shopping-categories.ts`'s
+  `SHOPPING_CATEGORIES`, seeded with Food/Treats/Toys/Grooming &
+  Hygiene/Health & Medicine/Accessories/Bedding & Litter/Other) — adding
+  one there going forward is a one-line change, no migration, no
+  downtime. That file's own comment warns against ever removing or
+  renaming a shipped entry, since an order already saved with it would
+  otherwise show a `<select>` silently falling back to the first option.
 - **Care tasks** — `care_tasks` table with RLS, exactly one of pet/habitat
   required (`0017_scope_rework.sql` tightened this from "pet, habitat, or
   household" — the vague household catch-all is gone, so every task is

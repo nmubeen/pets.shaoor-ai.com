@@ -148,6 +148,7 @@ export function ShoppingView({
             <thead>
               <tr className="bg-surface-2">
                 <th className={th}>Item</th>
+                <th className={th}>Category</th>
                 <th className={th}>Scope</th>
                 <th className={th}>Bought from</th>
                 <th className={th}>Ordered</th>
@@ -183,6 +184,7 @@ export function ShoppingView({
                       </div>
                     </div>
                   </td>
+                  <td className="px-4 py-3 text-muted whitespace-nowrap">{o.category ?? "—"}</td>
                   <td className="px-4 py-3 text-muted max-w-[200px]">{o.scope}</td>
                   <td className="px-4 py-3 text-muted whitespace-nowrap">{o.provider ?? "—"}</td>
                   <td className="px-4 py-3 text-muted whitespace-nowrap">{o.orderedDate}</td>

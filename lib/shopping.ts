@@ -33,6 +33,7 @@ export type ShoppingOrderRow = {
   cost: string | null;
   costValue: number | null;
   notes: string | null;
+  category: string | null;
 };
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
@@ -53,7 +54,7 @@ export async function getShoppingOrders(
   const [{ data }, { data: scopeRows }, roster, providers] = await Promise.all([
     supabase
       .from("shopping_orders")
-      .select("id, provider_id, order_date, delivered_date, item_url, qty, qty_unit, cost, notes, products(name, image_path)")
+      .select("id, provider_id, order_date, delivered_date, item_url, qty, qty_unit, cost, notes, category, products(name, image_path)")
       .eq("tenant_id", tenantId)
       .order("order_date", { ascending: false }),
     supabase.from("shopping_order_scopes").select("order_id, pet_id, habitat_id").eq("tenant_id", tenantId),
@@ -107,6 +108,7 @@ export async function getShoppingOrders(
       cost: formatCurrency(o.cost),
       costValue: o.cost,
       notes: o.notes,
+      category: o.category,
     };
   });
 }
