@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui";
-import { PetSummaryCards } from "@/components/pets/PetSummaryCards";
 import { WeightChart } from "@/components/health/GrowthPanel";
-import { WeightIcon, ShieldIcon, ClipboardIcon, StethoIcon, VialIcon, HeartIcon } from "@/components/icons";
+import { WeightIcon, ShieldIcon, ClipboardIcon, StethoIcon, VialIcon, HeartIcon, BackIcon } from "@/components/icons";
 import { SPECIES_LABEL } from "@/lib/species-labels";
 import { SEX_LABEL, sterilizationLabel } from "@/lib/pet-labels";
 import type { PetVetSummary, VetSummaryItem } from "@/lib/vet-view";
@@ -41,22 +40,46 @@ function Section({ title, icon: Icon, children }: { title: string; icon?: typeof
 }
 
 /**
- * Read-only, mobile-first one-pager: pet cards up top (tap one to select
- * it — the selected card gets a check badge + ring), an icon-led health
- * summary for just that pet, then Visits/Illnesses/Vaccinations/Growth
- * details below. Deliberately a
- * single-column stack throughout, not HealthView's multi-tab layout —
- * this is meant to be handed to (or opened by) someone on a phone, in
- * one scroll, not navigated tab by tab.
+ * Read-only, mobile-first one-pager: a one-pet-at-a-time carousel up top
+ * (circular photo, prev/next + dots + swipe + arrow keys — same
+ * hand-rolled carousel pattern as the Pet Passport, no library), an
+ * icon-led health summary for just that pet, then Visits/Illnesses/
+ * Vaccinations/Growth details below. Deliberately a single-column stack
+ * throughout, not HealthView's multi-tab layout — this is meant to be
+ * handed to (or opened by) someone on a phone, in one scroll, not
+ * navigated tab by tab.
  */
 export function VetView({ tenantName, summaries }: { tenantName: string; summaries: PetVetSummary[] }) {
-  const [selectedId, setSelectedId] = useState(summaries[0]?.pet.id ?? "");
+  const [index, setIndex] = useState(0);
   const [showAllVisits, setShowAllVisits] = useState(false);
-  const selected = summaries.find((s) => s.pet.id === selectedId) ?? summaries[0] ?? null;
+  const touchStartX = useRef<number | null>(null);
+  const total = summaries.length;
+  const selected = summaries[index] ?? null;
 
-  function handleSelectPet(id: string) {
-    setSelectedId(id);
+  function goTo(i: number) {
+    setIndex(Math.max(0, Math.min(total - 1, i)));
     setShowAllVisits(false);
+  }
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "ArrowLeft") goTo(index - 1);
+      if (e.key === "ArrowRight") goTo(index + 1);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index, total]);
+
+  function onTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+  }
+  function onTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (dx > 40) goTo(index - 1);
+    else if (dx < -40) goTo(index + 1);
+    touchStartX.current = null;
   }
 
   const points = selected?.weightHistory?.points ?? [];
@@ -82,12 +105,57 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
         <p className="text-sm text-muted">{tenantName} · read-only summary</p>
       </div>
 
-      <PetSummaryCards
-        pets={summaries.map((s) => s.pet)}
-        selectedId={selected?.pet.id}
-        onSelect={handleSelectPet}
-        showSubtitle={false}
-      />
+      <div className="flex flex-col items-center gap-3">
+        <div className="relative flex items-center justify-center gap-4" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+          <button
+            type="button"
+            onClick={() => goTo(index - 1)}
+            disabled={index === 0}
+            className="w-8 h-8 rounded-full bg-surface border border-line shadow flex items-center justify-center disabled:opacity-30 transition flex-none"
+            aria-label="Previous pet"
+          >
+            <BackIcon className="w-4 h-4" />
+          </button>
+
+          <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-line bg-surface-2 flex-none select-none">
+            {selected?.pet.photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={selected.pet.photoUrl} alt={selected.pet.name} className="w-full h-full object-cover" />
+            ) : (
+              <div
+                className="w-full h-full flex items-center justify-center text-2xl font-bold text-white"
+                style={{ background: selected?.pet.color }}
+              >
+                {selected?.pet.initials}
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => goTo(index + 1)}
+            disabled={index === total - 1}
+            className="w-8 h-8 rounded-full bg-surface border border-line shadow flex items-center justify-center disabled:opacity-30 transition flex-none"
+            aria-label="Next pet"
+          >
+            <BackIcon className="w-4 h-4 rotate-180" />
+          </button>
+        </div>
+
+        {total > 1 && (
+          <div className="flex items-center gap-1.5">
+            {summaries.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => goTo(i)}
+                className={`h-1.5 rounded-full transition ${i === index ? "w-4 bg-primary" : "w-1.5 bg-line"}`}
+                aria-label={`Go to pet ${i + 1}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       {selected && selected.pet.pet && (
         <div>

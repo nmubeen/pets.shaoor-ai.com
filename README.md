@@ -74,15 +74,17 @@ A Next.js (App Router) build of the marketing site and app shell described in
     commercially-blocked restricted-role user would bounce forever
     between their role's redirect and the pending redirect.
   - **`/app/vet-view`** (new, page name unchanged — see below for the
-    *role* rename) — a read-only, mobile-first one-pager, cards first: a
-    tappable pet-card grid at the top (`components/pets/
-    PetSummaryCards.tsx`, shared with Social's own read-only `/app/pets`
-    view — new `showSubtitle` prop, defaulting `true` for Social; Vet View
-    passes `false` so its cards show just the photo and name, nothing
-    else), with the selected card visibly marked (a check badge over its
-    photo plus a ring, not just a subtle border — easy to tell at a
-    glance which pet the page below is about). Right below the cards, a
-    plain header names the selected pet (`<h2>`) with a bold sub-header
+    *role* rename) — a read-only, mobile-first one-pager, one pet at a
+    time up top: a small carousel (hand-rolled — same pattern as the Pet
+    Passport's, no library) showing just that pet's photo, circle-cropped,
+    with prev/next arrow buttons, dot indicators, swipe, and left/right
+    arrow keys to move between pets — no name, subtitle, or card chrome on
+    the photo itself, since the header right below it already names the
+    pet. (Social's own read-only `/app/pets` view still uses the earlier
+    tappable pet-card grid, `components/pets/PetSummaryCards.tsx` —
+    unchanged; Vet View no longer uses that component at all.) Right below
+    the carousel, a plain header names the selected pet (`<h2>`) with a
+    bold sub-header
     reading "Age Gender Species (Breed), Spayed/Neutered status, Weight
     as on Date" (e.g. "3 yrs Female Dog (Labrador), Spayed, 12.4 kg as on
     05-Sep-2026" — `sterilizationLabel()` in `VetView.tsx` picks
