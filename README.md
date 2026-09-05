@@ -166,11 +166,14 @@ A Next.js (App Router) build of the marketing site and app shell described in
   a shared `PetFilterSelect` ("All pets" + one option per pet) on Visits,
   Illnesses, Vaccinations, and Medications too, which previously showed
   every pet mixed together with no way to narrow the list. Every date
-  shown in any list across the app now includes the year (`fmtDate`
-  helpers in `lib/health.ts`, `lib/medications.ts`, `lib/growth.ts`,
-  `lib/gallery.ts`, `lib/shopping.ts`, and the billing page) — a
-  short-month/day-only date reads ambiguously once a workspace has more
-  than a year of history. The Vaccinations tab's table also got three
+  shown in any list across the app now includes the year, in one
+  consistent `dd-mmm-yyyy` shape (e.g. "05-Sep-2026") — a shared
+  `formatDate()` (`lib/format.ts`, alongside `formatCurrency`) that the
+  per-file `fmtDate` wrappers in `lib/health.ts`, `lib/medications.ts`,
+  `lib/growth.ts`, `lib/gallery.ts`, `lib/shopping.ts`, and the billing
+  page all delegate to, rather than each hand-rolling its own
+  `toLocaleDateString` call (no locale actually produces this exact
+  dash-separated, zero-padded shape). The Vaccinations tab's table also got three
   small fixes: its second column now reads "Vaccine" (was "Reason",
   which never fit what it actually shows), a new "Clinic" column shows
   where it happened, and cost is no longer appended to the Status column
@@ -223,17 +226,26 @@ A Next.js (App Router) build of the marketing site and app shell described in
   RLS correctly can't read) — add one per shop from `/app/providers` if
   wanted. Vet, grooming, and offline-shop providers (anywhere with a
   physical location — the same "not online" split the form already drew
-  for phone/address) can also carry GPS coordinates and business hours
-  (`0018_provider_location_hours.sql`) — latitude/longitude are entered
-  as plain numbers (paste what Google Maps shows when you right-click a
-  spot; both-or-neither and valid-range check constraints back this up),
-  rendered as a "View on map" link (`lib/providers.ts` derives the
-  `https://www.google.com/maps?q=lat,lng` URL) rather than embedding an
-  actual map. Business hours is free text (e.g. "Mon–Sat 9am–8pm, Sun
-  closed") rather than a structured weekly schedule — simpler, and
-  consistent with how every other provider field is just text. Online
-  shops get neither field, same reasoning as phone/address: a website
-  has no location or opening hours.
+  for phone/address) can also carry a location and business hours.
+  Location started as manually-entered latitude/longitude
+  (`0018_provider_location_hours.sql`) rendered as a derived "View on
+  map" link; `0026_provider_location_url_email.sql` replaced that with a
+  single pasted `location_url` instead — most people have a Google Maps
+  share link to hand, not a coordinate pair, and a link also covers a
+  place a lat/lng pin doesn't describe well (one wing of a mall, a
+  multi-entrance complex). The migration backfilled every existing
+  coordinate pair into the same maps URL the app used to derive before
+  dropping the two numeric columns and their check constraints. The same
+  migration added an `email` column (open to any category at the DB
+  level, like phone/address) that the form only surfaces for Vets /
+  Hospitals — the category everyone actually emails. Business hours is
+  free text (e.g. "Mon–Sat 9am–8pm, Sun closed") rather than a structured
+  weekly schedule — simpler, and consistent with how every other provider
+  field is just text. A provider's card shows Website and Location as two
+  links separated by " | " when both are set (previously website alone
+  was a bare "Click here"). Online shops get none of phone/address/email/
+  location/hours, same reasoning throughout: a website has no location,
+  opening hours, or a phone to call.
 - **Shopping** — `products` and `shopping_orders` tables with RLS, plus a
   many-to-many `shopping_order_scopes` join table (`0017_scope_rework.sql`)
   — an order can now name *any combination* of pets and/or habitats (a

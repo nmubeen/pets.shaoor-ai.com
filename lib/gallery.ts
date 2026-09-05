@@ -9,6 +9,7 @@
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
 import { getRoster } from "@/lib/roster";
+import { formatDate } from "@/lib/format";
 
 export type MediaItem = {
   id: string;
@@ -32,7 +33,7 @@ export type CommentItem = {
 const SIGNED_URL_TTL_SECONDS = 60 * 60; // 1 hour
 
 function fmtDate(iso: string): string {
-  return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" });
+  return formatDate(new Date(iso + "T00:00:00"));
 }
 
 export async function getMediaItems(

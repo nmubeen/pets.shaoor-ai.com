@@ -5,7 +5,7 @@
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
 import { getProviders } from "@/lib/providers";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 
 export type HealthRow = {
   id: string;
@@ -55,7 +55,7 @@ export type VisitRow = {
 };
 
 function fmtDate(iso: string): string {
-  return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" });
+  return formatDate(new Date(iso + "T00:00:00"));
 }
 
 async function whoResolver(supabase: Awaited<ReturnType<typeof createClient>>, tenantId: string) {

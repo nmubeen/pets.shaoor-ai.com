@@ -8,6 +8,7 @@
 // distinction to color-code by.
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
+import { formatDate } from "@/lib/format";
 
 export type WeightPoint = {
   dateIso: string;
@@ -23,7 +24,7 @@ export type PetWeightHistory = {
 };
 
 function fmtDate(iso: string): string {
-  return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" });
+  return formatDate(new Date(iso + "T00:00:00"));
 }
 
 export async function getWeightHistory(

@@ -10,7 +10,7 @@ import "server-only";
 import type { createClient } from "@/lib/supabase/server";
 import { getRoster } from "@/lib/roster";
 import { getProviders } from "@/lib/providers";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 
 export type ShoppingOrderRow = {
   id: string;
@@ -38,7 +38,7 @@ export type ShoppingOrderRow = {
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
 function fmtDate(iso: string): string {
-  return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" });
+  return formatDate(new Date(iso + "T00:00:00"));
 }
 
 function fmtQty(qty: number | null, unit: string | null): string | null {

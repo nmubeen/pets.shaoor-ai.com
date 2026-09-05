@@ -2,6 +2,7 @@
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
 import { getProviders } from "@/lib/providers";
+import { formatDate } from "@/lib/format";
 
 export type MedicationRow = {
   id: string;
@@ -24,7 +25,7 @@ export type MedicationRow = {
 };
 
 function fmtDate(iso: string): string {
-  return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" });
+  return formatDate(new Date(iso + "T00:00:00"));
 }
 
 function dueLabelFor(nextDueDate: string): { label: string; overdue: boolean } {

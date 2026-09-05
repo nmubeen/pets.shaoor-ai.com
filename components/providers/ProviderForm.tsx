@@ -89,6 +89,13 @@ export function ProviderForm({
               </label>
             </div>
 
+            {category === "vet" && (
+              <label className="flex flex-col gap-1.5">
+                <span className={label}>Email (optional)</span>
+                <input type="email" name="email" defaultValue={initial?.email ?? ""} className={field} placeholder="clinic@example.com" />
+              </label>
+            )}
+
             <label className="flex flex-col gap-1.5">
               <span className={label}>Business hours (optional)</span>
               <input
@@ -99,37 +106,19 @@ export function ProviderForm({
               />
             </label>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1.5">
-                <span className={label}>Latitude (optional)</span>
-                <input
-                  type="number"
-                  name="latitude"
-                  step="any"
-                  min="-90"
-                  max="90"
-                  defaultValue={initial?.latitude ?? ""}
-                  className={field}
-                  placeholder="12.9716"
-                />
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className={label}>Longitude (optional)</span>
-                <input
-                  type="number"
-                  name="longitude"
-                  step="any"
-                  min="-180"
-                  max="180"
-                  defaultValue={initial?.longitude ?? ""}
-                  className={field}
-                  placeholder="77.5946"
-                />
-              </label>
-            </div>
-            <p className="text-[.7rem] text-muted -mt-1.5">
-              Tip: right-click the spot on Google Maps and copy the coordinates it shows.
-            </p>
+            <label className="flex flex-col gap-1.5">
+              <span className={label}>Location URL (optional)</span>
+              <input
+                type="url"
+                name="location_url"
+                defaultValue={initial?.locationUrl ?? ""}
+                className={field}
+                placeholder="https://maps.google.com/…"
+              />
+              <p className="text-[.7rem] text-muted">
+                Tip: find the place on Google Maps, tap Share, and paste the link it gives you.
+              </p>
+            </label>
           </>
         )}
 

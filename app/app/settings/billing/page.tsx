@@ -3,11 +3,11 @@ import { RazorpayCheckout } from "@/components/billing/RazorpayCheckout";
 import { CancelSubscriptionButton } from "@/components/billing/CancelSubscriptionButton";
 import { requireMembershipUnchecked } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 
 function fmtDate(iso: string | null) {
   if (!iso) return null;
-  return new Date(iso).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" });
+  return formatDate(new Date(iso));
 }
 
 // Deliberately NOT gated by requireActiveMembership() — this is exactly

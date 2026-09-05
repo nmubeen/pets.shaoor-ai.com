@@ -7,6 +7,8 @@ export type Provider = {
   category: ServiceProviderCategory;
   name: string;
   phone: string | null;
+  /** Vets/Hospitals only in the form — the column itself is open to any category, same as phone/address. */
+  email: string | null;
   address: string | null;
   website: string | null;
   notes: string | null;
@@ -14,10 +16,8 @@ export type Provider = {
   color: string;
   logoPath: string | null;
   logoUrl: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  /** https://www.google.com/maps?q=lat,lng — null unless both coordinates are set. */
-  mapsUrl: string | null;
+  /** A pasted map link (Google Maps "Share" URL or similar) — not derived, entered directly. */
+  locationUrl: string | null;
   businessHours: string | null;
 };
 
@@ -46,7 +46,7 @@ export async function getProviders(
 ): Promise<Provider[]> {
   let query = supabase
     .from("service_providers")
-    .select("id, category, name, phone, address, website, notes, logo_path, latitude, longitude, business_hours")
+    .select("id, category, name, phone, email, address, website, notes, logo_path, location_url, business_hours")
     .eq("tenant_id", tenantId)
     .order("name");
   if (categories && categories.length > 0) {
@@ -66,6 +66,7 @@ export async function getProviders(
     category: r.category,
     name: r.name,
     phone: r.phone,
+    email: r.email,
     address: r.address,
     website: r.website,
     notes: r.notes,
@@ -73,9 +74,7 @@ export async function getProviders(
     color: COLORS[i % COLORS.length],
     logoPath: r.logo_path,
     logoUrl: r.logo_path ? (urlByPath.get(r.logo_path) ?? null) : null,
-    latitude: r.latitude,
-    longitude: r.longitude,
-    mapsUrl: r.latitude !== null && r.longitude !== null ? `https://www.google.com/maps?q=${r.latitude},${r.longitude}` : null,
+    locationUrl: r.location_url,
     businessHours: r.business_hours,
   }));
 }
