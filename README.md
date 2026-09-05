@@ -673,6 +673,26 @@ A Next.js (App Router) build of the marketing site and app shell described in
   afterward (an empty string is falsy but still typed `string`, not
   `null`), so accessing `result.id` needs `if (result.error !== null)`
   instead.
+- **Shopping: Year and Seller filters, qty dropped from the list, "Bought
+  from" → "Seller"** — two more `<select>` filters sit below the existing
+  All/Pet/Habitat/Household scope row: Year (every distinct year present
+  in `orderedDateIso`, newest first — falls out of `orders` already being
+  sorted newest-first, no separate sort needed) and Seller (every
+  distinct `provider` name in use, alphabetical, plus a "No seller set"
+  option — a sentinel string, not `null` itself, since a native `<select>`
+  option's value is always a string). Both combine with scope (and each
+  other) as an AND filter, both reset pagination to page 1 on change, and
+  logging a new order resets all three back to "all" before jumping to
+  it (extending the same highlight/scroll behavior added just above) so
+  an active filter can't hide the very row just added. The qty/unit
+  shown under an item's name is gone from the table (still captured by
+  the form, just not surfaced in the compact list). "Bought from" is
+  relabeled **Seller** everywhere it appeared as a label — the table's
+  own column header and `LogOrderForm`'s `ProviderPicker` label — the
+  underlying `provider`/`providerId` fields, `ProviderPicker` itself, and
+  its default label ("Provider (optional)", used by contexts other than
+  Shopping) are all unchanged, same "label text only" treatment as the
+  Sex → Gender and Vet View → Vet renames earlier this project.
 - **Care tasks** — `care_tasks` table with RLS, exactly one of pet/habitat
   required (`0017_scope_rework.sql` tightened this from "pet, habitat, or
   household" — the vague household catch-all is gone, so every task is

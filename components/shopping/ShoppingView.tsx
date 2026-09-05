@@ -22,6 +22,14 @@ const SCOPES = [
 
 const PAGE_SIZE = 10;
 
+const YEAR_ALL = "all";
+const SELLER_ALL = "all";
+/** Sentinel for "no seller set" — distinct from SELLER_ALL, and never a real provider id. */
+const SELLER_NONE = "__none__";
+
+const selectField =
+  "bg-paper border border-line rounded-lg px-3 py-1.5 text-xs outline-none focus:border-primary transition";
+
 const th = "text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line whitespace-nowrap";
 
 function OrderActions({ tenantId, orderId, onEdit }: { tenantId: string; orderId: string; onEdit: () => void }) {
@@ -70,6 +78,8 @@ export function ShoppingView({
 }) {
   const canWrite = role === "owner" || role === "caregiver";
   const [scope, setScope] = useState<(typeof SCOPES)[number]["key"]>("all");
+  const [year, setYear] = useState(YEAR_ALL);
+  const [seller, setSeller] = useState(SELLER_ALL);
   const [showForm, setShowForm] = useState(false);
   const [editingOrder, setEditingOrder] = useState<ShoppingOrderRow | null>(null);
   const [page, setPage] = useState(1);
@@ -86,12 +96,25 @@ export function ShoppingView({
   // render at all, even for this exact purpose.
   const [jumpedForId, setJumpedForId] = useState<string | null>(null);
 
-  const filtered =
-    scope === "all"
-      ? orders
-      : scope === "household"
-        ? orders.filter((o) => o.scopeKinds.length === 0)
-        : orders.filter((o) => o.scopeKinds.includes(scope));
+  // Newest first, same as orders are already sorted — the years drop
+  // naturally out of the (already-sorted) order dates, no extra sort
+  // needed for the years list itself since Set preserves insertion order.
+  const years = [...new Set(orders.map((o) => o.orderedDateIso.slice(0, 4)))];
+  const sellers = [...new Set(orders.map((o) => o.provider).filter((p): p is string => p !== null))].sort((a, b) =>
+    a.localeCompare(b)
+  );
+  const hasUnsetSeller = orders.some((o) => o.provider === null);
+
+  const filtered = orders
+    .filter((o) =>
+      scope === "all" ? true : scope === "household" ? o.scopeKinds.length === 0 : o.scopeKinds.includes(scope)
+    )
+    .filter((o) => year === YEAR_ALL || o.orderedDateIso.slice(0, 4) === year)
+    .filter((o) => {
+      if (seller === SELLER_ALL) return true;
+      if (seller === SELLER_NONE) return o.provider === null;
+      return o.provider === seller;
+    });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageSafe = Math.min(page, totalPages);
@@ -99,6 +122,16 @@ export function ShoppingView({
 
   function changeScope(next: (typeof SCOPES)[number]["key"]) {
     setScope(next);
+    setPage(1);
+  }
+
+  function changeYear(next: string) {
+    setYear(next);
+    setPage(1);
+  }
+
+  function changeSeller(next: string) {
+    setSeller(next);
     setPage(1);
   }
 
@@ -172,6 +205,26 @@ export function ShoppingView({
         ))}
       </div>
 
+      <div className="flex gap-2 flex-wrap items-center">
+        <select value={year} onChange={(e) => changeYear(e.target.value)} className={selectField} aria-label="Filter by year">
+          <option value={YEAR_ALL}>All years</option>
+          {years.map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
+        </select>
+        <select value={seller} onChange={(e) => changeSeller(e.target.value)} className={selectField} aria-label="Filter by seller">
+          <option value={SELLER_ALL}>All sellers</option>
+          {sellers.map((p) => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+          {hasUnsetSeller && <option value={SELLER_NONE}>No seller set</option>}
+        </select>
+      </div>
+
       {(showForm || editingOrder) && (
         <LogOrderForm
           tenantId={tenantId}
@@ -183,9 +236,11 @@ export function ShoppingView({
             setShowForm(false);
             setEditingOrder(null);
             if (createdId) {
-              // "all" guarantees the new order is visible regardless of
-              // which scope it belongs to.
+              // "all" on every filter guarantees the new order is visible
+              // regardless of its own scope/year/seller.
               setScope("all");
+              setYear(YEAR_ALL);
+              setSeller(SELLER_ALL);
               setHighlightId(createdId);
             }
           }}
@@ -236,7 +291,7 @@ export function ShoppingView({
                 <th className={th}>Item</th>
                 <th className={th}>Category</th>
                 <th className={th}>Scope</th>
-                <th className={th}>Bought from</th>
+                <th className={th}>Seller</th>
                 <th className={th}>Ordered</th>
                 <th className={th}>Cost</th>
                 {canWrite && <th className={th}></th>}
@@ -271,7 +326,6 @@ export function ShoppingView({
                             o.item
                           )}
                         </div>
-                        {o.qtyLabel && <div className="text-xs text-muted">{o.qtyLabel}</div>}
                       </div>
                     </div>
                   </td>
