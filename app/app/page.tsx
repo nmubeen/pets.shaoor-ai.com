@@ -107,7 +107,15 @@ export default async function AppHomePage() {
               {orders.slice(0, 3).map((o) => (
                 <div key={o.id} className="flex items-center justify-between py-2.5 text-sm">
                   <div>
-                    <div className="font-medium">{o.item}</div>
+                    <div className="font-medium">
+                      {o.itemUrl ? (
+                        <a href={o.itemUrl} target="_blank" rel="noreferrer" className="hover:underline">
+                          {o.item}
+                        </a>
+                      ) : (
+                        o.item
+                      )}
+                    </div>
                     <div className="text-xs text-muted">{o.scope}</div>
                   </div>
                   <div className="flex items-center gap-3">

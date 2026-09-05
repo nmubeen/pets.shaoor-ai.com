@@ -678,11 +678,9 @@ A Next.js (App Router) build of the marketing site and app shell described in
   distinct `provider` name in use, alphabetical, plus a "No seller set"
   option — a sentinel string, not `null` itself, since a native `<select>`
   option's value is always a string). Both combine with scope (and each
-  other) as an AND filter, both reset pagination to page 1 on change, and
-  logging a new order resets all three back to "all" before jumping to
-  it (extending the same highlight/scroll behavior added just above) so
-  an active filter can't hide the very row just added. The qty/unit
-  shown under an item's name is gone from the table (still captured by
+  other) as an AND filter, and both reset pagination to page 1 on change
+  (see below for why logging a new order no longer also resets them). The
+  qty/unit shown under an item's name is gone from the table (still captured by
   the form, just not surfaced in the compact list). "Bought from" is
   relabeled **Seller** everywhere it appeared as a label — the table's
   own column header and `LogOrderForm`'s `ProviderPicker` label — the
@@ -690,6 +688,11 @@ A Next.js (App Router) build of the marketing site and app shell described in
   its default label ("Provider (optional)", used by contexts other than
   Shopping) are all unchanged, same "label text only" treatment as the
   Sex → Gender and Vet View → Vet renames earlier this project.
+- **An order's item name links out when it has one** — `/app/shopping`'s
+  own table already did this; the dashboard's "Recent shopping" card
+  (`app/app/page.tsx`) didn't, showing the item name as plain text even
+  when `itemUrl` was set. Same treatment now in both places: the name is
+  an `<a href={itemUrl} target="_blank">` when set, plain text otherwise.
 - **Care tasks** — `care_tasks` table with RLS, exactly one of pet/habitat
   required (`0017_scope_rework.sql` tightened this from "pet, habitat, or
   household" — the vague household catch-all is gone, so every task is
