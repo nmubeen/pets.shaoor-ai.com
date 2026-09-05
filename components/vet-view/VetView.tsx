@@ -40,13 +40,24 @@ function Section({ title, children }: { title: string; children: React.ReactNode
  */
 export function VetView({ tenantName, summaries }: { tenantName: string; summaries: PetVetSummary[] }) {
   const [selectedId, setSelectedId] = useState(summaries[0]?.pet.id ?? "");
+  const [showAllVisits, setShowAllVisits] = useState(false);
   const selected = summaries.find((s) => s.pet.id === selectedId) ?? summaries[0] ?? null;
+
+  function handleSelectPet(id: string) {
+    setSelectedId(id);
+    setShowAllVisits(false);
+  }
+
   // Basic details' Weight row shows the weight tracker's latest reading
   // (visit weigh-ins), not pets.weight_kg — that field is a separate,
   // manually-set "current weight" snapshot that's never auto-synced from
   // visit history (see lib/growth.ts), so it can silently go stale.
   const points = selected?.weightHistory?.points ?? [];
   const lastWeight = points.length > 0 ? points[points.length - 1] : null;
+
+  const VISIT_PREVIEW_COUNT = 3;
+  const visits = selected?.visits ?? [];
+  const visitsToShow = showAllVisits ? visits : visits.slice(0, VISIT_PREVIEW_COUNT);
 
   if (summaries.length === 0) {
     return (
@@ -67,7 +78,7 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
       <PetSummaryCards
         pets={summaries.map((s) => s.pet)}
         selectedId={selected?.pet.id}
-        onSelect={setSelectedId}
+        onSelect={handleSelectPet}
       />
 
       {selected && (
@@ -101,24 +112,60 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
           </Section>
 
           <Section title="Visits">
-            {selected.visits.length === 0 ? (
+            {visits.length === 0 ? (
               <p className="text-sm text-muted">No visits logged.</p>
             ) : (
-              <div className="flex flex-col divide-y divide-line">
-                {selected.visits.map((v) => (
-                  <div key={v.id} className="py-2 text-sm">
-                    <div className="flex justify-between gap-3">
-                      <span className="font-medium">{v.reason}</span>
-                      <span className="text-muted flex-none">{v.date}</span>
-                    </div>
-                    {(v.provider || v.doctor) && (
-                      <div className="text-xs text-muted">
-                        {[v.provider, v.doctor && `Dr. ${v.doctor}`].filter(Boolean).join(" · ")}
+              <>
+                <div className="flex flex-col divide-y divide-line">
+                  {visitsToShow.map((v) => {
+                    // Consultation is the default catch-all service every
+                    // visit tends to carry — listing it alongside actual
+                    // services (Deworming, Grooming, ...) just adds noise
+                    // to a summary meant to be scanned quickly.
+                    const services = v.services.filter((s) => s.name.trim().toLowerCase() !== "consultation");
+                    return (
+                      <div key={v.id} className="py-2.5 text-sm">
+                        <div className="font-semibold">{v.date}</div>
+                        {v.provider && <div className="text-xs text-muted mt-0.5">{v.provider}</div>}
+                        {v.doctor && <div className="text-xs text-muted">Dr. {v.doctor}</div>}
+                        {services.length > 0 && (
+                          <div className="text-xs mt-1">
+                            <span className="text-muted">Services: </span>
+                            {services.map((s) => s.name).join(", ")}
+                          </div>
+                        )}
+                        {v.vaccinations.length > 0 && (
+                          <div className="text-xs mt-1">
+                            <span className="text-muted">Vaccinations: </span>
+                            {v.vaccinations.map((x) => x.name).join(", ")}
+                          </div>
+                        )}
+                        {v.illnesses.length > 0 && (
+                          <div className="text-xs mt-1">
+                            <span className="text-muted">Illnesses: </span>
+                            {v.illnesses.map((x) => x.name).join(", ")}
+                          </div>
+                        )}
+                        {v.medications.length > 0 && (
+                          <div className="text-xs mt-1">
+                            <span className="text-muted">Medications: </span>
+                            {v.medications.map((x) => x.name).join(", ")}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                    );
+                  })}
+                </div>
+                {!showAllVisits && visits.length > VISIT_PREVIEW_COUNT && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllVisits(true)}
+                    className="text-xs text-primary hover:underline mt-2"
+                  >
+                    View all {visits.length} visits
+                  </button>
+                )}
+              </>
             )}
           </Section>
 
