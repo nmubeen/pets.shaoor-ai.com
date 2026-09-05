@@ -27,7 +27,7 @@ function PetHealthLinks({ petId, links }: { petId: string; links: PetLinks | und
   if (shown.length === 0) return null;
 
   return (
-    <ul className="list-disc pl-4 marker:text-muted flex flex-col gap-1">
+    <ul className="flex flex-col gap-0.5 pl-2">
       {shown.map((l) => (
         <li key={l.tab}>
           <Link

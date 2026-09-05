@@ -65,17 +65,22 @@ A Next.js (App Router) build of the marketing site and app shell described in
   `{tenant_id}/avatars/...` — see `lib/storage.ts`, shared with
   `lib/actions/gallery.ts`) — shown wherever its avatar circle appears
   instead of initials; replacing or removing a photo cleans up the old
-  Storage object. Each pet's card also shows a bullet list of quick-links
-  into its own Health history — Visits, Illnesses, Vaccinations,
-  Medications, Growth — but only for whichever of those five it actually
-  has a record in (`lib/pet-links.ts`'s `getPetLinks`, one existence check
-  per table; Growth reuses visits' own `weight_kg` rather than a separate
-  table), so a brand-new pet with nothing logged shows no dead links.
-  Clicking one navigates to `/app/health?tab=<tab>&pet=<petId>` —
-  `HealthView` reads that query once at mount (`useSearchParams`, plain
-  client-side read since the page is already fully dynamic) to open the
-  right tab pre-filtered to that pet, threading the same initial value
-  into `VisitsPanel`/`MedicationsPanel`/`GrowthPanel`'s own independent
+  Storage object. Each pet's card also shows a compact, lightly-indented
+  list of quick-links into its own Health history — Visits, Illnesses,
+  Vaccinations, Medications, Growth, each with a thin outline icon
+  (Stetho/Heart/Drop/Vial/Chart) but no literal bullet marker (redundant
+  next to an icon) — for whichever of those five it actually has a record
+  in (`lib/pet-links.ts`'s `getPetLinks`, one existence check per table;
+  Growth reuses visits' own `weight_kg` rather than a separate table), so
+  a brand-new pet with nothing logged shows no dead links. Health's own
+  tab row (`TabRow`, `components/health/HealthView.tsx`) uses this exact
+  same five-icon set — one visual vocabulary for "this is the
+  Vaccinations section" wherever it appears. Clicking a pet-card link
+  navigates to `/app/health?tab=<tab>&pet=<petId>` — `HealthView` reads
+  that query once at mount (`useSearchParams`, plain client-side read
+  since the page is already fully dynamic) to open the right tab
+  pre-filtered to that pet, threading the same initial value into
+  `VisitsPanel`/`MedicationsPanel`/`GrowthPanel`'s own independent
   pet-filter state.
 - **Health & unified visits** — `visits` (renamed from `vet_visits`,
   `0020_unified_visits.sql`), `illnesses`, `vaccinations`, pet-only
@@ -203,7 +208,16 @@ A Next.js (App Router) build of the marketing site and app shell described in
   useful for a species with no built-in default, or a vaccine the
   defaults miss — alongside a **service types** editor for the Visits
   form's catalog above (name + optional species + optional reminder
-  frequency). "Suggest schedule" on a pet's card (`generateVaccinationSchedule`, idempotent)
+  frequency). Service Types and Vaccinations are two separate pages now
+  (`/app/settings/care/service-types`, `/app/settings/care/vaccinations`
+  — bare `/app/settings/care` just redirects to the first), laid out like
+  Health's own tabbed pages rather than two panels stacked on one
+  scrolling screen: a page-level header with its own "+ Add" button, a
+  `CareTabs` row (real links, not client tab state, since these are
+  actual separate routes) styled identically to Health's `TabRow`, a
+  species filter (`SpeciesFilterSelect`, the same "All X" + one-per-item
+  shape as Health's `PetFilterSelect`) narrowing the list, and a Health-
+  style table instead of the old flex-divider list. "Suggest schedule" on a pet's card (`generateVaccinationSchedule`, idempotent)
   picks up both built-in and custom protocols for its species — one query,
   RLS returns the union, no code-level merge needed. Completing a
   protocol-linked vaccination auto-creates the next occurrence when its

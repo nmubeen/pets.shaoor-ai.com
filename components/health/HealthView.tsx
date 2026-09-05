@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui";
-import { PlusIcon } from "@/components/icons";
+import { PlusIcon, StethoIcon, HeartIcon, DropIcon, VialIcon, ChartIcon } from "@/components/icons";
 import { LogHealthForm, type HealthTabKey } from "@/components/health/LogHealthForm";
 import { PetFilterSelect } from "@/components/health/PetFilterSelect";
 import { VisitsPanel } from "@/components/health/VisitsPanel";
@@ -23,12 +23,15 @@ type TabKey = "visits" | HealthTabKey | "medications" | "growth";
 /** Which visit (and which of its line items to focus) a row's Edit button should jump to — set from the Illnesses/Vaccinations table or MedicationsPanel when the row came from a visit. */
 export type PendingVisitEdit = { visitId: string; focusId: string };
 
-const TABS: { key: TabKey; label: string; logLabel: string }[] = [
-  { key: "visits", label: "Visits", logLabel: "" },
-  { key: "illnesses", label: "Illnesses", logLabel: "Log an illness" },
-  { key: "vaccinations", label: "Vaccinations", logLabel: "Log a vaccination" },
-  { key: "medications", label: "Medications", logLabel: "Add medication" },
-  { key: "growth", label: "Growth", logLabel: "" },
+// Same icon per section as the pet-card quick-links on /app/pets
+// (components/pets/RosterGrid.tsx) — one visual vocabulary for "this is
+// the Vaccinations section" wherever it shows up.
+const TABS: { key: TabKey; label: string; logLabel: string; icon: typeof StethoIcon }[] = [
+  { key: "visits", label: "Visits", logLabel: "", icon: StethoIcon },
+  { key: "illnesses", label: "Illnesses", logLabel: "Log an illness", icon: HeartIcon },
+  { key: "vaccinations", label: "Vaccinations", logLabel: "Log a vaccination", icon: DropIcon },
+  { key: "medications", label: "Medications", logLabel: "Add medication", icon: VialIcon },
+  { key: "growth", label: "Growth", logLabel: "", icon: ChartIcon },
 ];
 
 function MarkGivenButton({ tenantId, vaccinationId }: { tenantId: string; vaccinationId: string }) {
@@ -340,10 +343,11 @@ function TabRow({ active, onChange }: { active: TabKey; onChange: (k: TabKey) =>
         <button
           key={t.key}
           onClick={() => onChange(t.key)}
-          className={`text-sm px-4 py-2 rounded-lg transition ${
+          className={`inline-flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg transition ${
             active === t.key ? "bg-surface border border-line font-semibold text-ink" : "text-muted hover:text-ink"
           }`}
         >
+          <t.icon className="w-[.9em] h-[.9em]" />
           {t.label}
         </button>
       ))}
