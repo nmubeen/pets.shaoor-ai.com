@@ -175,12 +175,8 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
             ) : (
               <div className="flex flex-col divide-y divide-line">
                 {selected.illnesses.map((i) => (
-                  <div key={i.id} className="py-2 text-sm flex justify-between gap-3">
-                    <div>
-                      <div className="font-medium">{i.reason}</div>
-                      <div className="text-xs text-muted">{i.date}</div>
-                    </div>
-                    <span className="text-xs text-muted flex-none">{i.status}</span>
+                  <div key={i.id} className="py-2 text-sm">
+                    {i.date} — {i.reason}
                   </div>
                 ))}
               </div>
@@ -193,33 +189,9 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
             ) : (
               <div className="flex flex-col divide-y divide-line">
                 {selected.vaccinations.map((v) => (
-                  <div key={v.id} className="py-2 text-sm flex justify-between gap-3">
-                    <div>
-                      <div className="font-medium">{v.reason}</div>
-                      <div className="text-xs text-muted">{v.date}{v.provider ? ` · ${v.provider}` : ""}</div>
-                    </div>
-                    <span className="text-xs text-muted flex-none">{v.status}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Section>
-
-          <Section title="Medications">
-            {selected.medications.length === 0 ? (
-              <p className="text-sm text-muted">No medications on record.</p>
-            ) : (
-              <div className="flex flex-col divide-y divide-line">
-                {selected.medications.map((m) => (
-                  <div key={m.id} className="py-2 text-sm flex justify-between gap-3">
-                    <div>
-                      <div className="font-medium">
-                        {m.name}
-                        {m.dosage && <span className="text-muted"> — {m.dosage}</span>}
-                      </div>
-                      <div className="text-xs text-muted">Every {m.frequencyDays}d · next {m.nextDueLabel}</div>
-                    </div>
-                    <span className="text-xs text-muted flex-none capitalize">{m.status}</span>
+                  <div key={v.id} className="py-2 text-sm">
+                    <div className="font-medium">{v.reason}</div>
+                    <div className="text-xs text-muted">{v.date}{v.provider ? ` · ${v.provider}` : ""}</div>
                   </div>
                 ))}
               </div>
