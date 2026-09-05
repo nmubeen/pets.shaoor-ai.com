@@ -87,6 +87,14 @@ export function PetsGrid({
               <div className="flex items-start justify-between gap-2">
                 <div className="font-semibold text-base truncate">{r.name}</div>
                 <div className="flex items-center gap-3 flex-none">
+                  <Link
+                    href={`/app/pets/${r.id}/passport`}
+                    className="text-muted hover:text-primary transition"
+                    aria-label={`${r.name}'s passport`}
+                    title="Passport"
+                  >
+                    <PassportIcon className="w-4 h-4" />
+                  </Link>
                   <button
                     onClick={() => setEditingId(r.id)}
                     className="text-xs text-muted hover:text-ink transition"
@@ -102,13 +110,6 @@ export function PetsGrid({
               )}
               {r.pet?.notes && <div className="text-xs text-muted">{r.pet.notes}</div>}
               <PetHealthLinks petId={r.id} links={petLinks[r.id]} />
-              <Link
-                href={`/app/pets/${r.id}/passport`}
-                className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline w-fit"
-              >
-                <PassportIcon className="w-[.9em] h-[.9em]" />
-                Passport
-              </Link>
               {r.pet?.birthDate && <SuggestScheduleButton tenantId={tenantId} petId={r.id} />}
               {isOrg && (
                 <div className="border-t border-line pt-2 mt-auto">

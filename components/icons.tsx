@@ -246,3 +246,30 @@ export const ScissorsIcon = (p: IconProps) => (
     <path d="m20 4-12.5 12.5M7.6 7.6 20 20M9.5 12 8.2 13.3" />
   </svg>
 );
+
+export const GlobeIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18M12 3c2.5 2.5 3.8 5.7 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.7-3.8-9S9.5 5.5 12 3Z" />
+  </svg>
+);
+
+export const MailIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="m3.5 6 8.5 7 8.5-7" />
+  </svg>
+);
+
+export const PhoneIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M5 4h3.2l1.4 4.2-2 1.6a13 13 0 0 0 6.6 6.6l1.6-2 4.2 1.4V19a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 3 6.2 2 2 0 0 1 5 4Z" />
+  </svg>
+);
+
+export const WhatsAppIcon = (p: IconProps) => (
+  <svg {...base(p)} strokeWidth={1.5}>
+    <path d="M4 20l1.3-4.4A8 8 0 1 1 8.7 19L4 20Z" />
+    <path d="M8.3 8.6c.2-.5.4-.5.7-.5h.5c.2 0 .4 0 .6.4s.7 1.6.7 1.8 0 .3-.2.5l-.5.6c-.1.2-.2.3 0 .6.2.4.8 1.2 1.7 1.9 1.1 1 1.6 1.1 1.9 1s.4-.3.6-.6l.4-.6c.2-.3.4-.3.6-.2l1.5.7c.2.1.4.2.4.4 0 .5 0 1.1-.3 1.5-.3.4-1 .8-1.6.8-1.5.1-3.5-.6-5.2-2.2-1.7-1.6-2.6-3.4-2.7-4.9 0-.6.2-1.3.7-1.7Z" fill="currentColor" stroke="none" />
+  </svg>
+);

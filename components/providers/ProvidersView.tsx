@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Avatar } from "@/components/ui";
-import { PlusIcon } from "@/components/icons";
+import { PlusIcon, GlobeIcon, PinIcon, MailIcon, PhoneIcon, WhatsAppIcon } from "@/components/icons";
 import { ProviderForm } from "@/components/providers/ProviderForm";
 import { deleteProvider } from "@/lib/actions/providers";
 import type { Provider } from "@/lib/providers";
@@ -11,6 +11,26 @@ import { CATEGORY_LABEL } from "@/lib/provider-categories";
 import type { ServiceProviderCategory } from "@/lib/database.types";
 
 const CATEGORIES: ServiceProviderCategory[] = ["vet", "grooming", "offline_shop", "online_shop"];
+
+/** wa.me only accepts digits — no "+", spaces, or dashes. */
+function whatsAppHref(phone: string): string {
+  return `https://wa.me/${phone.replace(/[^0-9]/g, "")}`;
+}
+
+/** One contact icon in a card's header action row, left of Edit/Delete — external links (website, location, WhatsApp) open in a new tab, tel:/mailto: don't. */
+function ContactIcon({ href, label, external = true, children }: { href: string; label: string; external?: boolean; children: ReactNode }) {
+  return (
+    <a
+      href={href}
+      {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
+      className="text-muted hover:text-primary transition"
+      aria-label={label}
+      title={label}
+    >
+      {children}
+    </a>
+  );
+}
 
 function DeleteButton({ tenantId, providerId }: { tenantId: string; providerId: string }) {
   const [pending, startTransition] = useTransition();
@@ -102,11 +122,44 @@ export function ProvidersView({ tenantId, providers }: { tenantId: string; provi
               );
             }
 
+            const isVet = p.category === "vet";
+            const isOnlineShop = p.category === "online_shop";
+
             return (
               <Card key={p.id} className="p-5 flex flex-col gap-4">
                 <div className="flex items-start justify-between">
                   <Avatar label={p.initials} color={p.color} photoUrl={p.logoUrl} />
                   <div className="flex items-center gap-3">
+                    {isVet && p.website && (
+                      <ContactIcon href={p.website} label="Website">
+                        <GlobeIcon className="w-4 h-4" />
+                      </ContactIcon>
+                    )}
+                    {isVet && p.locationUrl && (
+                      <ContactIcon href={p.locationUrl} label="Location">
+                        <PinIcon className="w-4 h-4" />
+                      </ContactIcon>
+                    )}
+                    {isVet && p.email && (
+                      <ContactIcon href={`mailto:${p.email}`} label="Email" external={false}>
+                        <MailIcon className="w-4 h-4" />
+                      </ContactIcon>
+                    )}
+                    {isVet && p.phone && (
+                      <ContactIcon href={`tel:${p.phone}`} label="Call" external={false}>
+                        <PhoneIcon className="w-4 h-4" />
+                      </ContactIcon>
+                    )}
+                    {isVet && p.phone && (
+                      <ContactIcon href={whatsAppHref(p.phone)} label="WhatsApp">
+                        <WhatsAppIcon className="w-4 h-4" />
+                      </ContactIcon>
+                    )}
+                    {isOnlineShop && p.website && (
+                      <ContactIcon href={p.website} label="Website">
+                        <GlobeIcon className="w-4 h-4" />
+                      </ContactIcon>
+                    )}
                     <button onClick={() => setEditingId(p.id)} className="text-xs text-muted hover:text-ink transition">
                       Edit
                     </button>
@@ -116,11 +169,11 @@ export function ProvidersView({ tenantId, providers }: { tenantId: string; provi
                 <div>
                   <div className="font-semibold text-base">{p.name}</div>
                   <div className="text-xs text-muted mt-0.5 flex flex-col gap-0.5">
-                    {p.phone && <span>{p.phone}</span>}
-                    {p.email && <span>{p.email}</span>}
+                    {!isVet && p.phone && <span>{p.phone}</span>}
+                    {!isVet && p.email && <span>{p.email}</span>}
                     {p.address && <span>{p.address}</span>}
                     {p.businessHours && <span>🕒 {p.businessHours}</span>}
-                    {(p.website || p.locationUrl) && (
+                    {!isVet && !isOnlineShop && (p.website || p.locationUrl) && (
                       <span>
                         {p.website && (
                           <a href={p.website} target="_blank" rel="noreferrer" className="text-primary hover:underline">
@@ -133,6 +186,13 @@ export function ProvidersView({ tenantId, providers }: { tenantId: string; provi
                             Location
                           </a>
                         )}
+                      </span>
+                    )}
+                    {isOnlineShop && p.locationUrl && (
+                      <span>
+                        <a href={p.locationUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                          Location
+                        </a>
                       </span>
                     )}
                   </div>

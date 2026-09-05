@@ -513,6 +513,24 @@ A Next.js (App Router) build of the marketing site and app shell described in
   was a bare "Click here"). Online shops get none of phone/address/email/
   location/hours, same reasoning throughout: a website has no location,
   opening hours, or a phone to call.
+- **Contact fields as header icons, not body links** — on a Vets /
+  Hospitals card, Website, Location, Email, and Phone now render as four
+  small icons (`GlobeIcon`, `PinIcon`, `MailIcon`, `PhoneIcon` —
+  `components/icons.tsx`) in the card's header, to the left of Edit/
+  Delete, instead of a link/plain text further down the card. Phone gets
+  a *second* icon (`WhatsAppIcon`) right next to the call one — the call
+  icon links `tel:<phone>`, the WhatsApp icon links `https://wa.me/
+  <digits-only-phone>` (`whatsAppHref()` in `ProvidersView.tsx` strips
+  everything but digits, since wa.me rejects `+`/spaces/dashes). Email
+  links `mailto:`. `tel:`/`mailto:` links skip `target="_blank"`
+  (nothing to open in a new tab); the rest do. On an Online Shops card,
+  only Website gets the same header-icon treatment (its own `GlobeIcon`)
+  — Online Shops never carry the other four fields (see above), so
+  there's nothing else to move. Grooming and Offline Shops cards are
+  unchanged (still the original body text/links) — not asked for here.
+  Same pattern applied to `/app/pets`'s own cards: the "Passport" link
+  (previously its own text+icon row under the health-record links) is
+  now a bare `PassportIcon` in the header, to the left of Edit/Delete.
 - **Shopping** — `products` and `shopping_orders` tables with RLS, plus a
   many-to-many `shopping_order_scopes` join table (`0017_scope_rework.sql`)
   — an order can now name *any combination* of pets and/or habitats (a
