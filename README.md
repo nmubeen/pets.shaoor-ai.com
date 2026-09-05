@@ -101,15 +101,27 @@ A Next.js (App Router) build of the marketing site and app shell described in
     both) or, for anything unscheduled, inserts a fresh already-complete
     row. Either way it's linked back to the visit (`vaccinations.visit_id`
     and `.cost`, both new) and its cost rolls into the visit total too.
+  - **Illnesses diagnosed** and **Medications prescribed** — two more
+    multi-row lists, added alongside the two above (`0025_visit_linked_
+    illness_medication_vaccination_clinic.sql` gave `illnesses` and
+    `medications` their own nullable `visit_id`, same FK shape as
+    vaccinations'). Each row becomes a real `illnesses`/`medications` row
+    linked back to the visit, so it shows up on the Illnesses/Medications
+    tabs exactly like a directly-logged entry — just with its origin
+    remembered.
   
   A visit still has its own reason, provider (vet **or** grooming, picked
   from one combined list), consulting doctor (`vet_name`,
   `0019_vet_visit_doctor.sql` — the facility is fixed, who actually saw
   the pet varies visit to visit), date, weight, and notes. Illnesses and
   Vaccinations (as a due/complete tracking list, not the "given during a
-  visit" flow above) keep their own simple single-event tabs, matching
-  how they worked before — they're not really "things you avail," so
-  merging them in wouldn't have solved anything. The **Growth** tab
+  visit" flow above) keep their own simple single-event tabs for anything
+  logged directly rather than as part of a visit — both paths coexist. A
+  direct-entry vaccination can also name its own clinic now
+  (`vaccinations.provider_id`, same migration as above) via a Clinic
+  picker on its own form; a visit-linked one instead shows that visit's
+  own provider live (derived, not duplicated onto the vaccination row) —
+  see `getVaccinations`' `visitProviderById` lookup. The **Growth** tab
   (`lib/growth.ts`, `components/health/GrowthPanel.tsx`) plots
   `visits.weight_kg` per pet as a hand-rolled SVG line chart (no charting
   dependency for one simple plot) — independent of `pets.weight_kg`, which
@@ -124,13 +136,27 @@ A Next.js (App Router) build of the marketing site and app shell described in
   themselves were previously ungated everywhere on these two pages, so a
   viewer could see and click "Log a visit" and have it silently fail
   against RLS; hiding them now matches what actually works, not just a
-  new restriction). A visit's edit is deliberately scoped to its own
-  top-level fields (pet, reason, provider, doctor, date, weight, notes) —
-  not its services/vaccinations-given line items, which stay exactly as
-  logged, since re-deriving those on edit would mean re-running reminder
-  scheduling and due-vaccination matching against whatever the form now
-  says; delete and re-log the visit if a line item itself needs to
-  change. Medication's Delete is a real removal, distinct from the
+  new restriction). A visit's edit now covers every one of its line items
+  too (services, vaccinations given, illnesses diagnosed, medications
+  prescribed), diffed by id against what's already linked rather than
+  blindly deleted-and-reinserted (`updateVisit`, `lib/actions/health.ts`):
+  an unchanged row is left alone; a changed row (same id) gets a plain
+  field update, never re-running reminder scheduling
+  (`upsertServiceReminder`) or due-vaccination matching
+  (`recordVaccinationGiven`) a second time; a new row (no id) gets a full
+  insert with every side effect a freshly-logged one would get; a row
+  removed from the form deletes outright for services (no lifecycle of
+  their own) but only **unlinks** (`visit_id = null`) for vaccinations/
+  illnesses/medications, so the record survives as a direct entry instead
+  of vanishing. That same asymmetry governs Edit and Delete on the
+  Illnesses/Vaccinations/Medications tabs themselves: a row with a
+  `visit_id` can only be changed by editing its source visit — its own
+  Edit button opens that visit instead (scrolled and focused to the exact
+  row, `focusRowId` threaded down through `VisitForm`'s `RowList`), and
+  Delete is hidden for it (also enforced server-side by
+  `deleteIllness`/`deleteVaccination`/`deleteMedication`, which check
+  `visit_id` first) — only a direct entry can be edited/deleted in place.
+  Medication's Delete is a real removal, distinct from the
   existing Discontinue (a status flip that keeps history). Editing a
   shopping order replaces its `shopping_order_scopes` wholesale (clear +
   re-insert), same pattern the add path already used; deleting one
@@ -139,7 +165,16 @@ A Next.js (App Router) build of the marketing site and app shell described in
   filter Growth already had (`components/health/GrowthPanel.tsx`) is now
   a shared `PetFilterSelect` ("All pets" + one option per pet) on Visits,
   Illnesses, Vaccinations, and Medications too, which previously showed
-  every pet mixed together with no way to narrow the list.
+  every pet mixed together with no way to narrow the list. Every date
+  shown in any list across the app now includes the year (`fmtDate`
+  helpers in `lib/health.ts`, `lib/medications.ts`, `lib/growth.ts`,
+  `lib/gallery.ts`, `lib/shopping.ts`, and the billing page) — a
+  short-month/day-only date reads ambiguously once a workspace has more
+  than a year of history. The Vaccinations tab's table also got three
+  small fixes: its second column now reads "Vaccine" (was "Reason",
+  which never fit what it actually shows), a new "Clinic" column shows
+  where it happened, and cost is no longer appended to the Status column
+  (it wasn't a status).
 - **Predictive vaccination scheduling, medications & Settings → Care** —
   beyond passive record-keeping: `pets.species` (dog/cat/bird/reptile/fish/
   small_mammal/other — required; see Core records above for the rename

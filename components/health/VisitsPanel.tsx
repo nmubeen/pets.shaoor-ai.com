@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
 import { PlusIcon } from "@/components/icons";
@@ -11,8 +11,9 @@ import type { VisitRow } from "@/lib/health";
 import type { RosterItem } from "@/lib/roster";
 import type { Provider } from "@/lib/providers";
 import type { ServiceType } from "@/lib/care-services";
+import type { PendingVisitEdit } from "@/components/health/HealthView";
 
-function LineItems({ label, items }: { label: string; items: { name: string; cost: string | null }[] }) {
+function LineItems({ label, items }: { label: string; items: { name: string; cost?: string | null }[] }) {
   if (items.length === 0) return null;
   return (
     <div className="text-xs text-muted mt-1.5">
@@ -62,6 +63,8 @@ export function VisitsPanel({
   serviceTypes,
   dueVaccinationNames,
   visits,
+  pendingEdit,
+  onPendingEditHandled,
 }: {
   tenantId: string;
   canWrite: boolean;
@@ -70,12 +73,30 @@ export function VisitsPanel({
   serviceTypes: ServiceType[];
   dueVaccinationNames: string[];
   visits: VisitRow[];
+  /** Set when a vaccination/illness/medication row's Edit was clicked elsewhere — opens that row's source visit here, focused on the matching line item. */
+  pendingEdit?: PendingVisitEdit | null;
+  onPendingEditHandled?: () => void;
 }) {
+  // VisitsPanel only exists in the tree while the Visits tab is active (see
+  // HealthView) — switching to it from elsewhere always mounts a fresh
+  // instance, so pendingEdit only ever needs reading once, at that mount,
+  // via a lazy initializer. No effect-driven sync needed.
   const [showForm, setShowForm] = useState(false);
-  const [editingVisit, setEditingVisit] = useState<VisitRow | null>(null);
+  const [editingVisit, setEditingVisit] = useState<VisitRow | null>(() =>
+    pendingEdit ? (visits.find((v) => v.id === pendingEdit.visitId) ?? null) : null
+  );
+  const [focusRowId, setFocusRowId] = useState<string | null>(() => pendingEdit?.focusId ?? null);
   const [petFilter, setPetFilter] = useState("all");
   const pets = roster.filter((r) => r.kind === "pet");
   const filtered = petFilter === "all" ? visits : visits.filter((v) => v.petId === petFilter);
+
+  useEffect(() => {
+    // Consumes the pendingEdit this instance was mounted with, if any —
+    // notifying the parent (not our own state) so a stale value can't leak
+    // into some later, unrelated mount of this component.
+    if (pendingEdit) onPendingEditHandled?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="flex flex-col gap-4">
@@ -85,6 +106,7 @@ export function VisitsPanel({
             onClick={() => {
               setShowForm((v) => !v);
               setEditingVisit(null);
+              setFocusRowId(null);
             }}
             className="inline-flex items-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition"
           >
@@ -98,15 +120,18 @@ export function VisitsPanel({
 
       {(showForm || editingVisit) && (
         <VisitForm
+          key={editingVisit?.id ?? "new"}
           tenantId={tenantId}
           roster={roster}
           providers={providers}
           serviceTypes={serviceTypes}
           dueVaccinationNames={dueVaccinationNames}
           editing={editingVisit ?? undefined}
+          focusRowId={focusRowId}
           onDone={() => {
             setShowForm(false);
             setEditingVisit(null);
+            setFocusRowId(null);
           }}
         />
       )}
@@ -132,11 +157,23 @@ export function VisitsPanel({
                 </div>
                 <div className="flex items-start gap-3 flex-none">
                   {v.cost && <span className="font-mono text-sm">{v.cost}</span>}
-                  {canWrite && <VisitActions tenantId={tenantId} visitId={v.id} onEdit={() => { setEditingVisit(v); setShowForm(false); }} />}
+                  {canWrite && (
+                    <VisitActions
+                      tenantId={tenantId}
+                      visitId={v.id}
+                      onEdit={() => {
+                        setEditingVisit(v);
+                        setShowForm(false);
+                        setFocusRowId(null);
+                      }}
+                    />
+                  )}
                 </div>
               </div>
               <LineItems label="Services" items={v.services} />
               <LineItems label="Vaccinations given" items={v.vaccinations} />
+              <LineItems label="Illnesses diagnosed" items={v.illnesses} />
+              <LineItems label="Medications prescribed" items={v.medications.map((m) => ({ name: m.dosage ? `${m.name} — ${m.dosage}` : m.name }))} />
               {v.notes && <div className="text-xs text-muted mt-2">{v.notes}</div>}
             </Card>
           ))}

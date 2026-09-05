@@ -7,7 +7,7 @@ import { formatCurrency } from "@/lib/format";
 
 function fmtDate(iso: string | null) {
   if (!iso) return null;
-  return new Date(iso).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+  return new Date(iso).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" });
 }
 
 // Deliberately NOT gated by requireActiveMembership() — this is exactly

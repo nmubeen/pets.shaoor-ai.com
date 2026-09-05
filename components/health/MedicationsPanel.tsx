@@ -11,6 +11,7 @@ import { addMedication, updateMedication, logMedicationDose, discontinueMedicati
 import type { MedicationRow } from "@/lib/medications";
 import type { RosterItem } from "@/lib/roster";
 import type { Provider } from "@/lib/providers";
+import type { PendingVisitEdit } from "@/components/health/HealthView";
 
 const field = "bg-paper border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary transition";
 const label = "text-[.68rem] uppercase tracking-[.05em] text-muted";
@@ -115,11 +116,16 @@ function MedicationForm({
 function MedicationActions({
   tenantId,
   medicationId,
+  visitId,
   onEdit,
+  onEditViaVisit,
 }: {
   tenantId: string;
   medicationId: string;
+  /** Set when this medication was prescribed as part of a visit — Edit opens that visit instead, and Delete (which would leave the visit's own record lying) is hidden. */
+  visitId: string | null;
   onEdit: () => void;
+  onEditViaVisit: (edit: PendingVisitEdit) => void;
 }) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -138,9 +144,19 @@ function MedicationActions({
       >
         {pending ? "…" : "Log dose"}
       </button>
-      <button onClick={onEdit} className="text-xs text-muted hover:text-ink border border-line rounded-md px-2 py-1 transition">
-        Edit
-      </button>
+      {visitId ? (
+        <button
+          onClick={() => onEditViaVisit({ visitId, focusId: medicationId })}
+          className="text-xs text-muted hover:text-ink border border-line rounded-md px-2 py-1 transition"
+          title="Prescribed as part of a visit — opens that visit"
+        >
+          Edit (in visit)
+        </button>
+      ) : (
+        <button onClick={onEdit} className="text-xs text-muted hover:text-ink border border-line rounded-md px-2 py-1 transition">
+          Edit
+        </button>
+      )}
       <button
         disabled={pending}
         onClick={() =>
@@ -154,19 +170,21 @@ function MedicationActions({
       >
         Discontinue
       </button>
-      <button
-        disabled={pending}
-        onClick={() =>
-          startTransition(async () => {
-            if (!confirm("Delete this medication entirely? This removes it, not just its future doses.")) return;
-            await deleteMedication(tenantId, medicationId);
-            router.refresh();
-          })
-        }
-        className="text-xs text-muted hover:text-coral transition disabled:opacity-60"
-      >
-        Delete
-      </button>
+      {!visitId && (
+        <button
+          disabled={pending}
+          onClick={() =>
+            startTransition(async () => {
+              if (!confirm("Delete this medication entirely? This removes it, not just its future doses.")) return;
+              await deleteMedication(tenantId, medicationId);
+              router.refresh();
+            })
+          }
+          className="text-xs text-muted hover:text-coral transition disabled:opacity-60"
+        >
+          Delete
+        </button>
+      )}
     </div>
   );
 }
@@ -177,12 +195,14 @@ export function MedicationsPanel({
   roster,
   vetProviders,
   medications,
+  onEditViaVisit,
 }: {
   tenantId: string;
   canWrite: boolean;
   roster: RosterItem[];
   vetProviders: Provider[];
   medications: MedicationRow[];
+  onEditViaVisit: (edit: PendingVisitEdit) => void;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [editingMed, setEditingMed] = useState<MedicationRow | null>(null);
@@ -250,10 +270,12 @@ export function MedicationsPanel({
                       <MedicationActions
                         tenantId={tenantId}
                         medicationId={m.id}
+                        visitId={m.visitId}
                         onEdit={() => {
                           setEditingMed(m);
                           setShowForm(false);
                         }}
+                        onEditViaVisit={onEditViaVisit}
                       />
                     </td>
                   )}

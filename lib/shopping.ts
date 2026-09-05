@@ -38,7 +38,7 @@ export type ShoppingOrderRow = {
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
 function fmtDate(iso: string): string {
-  return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+  return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function fmtQty(qty: number | null, unit: string | null): string | null {

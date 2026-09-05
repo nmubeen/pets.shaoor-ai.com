@@ -130,9 +130,20 @@ export async function updateMedication(tenantId: string, medicationId: string, f
   return { error: null };
 }
 
-/** Removes a medication entirely — distinct from discontinueMedication, which stops tracking it but keeps it visible in history until a status filter is added. */
+/**
+ * Removes a medication entirely — distinct from discontinueMedication,
+ * which stops tracking it but keeps it visible in history until a status
+ * filter is added. One prescribed during a visit can only be removed by
+ * editing that visit (unlinking or deleting it there), same as
+ * lib/actions/health.ts's deleteIllness/deleteVaccination, so the visit's
+ * own line-item list stays truthful.
+ */
 export async function deleteMedication(tenantId: string, medicationId: string) {
   const supabase = await createClient();
+  const { data: med } = await supabase.from("medications").select("visit_id").eq("id", medicationId).eq("tenant_id", tenantId).maybeSingle();
+  if (!med) return { error: "Not found." };
+  if (med.visit_id) return { error: "This was prescribed as part of a visit — edit that visit to change or remove it." };
+
   const { error } = await supabase.from("medications").delete().eq("id", medicationId).eq("tenant_id", tenantId);
   if (error) return { error: error.message };
 

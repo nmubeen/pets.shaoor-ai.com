@@ -4,8 +4,10 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
 import { PetPicker } from "@/components/scope/PetPicker";
+import { ProviderPicker } from "@/components/providers/ProviderPicker";
 import { addIllness, addVaccination, updateIllness, updateVaccination } from "@/lib/actions/health";
 import type { RosterItem } from "@/lib/roster";
+import type { Provider } from "@/lib/providers";
 import type { HealthRow } from "@/lib/health";
 
 /** Visits get their own dedicated form (components/health/VisitForm.tsx) — richer than these two, which stay simple single-event logs. */
@@ -28,12 +30,15 @@ export function LogHealthForm({
   tab,
   tenantId,
   roster,
+  providers,
   onDone,
   editing,
 }: {
   tab: HealthTabKey;
   tenantId: string;
   roster: RosterItem[];
+  /** Vet providers — offered as this vaccination's clinic when logged directly (not via a visit, which already picks its own provider). Unused for illnesses. */
+  providers: Provider[];
   onDone: () => void;
   /** Present when editing an existing row instead of logging a new one. */
   editing?: HealthRow;
@@ -114,6 +119,7 @@ export function LogHealthForm({
                 </select>
               </label>
             </div>
+            <ProviderPicker providers={providers} label="Clinic (optional)" defaultValue={editing?.providerId} />
           </>
         )}
 

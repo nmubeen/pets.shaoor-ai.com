@@ -20,6 +20,9 @@ import type { MembershipRole } from "@/lib/database.types";
 
 type TabKey = "visits" | HealthTabKey | "medications" | "growth";
 
+/** Which visit (and which of its line items to focus) a row's Edit button should jump to — set from the Illnesses/Vaccinations table or MedicationsPanel when the row came from a visit. */
+export type PendingVisitEdit = { visitId: string; focusId: string };
+
 const TABS: { key: TabKey; label: string; logLabel: string }[] = [
   { key: "visits", label: "Visits", logLabel: "" },
   { key: "illnesses", label: "Illnesses", logLabel: "Log an illness" },
@@ -50,18 +53,34 @@ function MarkGivenButton({ tenantId, vaccinationId }: { tenantId: string; vaccin
 function RowActions({
   tenantId,
   tab,
-  rowId,
+  row,
   onEdit,
+  onEditViaVisit,
 }: {
   tenantId: string;
   tab: HealthTabKey;
-  rowId: string;
+  row: HealthRow;
   onEdit: () => void;
+  onEditViaVisit: (edit: PendingVisitEdit) => void;
 }) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const deleteAction = tab === "illnesses" ? deleteIllness : deleteVaccination;
   const confirmLabel = tab === "illnesses" ? "Delete this illness record?" : "Delete this vaccination record?";
+
+  if (row.visitId) {
+    // Captured via a visit — editing/removing happens there, not here, so
+    // the visit's own line-item list stays the single source of truth.
+    return (
+      <button
+        onClick={() => onEditViaVisit({ visitId: row.visitId!, focusId: row.id })}
+        className="text-xs text-muted hover:text-ink border border-line rounded-md px-2 py-1 transition"
+        title="Logged as part of a visit — opens that visit"
+      >
+        Edit (in visit)
+      </button>
+    );
+  }
 
   return (
     <div className="flex items-center gap-2">
@@ -73,7 +92,7 @@ function RowActions({
         onClick={() =>
           startTransition(async () => {
             if (!confirm(confirmLabel)) return;
-            await deleteAction(tenantId, rowId);
+            await deleteAction(tenantId, row.id);
             router.refresh();
           })
         }
@@ -119,6 +138,7 @@ export function HealthView({
   const [showForm, setShowForm] = useState(false);
   const [editingRow, setEditingRow] = useState<HealthRow | null>(null);
   const [petFilter, setPetFilter] = useState("all");
+  const [pendingVisitEdit, setPendingVisitEdit] = useState<PendingVisitEdit | null>(null);
   const pets = roster.filter((r) => r.kind === "pet");
 
   const rowsByTab: Record<HealthTabKey, HealthRow[]> = { illnesses, vaccinations };
@@ -128,6 +148,14 @@ export function HealthView({
     setActive(key);
     setShowForm(false);
     setEditingRow(null);
+  }
+
+  /** Switches to the Visits tab and opens the given visit's edit form, cursor on the given line item — used when Edit is clicked on a vaccination/illness/medication row that was captured via a visit. */
+  function openInVisit(edit: PendingVisitEdit) {
+    setActive("visits");
+    setShowForm(false);
+    setEditingRow(null);
+    setPendingVisitEdit(edit);
   }
 
   if (active === "visits") {
@@ -143,6 +171,8 @@ export function HealthView({
           serviceTypes={serviceTypes}
           dueVaccinationNames={dueVaccinationNames}
           visits={visits}
+          pendingEdit={pendingVisitEdit}
+          onPendingEditHandled={() => setPendingVisitEdit(null)}
         />
       </div>
     );
@@ -153,7 +183,14 @@ export function HealthView({
       <div className="flex flex-col gap-6">
         <Header />
         <TabRow active={active} onChange={changeTab} />
-        <MedicationsPanel tenantId={tenantId} canWrite={canWrite} roster={roster} vetProviders={vetProviders} medications={medications} />
+        <MedicationsPanel
+          tenantId={tenantId}
+          canWrite={canWrite}
+          roster={roster}
+          vetProviders={vetProviders}
+          medications={medications}
+          onEditViaVisit={openInVisit}
+        />
       </div>
     );
   }
@@ -170,6 +207,7 @@ export function HealthView({
 
   const allRows = rowsByTab[active];
   const rows = petFilter === "all" ? allRows : allRows.filter((r) => r.petId === petFilter);
+  const isVaccinations = active === "vaccinations";
 
   return (
     <div className="flex flex-col gap-6">
@@ -182,6 +220,7 @@ export function HealthView({
           tab={active}
           tenantId={tenantId}
           roster={roster}
+          providers={vetProviders}
           editing={editingRow ?? undefined}
           onDone={() => {
             setShowForm(false);
@@ -208,8 +247,13 @@ export function HealthView({
                   Who
                 </th>
                 <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line">
-                  Reason
+                  {isVaccinations ? "Vaccine" : "Reason"}
                 </th>
+                {isVaccinations && (
+                  <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line">
+                    Clinic
+                  </th>
+                )}
                 <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line">
                   Status
                 </th>
@@ -224,17 +268,15 @@ export function HealthView({
                   <td className="px-4 py-3 text-muted">{r.date}</td>
                   <td className="px-4 py-3 font-medium">{r.who}</td>
                   <td className="px-4 py-3">{r.reason}</td>
-                  <td className="px-4 py-3 font-mono">
-                    {r.status}
-                    {r.cost && <span className="text-muted"> · {r.cost}</span>}
-                  </td>
+                  {isVaccinations && <td className="px-4 py-3 text-muted">{r.provider ?? "—"}</td>}
+                  <td className="px-4 py-3 font-mono">{r.status}</td>
                   {canWrite && (
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         {active === "vaccinations" && r.status !== "Complete" && (
                           <MarkGivenButton tenantId={tenantId} vaccinationId={r.id} />
                         )}
-                        <RowActions tenantId={tenantId} tab={active} rowId={r.id} onEdit={() => setEditingRow(r)} />
+                        <RowActions tenantId={tenantId} tab={active} row={r} onEdit={() => setEditingRow(r)} onEditViaVisit={openInVisit} />
                       </div>
                     </td>
                   )}

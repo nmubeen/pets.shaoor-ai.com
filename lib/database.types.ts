@@ -209,6 +209,7 @@ export interface Database {
           id: string;
           tenant_id: string;
           pet_id: string;
+          visit_id: string | null;
           reason: string;
           status: IllnessStatus;
           diagnosed_date: string;
@@ -225,6 +226,7 @@ export interface Database {
           pet_id: string;
           protocol_id: string | null;
           visit_id: string | null;
+          provider_id: string | null;
           reason: string;
           status: VaccinationStatus;
           due_date: string | null;
@@ -259,6 +261,7 @@ export interface Database {
           tenant_id: string;
           pet_id: string;
           provider_id: string | null;
+          visit_id: string | null;
           name: string;
           dosage: string | null;
           frequency_days: number;

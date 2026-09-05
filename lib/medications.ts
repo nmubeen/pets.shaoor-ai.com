@@ -6,6 +6,8 @@ import { getProviders } from "@/lib/providers";
 export type MedicationRow = {
   id: string;
   petId: string;
+  /** Set when prescribed via a Visit's line items rather than added directly — Edit opens that visit instead, and Delete is disabled. */
+  visitId: string | null;
   name: string;
   dosage: string | null;
   who: string;
@@ -22,7 +24,7 @@ export type MedicationRow = {
 };
 
 function fmtDate(iso: string): string {
-  return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+  return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function dueLabelFor(nextDueDate: string): { label: string; overdue: boolean } {
@@ -39,7 +41,7 @@ export async function getMedications(
   const [{ data }, { data: pets }, providers] = await Promise.all([
     supabase
       .from("medications")
-      .select("id, pet_id, provider_id, name, dosage, frequency_days, start_date, end_date, next_due_date, notes, status")
+      .select("id, pet_id, visit_id, provider_id, name, dosage, frequency_days, start_date, end_date, next_due_date, notes, status")
       .eq("tenant_id", tenantId)
       .neq("status", "discontinued")
       .order("next_due_date"),
@@ -55,6 +57,7 @@ export async function getMedications(
     return {
       id: m.id,
       petId: m.pet_id,
+      visitId: m.visit_id,
       name: m.name,
       dosage: m.dosage,
       who: byId.get(m.pet_id) ?? "Unknown",

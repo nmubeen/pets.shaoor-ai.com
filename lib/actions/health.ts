@@ -30,17 +30,46 @@ function revalidateHealth() {
   revalidatePath("/app/health");
 }
 
-/** Reads a repeated pair of same-named inputs (one row = one name + one cost, in DOM order) into rows, dropping blank-name rows. */
-function readRows(formData: FormData, nameField: string, costField: string): { name: string; cost: number | null }[] {
+/**
+ * Reads a repeated set of same-named inputs (one row = one optional id +
+ * one name + one optional cost, in DOM order — VisitForm's RowList emits
+ * exactly this shape) into rows, dropping blank-name rows. `id` is only
+ * present when editing an existing linked record (see updateVisit); a
+ * brand-new row has none.
+ */
+function readRowsWithId(
+  formData: FormData,
+  idField: string,
+  nameField: string,
+  costField?: string
+): { id: string | null; name: string; cost: number | null }[] {
+  const ids = formData.getAll(idField);
   const names = formData.getAll(nameField);
-  const costs = formData.getAll(costField);
-  const rows: { name: string; cost: number | null }[] = [];
+  const costs = costField ? formData.getAll(costField) : [];
+  const rows: { id: string | null; name: string; cost: number | null }[] = [];
   for (let i = 0; i < names.length; i++) {
     const name = typeof names[i] === "string" ? (names[i] as string).trim() : "";
     if (!name) continue;
-    const rawCost = typeof costs[i] === "string" ? (costs[i] as string).trim() : "";
+    const id = typeof ids[i] === "string" && (ids[i] as string).trim() ? (ids[i] as string).trim() : null;
+    const rawCost = costField && typeof costs[i] === "string" ? (costs[i] as string).trim() : "";
     const cost = rawCost ? Number(rawCost) : null;
-    rows.push({ name, cost: cost !== null && Number.isFinite(cost) ? cost : null });
+    rows.push({ id, name, cost: cost !== null && Number.isFinite(cost) ? cost : null });
+  }
+  return rows;
+}
+
+/** Same idea as readRowsWithId, but the second column is free text (dosage) rather than a numeric cost. */
+function readMedicationRows(formData: FormData): { id: string | null; name: string; dosage: string | null }[] {
+  const ids = formData.getAll("medication_id");
+  const names = formData.getAll("medication_name");
+  const dosages = formData.getAll("medication_dosage");
+  const rows: { id: string | null; name: string; dosage: string | null }[] = [];
+  for (let i = 0; i < names.length; i++) {
+    const name = typeof names[i] === "string" ? (names[i] as string).trim() : "";
+    if (!name) continue;
+    const id = typeof ids[i] === "string" && (ids[i] as string).trim() ? (ids[i] as string).trim() : null;
+    const dosage = typeof dosages[i] === "string" && (dosages[i] as string).trim() ? (dosages[i] as string).trim() : null;
+    rows.push({ id, name, dosage });
   }
   return rows;
 }
@@ -204,12 +233,16 @@ async function recordVaccinationGiven(
 
 /**
  * Logs one real-world visit, which may carry any mix of services (a
- * checkup, a grooming session, whatever actually happened) and vaccines
- * given — one form, one entry, regardless of how many different things
- * were done. The visit's cost is the sum of every line item entered here,
- * computed and stored now rather than recomputed later (there's no "edit
- * a visit's services" flow yet, so this is a write-time snapshot, not a
- * live trigger).
+ * checkup, a grooming session, whatever actually happened), vaccines
+ * given, illnesses diagnosed, and medications prescribed — one form, one
+ * entry, regardless of how many different things were done. The visit's
+ * cost is the sum of every services/vaccinations line item entered here
+ * (illnesses/medications don't carry a cost, matching their own
+ * standalone forms), computed and stored now rather than recomputed
+ * later. Illnesses/medications captured here are just real rows in those
+ * tables with `visit_id` set — they show up in the Illnesses/Medications
+ * lists exactly like a directly-logged entry, just linked back to this
+ * visit (same pattern vaccinations given during a visit already used).
  */
 export async function addVisit(tenantId: string, formData: FormData) {
   const petId = requirePetId(formData);
@@ -218,8 +251,11 @@ export async function addVisit(tenantId: string, formData: FormData) {
   if (!reason) return { error: "Reason is required." };
 
   const visitDate = str(formData, "visit_date") ?? new Date().toISOString().slice(0, 10);
-  const services = readRows(formData, "service_name", "service_cost");
-  const vaccines = readRows(formData, "vaccine_name", "vaccine_cost");
+  const providerId = str(formData, "provider_id");
+  const services = readRowsWithId(formData, "service_id", "service_name", "service_cost");
+  const vaccines = readRowsWithId(formData, "vaccine_id", "vaccine_name", "vaccine_cost");
+  const illnessRows = readRowsWithId(formData, "illness_id", "illness_name");
+  const medRows = readMedicationRows(formData);
   const totalCost =
     services.reduce((sum, r) => sum + (r.cost ?? 0), 0) + vaccines.reduce((sum, r) => sum + (r.cost ?? 0), 0);
 
@@ -232,7 +268,7 @@ export async function addVisit(tenantId: string, formData: FormData) {
     .insert({
       tenant_id: tenantId,
       pet_id: petId,
-      provider_id: str(formData, "provider_id"),
+      provider_id: providerId,
       vet_name: str(formData, "vet_name"),
       visit_date: visitDate,
       reason,
@@ -260,6 +296,32 @@ export async function addVisit(tenantId: string, formData: FormData) {
   for (const v of vaccines) {
     const { error: vaxError } = await recordVaccinationGiven(supabase, tenantId, petId, visit.id, v.name, v.cost, visitDate);
     if (vaxError) return { error: vaxError };
+  }
+
+  for (const i of illnessRows) {
+    const { error: illnessError } = await supabase.from("illnesses").insert({
+      tenant_id: tenantId,
+      pet_id: petId,
+      visit_id: visit.id,
+      reason: i.name,
+      status: "active",
+      diagnosed_date: visitDate,
+    });
+    if (illnessError) return { error: illnessError.message };
+  }
+
+  for (const m of medRows) {
+    const { error: medError } = await supabase.from("medications").insert({
+      tenant_id: tenantId,
+      pet_id: petId,
+      visit_id: visit.id,
+      provider_id: providerId,
+      name: m.name,
+      dosage: m.dosage,
+      start_date: visitDate,
+      next_due_date: visitDate,
+    });
+    if (medError) return { error: medError.message };
   }
 
   revalidateHealth();
@@ -300,6 +362,7 @@ export async function addVaccination(tenantId: string, formData: FormData) {
   const { error } = await supabase.from("vaccinations").insert({
     tenant_id: tenantId,
     pet_id: petId,
+    provider_id: str(formData, "provider_id"),
     reason,
     status: validStatus,
     due_date: str(formData, "due_date"),
@@ -395,14 +458,25 @@ export async function markVaccinationGiven(tenantId: string, vaccinationId: stri
 }
 
 /**
- * Edits a visit's top-level fields only (pet, reason, provider, doctor,
- * date, weight, notes) — its services and vaccinations-given line items
- * stay exactly as originally logged. Re-deriving those on edit would mean
- * re-running reminder scheduling (upsertServiceReminder) and the
- * due-vaccination matching (recordVaccinationGiven) against whatever the
- * form now says, which risks silently corrupting care-task/vaccination
- * schedule state that's moved on since the visit was logged. Delete and
- * re-log the visit if a line item itself needs to change.
+ * Edits a visit — its own fields (pet, reason, provider, doctor, date,
+ * weight, notes) plus every line item, diffed against what's already
+ * linked to it rather than blindly deleted-and-reinserted:
+ * - unchanged rows (same id, same values) are left alone entirely — no
+ *   writes, no side effects;
+ * - changed rows (same id, different name/cost/dosage) get a plain field
+ *   UPDATE by id — never re-running reminder scheduling
+ *   (upsertServiceReminder) or due-vaccination matching
+ *   (recordVaccinationGiven), which already ran once at creation; doing
+ *   it again on every edit would push reminders forward or create
+ *   duplicate bookings every time someone just fixes a typo;
+ * - new rows (no id) are inserted exactly like addVisit would, full side
+ *   effects included — this genuinely is a new thing being added;
+ * - rows removed from the form: for services (visit_services, no
+ *   independent lifecycle of their own) this deletes them outright; for
+ *   vaccinations/illnesses/medications (real records with their own
+ *   history/schedule) this only unlinks them (visit_id = null) rather
+ *   than deleting — the record survives as a direct entry instead of a
+ *   visit-given one.
  */
 export async function updateVisit(tenantId: string, visitId: string, formData: FormData) {
   const petId = requirePetId(formData);
@@ -410,21 +484,130 @@ export async function updateVisit(tenantId: string, visitId: string, formData: F
   const reason = str(formData, "reason");
   if (!reason) return { error: "Reason is required." };
 
+  const visitDate = str(formData, "visit_date") ?? new Date().toISOString().slice(0, 10);
+  const providerId = str(formData, "provider_id");
+  const services = readRowsWithId(formData, "service_id", "service_name", "service_cost");
+  const vaccines = readRowsWithId(formData, "vaccine_id", "vaccine_name", "vaccine_cost");
+  const illnessRows = readRowsWithId(formData, "illness_id", "illness_name");
+  const medRows = readMedicationRows(formData);
+  const totalCost =
+    services.reduce((sum, r) => sum + (r.cost ?? 0), 0) + vaccines.reduce((sum, r) => sum + (r.cost ?? 0), 0);
+
   const supabase = await createClient();
+  const { data: pet } = await supabase.from("pets").select("species").eq("id", petId).eq("tenant_id", tenantId).maybeSingle();
+  if (!pet) return { error: "Pet not found." };
+
   const { error } = await supabase
     .from("visits")
     .update({
       pet_id: petId,
-      provider_id: str(formData, "provider_id"),
+      provider_id: providerId,
       vet_name: str(formData, "vet_name"),
-      visit_date: str(formData, "visit_date") ?? new Date().toISOString().slice(0, 10),
+      visit_date: visitDate,
       reason,
       weight_kg: num(formData, "weight_kg"),
       notes: str(formData, "notes"),
+      cost: services.length + vaccines.length > 0 ? totalCost : null,
     })
     .eq("id", visitId)
     .eq("tenant_id", tenantId);
   if (error) return { error: error.message };
+
+  // --- Services: no independent lifecycle — safe to delete removed rows outright. ---
+  const { data: existingServices } = await supabase.from("visit_services").select("id, name, cost").eq("visit_id", visitId).eq("tenant_id", tenantId);
+  const submittedServiceIds = new Set(services.filter((s) => s.id).map((s) => s.id));
+  const removedServiceIds = (existingServices ?? []).filter((s) => !submittedServiceIds.has(s.id)).map((s) => s.id);
+  if (removedServiceIds.length > 0) await supabase.from("visit_services").delete().in("id", removedServiceIds);
+  for (const s of services) {
+    if (s.id) {
+      const original = existingServices?.find((e) => e.id === s.id);
+      if (original && (original.name !== s.name || original.cost !== s.cost)) {
+        const { error: updateError } = await supabase.from("visit_services").update({ name: s.name, cost: s.cost }).eq("id", s.id);
+        if (updateError) return { error: updateError.message };
+      }
+    } else {
+      const serviceType = await findOrCreateServiceType(supabase, tenantId, s.name, pet.species);
+      const { error: insertError } = await supabase.from("visit_services").insert({
+        tenant_id: tenantId,
+        visit_id: visitId,
+        service_type_id: serviceType?.id ?? null,
+        name: s.name,
+        cost: s.cost,
+      });
+      if (insertError) return { error: insertError.message };
+      if (serviceType) await upsertServiceReminder(supabase, tenantId, petId, s.name, serviceType.frequencyDays, visitDate);
+    }
+  }
+
+  // --- Vaccinations given: real records with their own schedule — unlink removed rows, never delete. ---
+  const { data: existingVax } = await supabase.from("vaccinations").select("id, reason, cost").eq("visit_id", visitId).eq("tenant_id", tenantId);
+  const submittedVaxIds = new Set(vaccines.filter((v) => v.id).map((v) => v.id));
+  const removedVaxIds = (existingVax ?? []).filter((v) => !submittedVaxIds.has(v.id)).map((v) => v.id);
+  if (removedVaxIds.length > 0) await supabase.from("vaccinations").update({ visit_id: null }).in("id", removedVaxIds);
+  for (const v of vaccines) {
+    if (v.id) {
+      const original = existingVax?.find((e) => e.id === v.id);
+      if (original && (original.reason !== v.name || original.cost !== v.cost)) {
+        const { error: updateError } = await supabase.from("vaccinations").update({ reason: v.name, cost: v.cost }).eq("id", v.id);
+        if (updateError) return { error: updateError.message };
+      }
+    } else {
+      const { error: vaxError } = await recordVaccinationGiven(supabase, tenantId, petId, visitId, v.name, v.cost, visitDate);
+      if (vaxError) return { error: vaxError };
+    }
+  }
+
+  // --- Illnesses diagnosed: unlink removed rows, never delete. ---
+  const { data: existingIllness } = await supabase.from("illnesses").select("id, reason").eq("visit_id", visitId).eq("tenant_id", tenantId);
+  const submittedIllnessIds = new Set(illnessRows.filter((i) => i.id).map((i) => i.id));
+  const removedIllnessIds = (existingIllness ?? []).filter((i) => !submittedIllnessIds.has(i.id)).map((i) => i.id);
+  if (removedIllnessIds.length > 0) await supabase.from("illnesses").update({ visit_id: null }).in("id", removedIllnessIds);
+  for (const i of illnessRows) {
+    if (i.id) {
+      const original = existingIllness?.find((e) => e.id === i.id);
+      if (original && original.reason !== i.name) {
+        const { error: updateError } = await supabase.from("illnesses").update({ reason: i.name }).eq("id", i.id);
+        if (updateError) return { error: updateError.message };
+      }
+    } else {
+      const { error: insertError } = await supabase.from("illnesses").insert({
+        tenant_id: tenantId,
+        pet_id: petId,
+        visit_id: visitId,
+        reason: i.name,
+        status: "active",
+        diagnosed_date: visitDate,
+      });
+      if (insertError) return { error: insertError.message };
+    }
+  }
+
+  // --- Medications prescribed: unlink removed rows, never delete. ---
+  const { data: existingMeds } = await supabase.from("medications").select("id, name, dosage").eq("visit_id", visitId).eq("tenant_id", tenantId);
+  const submittedMedIds = new Set(medRows.filter((m) => m.id).map((m) => m.id));
+  const removedMedIds = (existingMeds ?? []).filter((m) => !submittedMedIds.has(m.id)).map((m) => m.id);
+  if (removedMedIds.length > 0) await supabase.from("medications").update({ visit_id: null }).in("id", removedMedIds);
+  for (const m of medRows) {
+    if (m.id) {
+      const original = existingMeds?.find((e) => e.id === m.id);
+      if (original && (original.name !== m.name || original.dosage !== m.dosage)) {
+        const { error: updateError } = await supabase.from("medications").update({ name: m.name, dosage: m.dosage }).eq("id", m.id);
+        if (updateError) return { error: updateError.message };
+      }
+    } else {
+      const { error: insertError } = await supabase.from("medications").insert({
+        tenant_id: tenantId,
+        pet_id: petId,
+        visit_id: visitId,
+        provider_id: providerId,
+        name: m.name,
+        dosage: m.dosage,
+        start_date: visitDate,
+        next_due_date: visitDate,
+      });
+      if (insertError) return { error: insertError.message };
+    }
+  }
 
   revalidateHealth();
   return { error: null };
@@ -464,8 +647,13 @@ export async function updateIllness(tenantId: string, illnessId: string, formDat
   return { error: null };
 }
 
+/** Entries captured via a visit can only be removed by editing that visit (unlinking or deleting it there) — never directly, so the visit's own line-item list stays truthful. Mirrors deleteVaccination/deleteMedication. */
 export async function deleteIllness(tenantId: string, illnessId: string) {
   const supabase = await createClient();
+  const { data: illness } = await supabase.from("illnesses").select("visit_id").eq("id", illnessId).eq("tenant_id", tenantId).maybeSingle();
+  if (!illness) return { error: "Not found." };
+  if (illness.visit_id) return { error: "This was logged as part of a visit — edit that visit to change or remove it." };
+
   const { error } = await supabase.from("illnesses").delete().eq("id", illnessId).eq("tenant_id", tenantId);
   if (error) return { error: error.message };
 
@@ -488,6 +676,7 @@ export async function updateVaccination(tenantId: string, vaccinationId: string,
     .from("vaccinations")
     .update({
       pet_id: petId,
+      provider_id: str(formData, "provider_id"),
       reason,
       status: validStatus,
       due_date: dueDate,
@@ -502,8 +691,13 @@ export async function updateVaccination(tenantId: string, vaccinationId: string,
   return { error: null };
 }
 
+/** Entries given during a visit can only be removed by editing that visit — see deleteIllness's comment. */
 export async function deleteVaccination(tenantId: string, vaccinationId: string) {
   const supabase = await createClient();
+  const { data: vax } = await supabase.from("vaccinations").select("visit_id").eq("id", vaccinationId).eq("tenant_id", tenantId).maybeSingle();
+  if (!vax) return { error: "Not found." };
+  if (vax.visit_id) return { error: "This was logged as part of a visit — edit that visit to change or remove it." };
+
   const { error } = await supabase.from("vaccinations").delete().eq("id", vaccinationId).eq("tenant_id", tenantId);
   if (error) return { error: error.message };
 
