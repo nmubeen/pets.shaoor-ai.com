@@ -88,13 +88,20 @@ A Next.js (App Router) build of the marketing site and app shell described in
     tenant-wide fetchers `/app/health` already uses, grouped by pet the
     same way `lib/pet-links.ts` does; no AI/LLM call, this codebase has no
     AI integration) — switching the selected card swaps this card's text,
-    it doesn't show every pet stacked. Then that pet's full basic-details
-    plus Visits/Illnesses/Vaccinations/Medications/Growth below (the
-    Growth chart reuses `GrowthPanel`'s exported `WeightChart` directly,
-    skipping its own redundant pet-selector). Reachable by every role from
-    the sidebar (an owner can open it themselves to show a vet in
-    person) — only the `vet_view` *role* is restricted to seeing nothing
-    else.
+    it doesn't show every pet stacked. Then that pet's Basic details
+    (deliberately compact: Breed's *value* reads "Species (Breed)" rather
+    than a separate Species row; "Gender" — see below — instead of Sex;
+    Weight shows the weight tracker's *latest reading*, "12.4 kg (as on
+    05-Sep-2026)", not the separate manually-set `pets.weight_kg`
+    snapshot, which can go stale; no Color/markings row) plus Visits/
+    Illnesses/Vaccinations/Medications/Growth below (the Growth chart
+    reuses `GrowthPanel`'s exported `WeightChart` directly, skipping its
+    own redundant pet-selector). Reachable by every role from the sidebar
+    (an owner can open it themselves to show a vet in person) — only the
+    `vet_view` *role* is restricted to seeing nothing else. "Sex" is
+    "Gender" everywhere in the product now (the roster form's label and
+    this page) — `PetSex`/the `sex` column/`SEX_LABEL` keep their
+    existing names, only the user-facing label changed.
   - **Social's read-only surfaces** — `/app/pets` renders
     `PetSummaryCards` instead of the normal `PetsGrid` for this role
     (`app/app/pets/page.tsx` branches on `active.role`); `GalleryView`

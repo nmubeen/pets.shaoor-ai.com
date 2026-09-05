@@ -41,6 +41,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export function VetView({ tenantName, summaries }: { tenantName: string; summaries: PetVetSummary[] }) {
   const [selectedId, setSelectedId] = useState(summaries[0]?.pet.id ?? "");
   const selected = summaries.find((s) => s.pet.id === selectedId) ?? summaries[0] ?? null;
+  // Basic details' Weight row shows the weight tracker's latest reading
+  // (visit weigh-ins), not pets.weight_kg — that field is a separate,
+  // manually-set "current weight" snapshot that's never auto-synced from
+  // visit history (see lib/growth.ts), so it can silently go stale.
+  const points = selected?.weightHistory?.points ?? [];
+  const lastWeight = points.length > 0 ? points[points.length - 1] : null;
 
   if (summaries.length === 0) {
     return (
@@ -73,16 +79,19 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
 
       {selected && (
         <div className="flex flex-col gap-4">
-          <Section title={`${selected.pet.name} — Basic details`}>
+          <Section title="Basic details">
             <div className="flex flex-col">
               {selected.pet.pet && (
                 <>
-                  <DetailRow label="Species" value={SPECIES_LABEL[selected.pet.pet.species]} />
-                  <DetailRow label="Breed" value={selected.pet.pet.breed} />
-                  <DetailRow label="Sex" value={SEX_LABEL[selected.pet.pet.sex]} />
+                  <DetailRow label="Breed" value={`${SPECIES_LABEL[selected.pet.pet.species]} (${selected.pet.pet.breed})`} />
+                  <DetailRow label="Gender" value={SEX_LABEL[selected.pet.pet.sex]} />
                   <DetailRow label="Age" value={ageLabel(selected.pet.pet.birthDate)} />
-                  <DetailRow label="Weight" value={selected.pet.pet.weightKg !== null ? `${selected.pet.pet.weightKg} kg` : null} />
-                  <DetailRow label="Color / markings" value={selected.pet.pet.color} />
+                  <DetailRow
+                    label="Weight"
+                    value={
+                      lastWeight ? `${lastWeight.weightKg} kg (as on ${lastWeight.date})` : null
+                    }
+                  />
                   <DetailRow label="Microchip" value={selected.pet.pet.microchipId} />
                   <DetailRow label="Neutered / spayed" value={selected.pet.pet.neutered === null ? null : selected.pet.pet.neutered ? "Yes" : "No"} />
                   <DetailRow label="Notes" value={selected.pet.pet.notes} />

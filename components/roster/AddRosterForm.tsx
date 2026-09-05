@@ -137,7 +137,7 @@ export function AddRosterForm({
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
-                <span className={label}>Sex</span>
+                <span className={label}>Gender</span>
                 <select name="sex" defaultValue={pet?.sex ?? "unknown"} className={field}>
                   <option value="unknown">Unknown</option>
                   <option value="male">Male</option>
