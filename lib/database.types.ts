@@ -399,6 +399,10 @@ export interface Database {
         };
         Returns: Record<string, unknown>;
       };
+      team_last_logins: {
+        Args: { p_tenant_id: string };
+        Returns: { user_id: string; last_sign_in_at: string | null }[];
+      };
     };
   };
 }

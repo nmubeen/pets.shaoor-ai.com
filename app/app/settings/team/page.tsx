@@ -3,6 +3,14 @@ import { InviteForm } from "@/components/team/InviteForm";
 import { RemoveMemberButton } from "@/components/team/RemoveMemberButton";
 import { ResendInviteButton } from "@/components/team/ResendInviteButton";
 import { requireActiveMembership } from "@/lib/tenant";
+import { formatDate } from "@/lib/format";
+
+function lastLoginLabel(iso: string | null | undefined): string {
+  if (!iso) return "Never signed in";
+  const date = new Date(iso);
+  const time = date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+  return `Last login ${formatDate(date)}, ${time}`;
+}
 
 const ROLE_LABEL: Record<string, string> = {
   owner: "owner",
@@ -15,13 +23,17 @@ const ROLE_LABEL: Record<string, string> = {
 export default async function TeamPage() {
   const { supabase, active } = await requireActiveMembership();
 
-  const { data: members } = await supabase
-    .from("memberships")
-    .select("id, invited_email, role, status")
-    .eq("tenant_id", active.tenantId)
-    .neq("status", "removed")
-    .order("created_at");
+  const [{ data: members }, { data: logins }] = await Promise.all([
+    supabase
+      .from("memberships")
+      .select("id, user_id, invited_email, role, status")
+      .eq("tenant_id", active.tenantId)
+      .neq("status", "removed")
+      .order("created_at"),
+    supabase.rpc("team_last_logins", { p_tenant_id: active.tenantId }),
+  ]);
 
+  const lastLoginByUserId = new Map((logins ?? []).map((l) => [l.user_id, l.last_sign_in_at]));
   const isOwner = active.role === "owner";
 
   return (
@@ -34,9 +46,14 @@ export default async function TeamPage() {
       <Card className="p-5">
         <div className="flex flex-col divide-y divide-line mb-5">
           {(members ?? []).map((m) => (
-            <div key={m.id} className="flex items-center justify-between py-2.5 text-sm">
-              <span>{m.invited_email}</span>
-              <div className="flex items-center gap-2">
+            <div key={m.id} className="flex items-center justify-between py-2.5 text-sm gap-3">
+              <div className="min-w-0">
+                <div className="truncate">{m.invited_email}</div>
+                <div className="text-xs text-muted">
+                  {m.status === "invited" ? "Invite not yet accepted" : lastLoginLabel(lastLoginByUserId.get(m.user_id ?? ""))}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-none">
                 <Pill>{ROLE_LABEL[m.role] ?? m.role}</Pill>
                 {m.status === "invited" && <Pill dotColor="var(--accent)">pending</Pill>}
                 {isOwner && m.status === "invited" && (

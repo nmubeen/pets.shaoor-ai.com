@@ -17,6 +17,21 @@ const ROLE_LABEL: Record<string, string> = {
 // whose email never arrived — see lib/email.ts's soft-fail behavior when
 // ZEPTOMAIL_API_TOKEN isn't set, which is exactly what happened here once
 // in production).
+//
+// The primary link goes to /signup?invited=1 rather than /login: an
+// invited person very often has no Menagerie account yet, so "sign in"
+// is a dead end for them (no password exists) — this was a real bug
+// (sumayra1817@gmail.com, 2026-09-04): the invite pointed at /login,
+// which she couldn't use, and the page's own "New to Menagerie? Sign up"
+// fallback landed on the *generic* signup form, which demands a new
+// workspace name and would have created a second, empty household
+// instead of joining the one she was actually invited to.
+// /signup's invited mode (app/signup/page.tsx) skips the workspace
+// fields entirely and signs up with no workspace_name metadata, so
+// menagerie.handle_new_user()'s unconditional invite-reconciliation
+// step is the *only* thing that fires — she lands directly in the
+// workspace she was invited to. The secondary link covers the other
+// case (already has a Menagerie account from another workspace).
 async function sendInviteEmail({
   toEmail,
   tenantName,
@@ -29,6 +44,8 @@ async function sendInviteEmail({
   role: string;
 }) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://pets.shaoor-ai.com";
+  const signupUrl = `${siteUrl}/signup?invited=1&email=${encodeURIComponent(toEmail)}&tenant=${encodeURIComponent(tenantName ?? "")}`;
+  const loginUrl = `${siteUrl}/login?email=${encodeURIComponent(toEmail)}`;
   const { error } = await sendEmail({
     to: toEmail,
     subject: `You've been invited to ${tenantName ?? "a workspace"} on Menagerie`,
@@ -36,12 +53,12 @@ async function sendInviteEmail({
       `Join ${tenantName ?? "a workspace"} on Menagerie`,
       `<p>${inviterEmail ? `<strong>${inviterEmail}</strong> invited` : "You've been invited"} you to join
         <strong>${tenantName ?? "their workspace"}</strong> on Menagerie as ${ROLE_LABEL[role] ?? "a member"}.</p>
-       <p>Sign in with this email address (or create an account with it, if you're new) and you'll land right in the workspace.</p>
-       ${emailButton(`${siteUrl}/login`, "Sign in →")}
-       <p style="color:#5B6459; font-size:12px; margin-top:16px;">New to Menagerie? Use <a href="${siteUrl}/signup" style="color:#1F4B3F;">the same email</a> to sign up instead.</p>`
+       <p>Set a password to get started and you'll land right in the workspace.</p>
+       ${emailButton(signupUrl, "Set up your account →")}
+       <p style="color:#5B6459; font-size:12px; margin-top:16px;">Already have a Menagerie account? <a href="${loginUrl}" style="color:#1F4B3F;">Sign in instead</a>.</p>`
     ),
   });
-  return { error, siteUrl };
+  return { error, siteUrl, signupUrl };
 }
 
 export async function inviteMember(tenantId: string, formData: FormData) {
@@ -64,22 +81,35 @@ export async function inviteMember(tenantId: string, formData: FormData) {
 
   const [{ data: tenant }, {
     data: { user },
-  }] = await Promise.all([
+  }, { data: existing }] = await Promise.all([
     supabase.from("tenants").select("name").eq("id", tenantId).maybeSingle(),
     supabase.auth.getUser(),
+    supabase.from("memberships").select("id, status").eq("tenant_id", tenantId).eq("invited_email", email).maybeSingle(),
   ]);
 
-  const { error } = await supabase.from("memberships").insert({
-    tenant_id: tenantId,
-    invited_email: email,
-    role,
-    status: "invited",
-  });
-
-  if (error) {
-    // Unique violation on (tenant_id, invited_email) means they're already a member.
-    if (error.code === "23505") return { error: "That person already has access." };
-    return { error: error.message };
+  // The unique constraint is on (tenant_id, invited_email) — a *removed*
+  // member still occupies that row, so a plain insert would always fail
+  // with a unique violation and never let them be invited back. Reactivate
+  // the existing row instead (only a genuinely still-active member blocks
+  // re-inviting).
+  if (existing) {
+    if (existing.status === "active") return { error: "That person already has access." };
+    const { error: reactivateError } = await supabase
+      .from("memberships")
+      .update({ role, status: "invited" })
+      .eq("id", existing.id);
+    if (reactivateError) return { error: reactivateError.message };
+  } else {
+    const { error: insertError } = await supabase.from("memberships").insert({
+      tenant_id: tenantId,
+      invited_email: email,
+      role,
+      status: "invited",
+    });
+    if (insertError) {
+      if (insertError.code === "23505") return { error: "That person already has access." };
+      return { error: insertError.message };
+    }
   }
 
   // Best-effort — an invite that fails to notify by email is still a real
@@ -87,7 +117,7 @@ export async function inviteMember(tenantId: string, formData: FormData) {
   // so a delivery failure here shouldn't fail the whole action. It should,
   // however, actually tell the person who sent it — silently swallowing
   // the error left a real "no email arrived" case looking like success.
-  const { error: emailError, siteUrl } = await sendInviteEmail({
+  const { error: emailError, signupUrl } = await sendInviteEmail({
     toEmail: email,
     tenantName: tenant?.name,
     inviterEmail: user?.email,
@@ -98,7 +128,7 @@ export async function inviteMember(tenantId: string, formData: FormData) {
   if (emailError) {
     return {
       error: null,
-      warning: `${email} was added, but the invite email couldn't be sent (${emailError}). Ask them to sign up at ${siteUrl}/signup with this email address instead.`,
+      warning: `${email} was added, but the invite email couldn't be sent (${emailError}). Share this link with them instead: ${signupUrl}`,
     };
   }
   return { error: null, warning: null };
@@ -119,7 +149,7 @@ export async function resendInvite(tenantId: string, membershipId: string) {
     return { error: "That invite is no longer pending." };
   }
 
-  const { error: emailError, siteUrl } = await sendInviteEmail({
+  const { error: emailError, signupUrl } = await sendInviteEmail({
     toEmail: membership.invited_email,
     tenantName: tenant?.name,
     inviterEmail: user?.email,
@@ -127,7 +157,7 @@ export async function resendInvite(tenantId: string, membershipId: string) {
   });
 
   if (emailError) {
-    return { error: `Still couldn't send it (${emailError}). Ask them to sign up at ${siteUrl}/signup with this email address instead.` };
+    return { error: `Still couldn't send it (${emailError}). Share this link with them instead: ${signupUrl}` };
   }
   return { error: null };
 }

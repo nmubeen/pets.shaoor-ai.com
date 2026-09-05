@@ -99,6 +99,44 @@ A Next.js (App Router) build of the marketing site and app shell described in
     `owner`/`caregiver`/`social` — fixing a pre-existing gap along the way
     where `viewer` could see a comment box that would've failed
     server-side anyway.
+- **Invite flow: a real "no password yet" bug, fixed** — a real invited
+  user (viewer role, 2026-09-04) got the invite email, its "Sign in"
+  button sent her to `/login`, which she had no password for yet, and the
+  page's own "New to Menagerie? Sign up" fallback landed on the *default*
+  `/signup` — which demands a new workspace name and would have created a
+  second, empty household instead of joining the one she was invited to.
+  `/signup` now has an **invited mode** (`?invited=1&email=...&tenant=...`
+  — `app/signup/page.tsx`): the workspace name/type fields disappear
+  entirely, the email is prefilled and locked, and `auth.signUp()` sends
+  no `workspace_name`/`workspace_type` metadata at all — so
+  `menagerie.handle_new_user()`'s invite-reconciliation step (which
+  already ran unconditionally, regardless of whether that metadata was
+  present) is the *only* thing that fires, and the person lands in the
+  workspace they were actually invited to, not a new one. If `signUp()`
+  reports the email is already registered (an invitee who already has a
+  Menagerie account elsewhere), it redirects to `/login?email=...`
+  instead of showing a dead-end error. `lib/actions/team.ts`'s
+  `sendInviteEmail` now links there as the primary CTA ("Set up your
+  account →"), with "Sign in instead" as the fallback — the two links
+  from before, swapped in priority and both actually correct now. While
+  in this code: `inviteMember` also no longer fails to re-invite someone
+  who was previously removed — the unique constraint is on `(tenant_id,
+  invited_email)`, so a `removed` row silently blocked ever re-inviting
+  that email before (a real second bug, same investigation); it now
+  reactivates the existing row (role + status='invited') instead of
+  blindly inserting. Verified against the live database (RLS-safe
+  re-invite-after-removal semantics); the affected user's own membership
+  row was restored to `invited` so a corrected invite can be resent to
+  her from the Team page whenever wanted — no email was sent
+  automatically as part of this fix.
+- **Team page: last login** — `/app/settings/team` now shows each
+  member's last sign-in under their email (`lib/database.types.ts`'s new
+  `team_last_logins` RPC + migration `0029_team_last_logins.sql`,
+  security-definer, same pattern as `accept_pending_invites()` — `auth.
+  users` isn't reachable via RLS/PostgREST directly, so this is a thin
+  function that checks the caller actually belongs to the tenant before
+  returning anyone's `last_sign_in_at`). A still-pending invite shows
+  "Invite not yet accepted" instead.
 - **Core records** — `pets` and `habitats` tables with RLS, Server Actions
   to add, edit, *and delete* them (`lib/actions/roster.ts` — delete cascades
   every health/shopping/task/media row scoped to that pet or habitat at the
