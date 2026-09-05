@@ -660,7 +660,17 @@ A Next.js (App Router) build of the marketing site and app shell described in
   `URL.createObjectURL` is cheap enough to treat as a pure render-time
   read, with a plain effect alongside it only for the one real side
   effect, `URL.revokeObjectURL` on the previous blob once a new one
-  replaces it.
+  replaces it. Bug from real use: pasting a photo, saving, and reopening
+  that same order for editing showed an *empty* photo box, reading as
+  "the photo got lost" — it hadn't (`addShoppingOrder`/
+  `updateShoppingOrder` only ever replace the saved photo when a real new
+  file comes through the form), the box just never showed the
+  already-saved one to begin with. Fixed by falling back the preview to
+  `editing?.imageUrl` whenever no new file has been picked/pasted yet;
+  "Remove" only shows (and only ever clears the *new* pending pick) once
+  there is a new one to undo — otherwise a small note reads "Current
+  photo — pick or paste a new one to replace it", since a bare "Remove"
+  there would have looked actionable while silently doing nothing.
 - **Jump to a newly-added Shopping order or Visit — without disturbing
   your filters** — logging a new order or visit and returning to the
   list now briefly highlights the row you just added, *if* it happens to
@@ -712,6 +722,28 @@ A Next.js (App Router) build of the marketing site and app shell described in
   (`app/app/page.tsx`) didn't, showing the item name as plain text even
   when `itemUrl` was set. Same treatment now in both places: the name is
   an `<a href={itemUrl} target="_blank">` when set, plain text otherwise.
+- **Shopping: the summary cards follow the active filter** — selecting a
+  scope/year/seller filter used to leave all 6 summary cards unchanged,
+  still showing the same all-time, unfiltered numbers no matter what was
+  selected — confusing next to a table that *was* filtered. The moment
+  any filter is active, every card recomputes from exactly the same rows
+  `filtered` leaves in the table (`lib/shopping-summary.ts`'s new
+  `summarizeOrders`, a pure function mirroring `getSpendSummary`'s own
+  30-day/all-time/avg-per-month math); with nothing filtered, the cards
+  go back to the original server-computed, all-time "shopping + health"
+  rollup. The two aren't quite the same shape: a filtered view is
+  necessarily shopping-orders-only (Scope and Seller are shopping_orders
+  concepts, a visit doesn't have either the same way), so the "(shopping
+  + health)" card labels become "(filtered)" while a filter is active,
+  and a small note above the cards says they reflect the selected
+  filters. `summarizeOrders` lives in its own file rather than being
+  added to `lib/shopping.ts`, which carries `import "server-only"` and
+  would poison the whole module the moment `ShoppingView.tsx` (a client
+  component) imported a real binding from it, not just a type. Its
+  avg-per-month math needs "today" the same way the rest of this session
+  has needed it — computed once server-side (`app/app/shopping/page.tsx`'s
+  new `nowIso` prop) and passed down as a plain string, never read live
+  via `Date.now()` inside the client component's own render.
 - **Care tasks** — `care_tasks` table with RLS, exactly one of pet/habitat
   required (`0017_scope_rework.sql` tightened this from "pet, habitat, or
   household" — the vague household catch-all is gone, so every task is

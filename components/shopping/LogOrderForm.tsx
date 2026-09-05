@@ -58,12 +58,19 @@ export function LogOrderForm({
   // effect) avoids an extra cascading render. The effect below only
   // handles the one real side effect: revoking the previous URL once
   // it's no longer the current one.
-  const previewUrl = useMemo(() => (imageFile ? URL.createObjectURL(imageFile) : null), [imageFile]);
+  const newFilePreviewUrl = useMemo(() => (imageFile ? URL.createObjectURL(imageFile) : null), [imageFile]);
   useEffect(() => {
     return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (newFilePreviewUrl) URL.revokeObjectURL(newFilePreviewUrl);
     };
-  }, [previewUrl]);
+  }, [newFilePreviewUrl]);
+  // Falls back to the order's already-saved photo when nothing new has
+  // been picked/pasted yet — without this, opening Edit on an order that
+  // already has a photo showed an empty box, making it look like the
+  // photo had been lost (it hadn't: addShoppingOrder/updateShoppingOrder
+  // only ever replace the saved photo when a real new file comes through,
+  // this was purely a missing preview).
+  const previewUrl = newFilePreviewUrl ?? editing?.imageUrl ?? null;
 
   function handlePaste(e: React.ClipboardEvent<HTMLDivElement>) {
     const items = e.clipboardData?.items;
@@ -228,9 +235,13 @@ export function LogOrderForm({
               <div className="flex items-center gap-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={previewUrl} alt="Selected item photo" className="w-14 h-14 rounded-md object-cover border border-line" />
-                <button type="button" onClick={clearImage} className="text-xs text-coral hover:underline">
-                  Remove
-                </button>
+                {newFilePreviewUrl ? (
+                  <button type="button" onClick={clearImage} className="text-xs text-coral hover:underline">
+                    Remove
+                  </button>
+                ) : (
+                  <span className="text-[.7rem] text-muted">Current photo — pick or paste a new one to replace it</span>
+                )}
               </div>
             )}
           </div>

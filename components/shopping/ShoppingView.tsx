@@ -7,6 +7,7 @@ import { PlusIcon, PencilIcon, TrashIcon } from "@/components/icons";
 import { LogOrderForm } from "@/components/shopping/LogOrderForm";
 import { deleteShoppingOrder } from "@/lib/actions/shopping";
 import type { ShoppingOrderRow, SpendSummary } from "@/lib/shopping";
+import { summarizeOrders } from "@/lib/shopping-summary";
 import type { ShoppingCategory } from "@/lib/shopping-categories";
 import type { RosterItem } from "@/lib/roster";
 import type { Provider } from "@/lib/providers";
@@ -67,6 +68,7 @@ export function ShoppingView({
   categories,
   orders,
   summary,
+  nowIso,
 }: {
   tenantId: string;
   role: MembershipRole;
@@ -75,6 +77,8 @@ export function ShoppingView({
   categories: ShoppingCategory[];
   orders: ShoppingOrderRow[];
   summary: SpendSummary;
+  /** Today, as a plain date string computed server-side — see lib/shopping-summary.ts's own doc comment for why. */
+  nowIso: string;
 }) {
   const canWrite = role === "owner" || role === "caregiver";
   const [scope, setScope] = useState<(typeof SCOPES)[number]["key"]>("all");
@@ -114,6 +118,16 @@ export function ShoppingView({
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageSafe = Math.min(page, totalPages);
   const pageItems = filtered.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
+
+  // The summary cards show the server-computed, unfiltered "shopping +
+  // health" rollup only while nothing's filtered; the moment a
+  // scope/year/seller filter is active, they recompute from exactly the
+  // orders that filter leaves in `filtered` (shopping only — a filtered
+  // view can't meaningfully fold in health visit costs, since Scope and
+  // Seller don't describe a visit the same way an order's multi-scope/
+  // provider fields do).
+  const hasActiveFilter = scope !== "all" || year !== YEAR_ALL || seller !== SELLER_ALL;
+  const displaySummary = hasActiveFilter ? summarizeOrders(filtered, nowIso) : summary;
 
   function changeScope(next: (typeof SCOPES)[number]["key"]) {
     setScope(next);
@@ -222,18 +236,24 @@ export function ShoppingView({
         />
       )}
 
+      {hasActiveFilter && (
+        <p className="text-xs text-muted -mb-2">Summary below reflects the filters selected above.</p>
+      )}
+
       <div className="grid md:grid-cols-3 gap-4">
         <Card className="p-4">
-          <div className="font-mono font-semibold text-xl">{formatCurrency(summary.spentLast30d)}</div>
-          <div className="text-[.66rem] uppercase text-muted mt-1">Spent · 30d (shopping + health)</div>
+          <div className="font-mono font-semibold text-xl">{formatCurrency(displaySummary.spentLast30d)}</div>
+          <div className="text-[.66rem] uppercase text-muted mt-1">
+            Spent · 30d {hasActiveFilter ? "(filtered)" : "(shopping + health)"}
+          </div>
         </Card>
         <Card className="p-4">
-          <div className="font-mono font-semibold text-xl">{summary.ordersLogged}</div>
+          <div className="font-mono font-semibold text-xl">{displaySummary.ordersLogged}</div>
           <div className="text-[.66rem] uppercase text-muted mt-1">Orders logged · 30d</div>
         </Card>
         <Card className="p-4">
           <div className="font-mono font-semibold text-xl">
-            {summary.avgOrder !== null ? formatCurrency(summary.avgOrder) : "—"}
+            {displaySummary.avgOrder !== null ? formatCurrency(displaySummary.avgOrder) : "—"}
           </div>
           <div className="text-[.66rem] uppercase text-muted mt-1">Avg. order · 30d</div>
         </Card>
@@ -241,16 +261,18 @@ export function ShoppingView({
 
       <div className="grid md:grid-cols-3 gap-4">
         <Card className="p-4">
-          <div className="font-mono font-semibold text-xl">{formatCurrency(summary.totalSpent)}</div>
-          <div className="text-[.66rem] uppercase text-muted mt-1">Total spent (shopping + health)</div>
+          <div className="font-mono font-semibold text-xl">{formatCurrency(displaySummary.totalSpent)}</div>
+          <div className="text-[.66rem] uppercase text-muted mt-1">
+            Total spent {hasActiveFilter ? "(filtered)" : "(shopping + health)"}
+          </div>
         </Card>
         <Card className="p-4">
-          <div className="font-mono font-semibold text-xl">{summary.totalOrdersCount}</div>
+          <div className="font-mono font-semibold text-xl">{displaySummary.totalOrdersCount}</div>
           <div className="text-[.66rem] uppercase text-muted mt-1">Total orders</div>
         </Card>
         <Card className="p-4">
           <div className="font-mono font-semibold text-xl">
-            {summary.avgPerMonth !== null ? formatCurrency(summary.avgPerMonth) : "—"}
+            {displaySummary.avgPerMonth !== null ? formatCurrency(displaySummary.avgPerMonth) : "—"}
           </div>
           <div className="text-[.66rem] uppercase text-muted mt-1">Avg. order amount / month</div>
         </Card>
