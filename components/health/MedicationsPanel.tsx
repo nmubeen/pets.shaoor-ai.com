@@ -196,6 +196,7 @@ export function MedicationsPanel({
   vetProviders,
   medications,
   onEditViaVisit,
+  initialPetFilter,
 }: {
   tenantId: string;
   canWrite: boolean;
@@ -203,10 +204,12 @@ export function MedicationsPanel({
   vetProviders: Provider[];
   medications: MedicationRow[];
   onEditViaVisit: (edit: PendingVisitEdit) => void;
+  /** Seeds the pet filter — set when arriving from a pet card's "Medications" quick-link (see HealthView). */
+  initialPetFilter?: string;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [editingMed, setEditingMed] = useState<MedicationRow | null>(null);
-  const [petFilter, setPetFilter] = useState("all");
+  const [petFilter, setPetFilter] = useState(initialPetFilter ?? "all");
   const hasPets = roster.some((r) => r.kind === "pet");
   const filtered = petFilter === "all" ? medications : medications.filter((m) => m.petId === petFilter);
 

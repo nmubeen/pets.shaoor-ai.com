@@ -72,8 +72,21 @@ function WeightChart({ points }: { points: WeightPoint[] }) {
   );
 }
 
-export function GrowthPanel({ history }: { history: PetWeightHistory[] }) {
-  const [petId, setPetId] = useState(() => history.find((h) => h.points.length > 0)?.petId ?? history[0]?.petId ?? "");
+export function GrowthPanel({
+  history,
+  initialPetId,
+}: {
+  history: PetWeightHistory[];
+  /** Seeds the selected pet — set when arriving from a pet card's "Growth" quick-link (see HealthView). Falls back to the usual "first pet with data" default when unset or not found. */
+  initialPetId?: string;
+}) {
+  const [petId, setPetId] = useState(
+    () =>
+      (initialPetId && history.find((h) => h.petId === initialPetId)?.petId) ??
+      history.find((h) => h.points.length > 0)?.petId ??
+      history[0]?.petId ??
+      ""
+  );
   const selected = history.find((h) => h.petId === petId);
 
   if (history.length === 0) {

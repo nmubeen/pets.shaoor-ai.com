@@ -65,7 +65,18 @@ A Next.js (App Router) build of the marketing site and app shell described in
   `{tenant_id}/avatars/...` — see `lib/storage.ts`, shared with
   `lib/actions/gallery.ts`) — shown wherever its avatar circle appears
   instead of initials; replacing or removing a photo cleans up the old
-  Storage object.
+  Storage object. Each pet's card also shows a bullet list of quick-links
+  into its own Health history — Visits, Illnesses, Vaccinations,
+  Medications, Growth — but only for whichever of those five it actually
+  has a record in (`lib/pet-links.ts`'s `getPetLinks`, one existence check
+  per table; Growth reuses visits' own `weight_kg` rather than a separate
+  table), so a brand-new pet with nothing logged shows no dead links.
+  Clicking one navigates to `/app/health?tab=<tab>&pet=<petId>` —
+  `HealthView` reads that query once at mount (`useSearchParams`, plain
+  client-side read since the page is already fully dynamic) to open the
+  right tab pre-filtered to that pet, threading the same initial value
+  into `VisitsPanel`/`MedicationsPanel`/`GrowthPanel`'s own independent
+  pet-filter state.
 - **Health & unified visits** — `visits` (renamed from `vet_visits`,
   `0020_unified_visits.sql`), `illnesses`, `vaccinations`, pet-only
   (`pet_id` required, `0017_scope_rework.sql` dropped `habitat_id` —

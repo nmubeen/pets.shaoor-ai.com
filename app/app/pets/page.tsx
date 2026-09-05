@@ -3,10 +3,14 @@ import { AddRosterPanel } from "@/components/roster/AddRosterPanel";
 import { RosterGrid } from "@/components/pets/RosterGrid";
 import { requireActiveMembership } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
+import { getPetLinks } from "@/lib/pet-links";
 
 export default async function PetsPage() {
   const { supabase, active } = await requireActiveMembership();
-  const roster = await getRoster(supabase, active.tenantId);
+  const [roster, petLinks] = await Promise.all([
+    getRoster(supabase, active.tenantId),
+    getPetLinks(supabase, active.tenantId),
+  ]);
   const isOrg = active.workspaceType === "organization";
 
   return (
@@ -27,7 +31,12 @@ export default async function PetsPage() {
           No pets or habitats yet — use “Add pet or habitat” above to add your first one.
         </Card>
       ) : (
-        <RosterGrid tenantId={active.tenantId} roster={roster} isOrg={isOrg} />
+        <RosterGrid
+          tenantId={active.tenantId}
+          roster={roster}
+          isOrg={isOrg}
+          petLinks={Object.fromEntries(petLinks)}
+        />
       )}
     </div>
   );

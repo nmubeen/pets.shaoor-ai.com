@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui";
 import { PlusIcon } from "@/components/icons";
 import { LogHealthForm, type HealthTabKey } from "@/components/health/LogHealthForm";
@@ -134,10 +134,21 @@ export function HealthView({
   dueVaccinationNames: string[];
 }) {
   const canWrite = role === "owner" || role === "caregiver";
-  const [active, setActive] = useState<TabKey>("visits");
+
+  // A pet card's Health quick-links (components/pets/RosterGrid.tsx) land
+  // here as /app/health?tab=<tab>&pet=<petId> — read once at mount to seed
+  // which tab opens and which pet everything below starts filtered to.
+  // Read once, not synced afterward: this page doesn't keep its own state
+  // in the URL, so there's nothing to react to beyond the initial load.
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const initialTab: TabKey = TABS.some((t) => t.key === tabParam) ? (tabParam as TabKey) : "visits";
+  const initialPetFilter = searchParams.get("pet") ?? "all";
+
+  const [active, setActive] = useState<TabKey>(initialTab);
   const [showForm, setShowForm] = useState(false);
   const [editingRow, setEditingRow] = useState<HealthRow | null>(null);
-  const [petFilter, setPetFilter] = useState("all");
+  const [petFilter, setPetFilter] = useState(initialPetFilter);
   const [pendingVisitEdit, setPendingVisitEdit] = useState<PendingVisitEdit | null>(null);
   const pets = roster.filter((r) => r.kind === "pet");
 
@@ -173,6 +184,7 @@ export function HealthView({
           visits={visits}
           pendingEdit={pendingVisitEdit}
           onPendingEditHandled={() => setPendingVisitEdit(null)}
+          initialPetFilter={initialPetFilter}
         />
       </div>
     );
@@ -190,6 +202,7 @@ export function HealthView({
           vetProviders={vetProviders}
           medications={medications}
           onEditViaVisit={openInVisit}
+          initialPetFilter={initialPetFilter}
         />
       </div>
     );
@@ -200,7 +213,7 @@ export function HealthView({
       <div className="flex flex-col gap-6">
         <Header />
         <TabRow active={active} onChange={changeTab} />
-        <GrowthPanel history={weightHistory} />
+        <GrowthPanel history={weightHistory} initialPetId={initialPetFilter !== "all" ? initialPetFilter : undefined} />
       </div>
     );
   }

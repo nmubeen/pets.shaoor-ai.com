@@ -65,6 +65,7 @@ export function VisitsPanel({
   visits,
   pendingEdit,
   onPendingEditHandled,
+  initialPetFilter,
 }: {
   tenantId: string;
   canWrite: boolean;
@@ -76,6 +77,8 @@ export function VisitsPanel({
   /** Set when a vaccination/illness/medication row's Edit was clicked elsewhere — opens that row's source visit here, focused on the matching line item. */
   pendingEdit?: PendingVisitEdit | null;
   onPendingEditHandled?: () => void;
+  /** Seeds the pet filter — set when arriving from a pet card's "Visits" quick-link (see HealthView). */
+  initialPetFilter?: string;
 }) {
   // VisitsPanel only exists in the tree while the Visits tab is active (see
   // HealthView) — switching to it from elsewhere always mounts a fresh
@@ -86,7 +89,7 @@ export function VisitsPanel({
     pendingEdit ? (visits.find((v) => v.id === pendingEdit.visitId) ?? null) : null
   );
   const [focusRowId, setFocusRowId] = useState<string | null>(() => pendingEdit?.focusId ?? null);
-  const [petFilter, setPetFilter] = useState("all");
+  const [petFilter, setPetFilter] = useState(initialPetFilter ?? "all");
   const pets = roster.filter((r) => r.kind === "pet");
   const filtered = petFilter === "all" ? visits : visits.filter((v) => v.petId === petFilter);
 
