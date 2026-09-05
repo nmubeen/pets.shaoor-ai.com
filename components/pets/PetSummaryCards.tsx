@@ -2,7 +2,7 @@ import { Card } from "@/components/ui";
 import { CheckIcon } from "@/components/icons";
 import type { RosterItem } from "@/lib/roster";
 
-function CardBody({ r, selected }: { r: RosterItem; selected: boolean }) {
+function CardBody({ r, selected, showSubtitle }: { r: RosterItem; selected: boolean; showSubtitle: boolean }) {
   return (
     <>
       <div className="w-full aspect-[4/3] relative">
@@ -25,7 +25,7 @@ function CardBody({ r, selected }: { r: RosterItem; selected: boolean }) {
       </div>
       <div className="p-3">
         <div className="font-semibold text-sm truncate">{r.name}</div>
-        <div className="text-xs text-muted truncate">{r.subtitle}</div>
+        {showSubtitle && <div className="text-xs text-muted truncate">{r.subtitle}</div>}
       </div>
     </>
   );
@@ -43,11 +43,14 @@ export function PetSummaryCards({
   pets,
   selectedId,
   onSelect,
+  showSubtitle = true,
 }: {
   pets: RosterItem[];
   /** Highlights the matching card — set together with onSelect for a tappable chooser (Vet View); omit both for a plain static grid (Social's /app/pets). */
   selectedId?: string;
   onSelect?: (petId: string) => void;
+  /** Vet View wants just the name on its cards — the breed/species/age/gender line lives in its own header below the grid instead, so repeating it here is redundant. Defaults to true (Social's /app/pets keeps the subtitle, its only identifying text on the card). */
+  showSubtitle?: boolean;
 }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -65,12 +68,12 @@ export function PetSummaryCards({
                 isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-paper shadow-md" : "opacity-85 hover:opacity-100"
               }`}
             >
-              <CardBody r={r} selected={isSelected} />
+              <CardBody r={r} selected={isSelected} showSubtitle={showSubtitle} />
             </Card>
           </button>
         ) : (
           <Card key={r.id} className="p-0 overflow-hidden">
-            <CardBody r={r} selected={false} />
+            <CardBody r={r} selected={false} showSubtitle={showSubtitle} />
           </Card>
         );
       })}

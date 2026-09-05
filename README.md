@@ -73,56 +73,58 @@ A Next.js (App Router) build of the marketing site and app shell described in
     `/app/pending` is always reachable regardless of role — otherwise a
     commercially-blocked restricted-role user would bounce forever
     between their role's redirect and the pending redirect.
-  - **`/app/vet-view`** (new) — a read-only, mobile-first one-pager, cards
-    first: a tappable pet-card grid at the top
-    (`components/pets/PetSummaryCards.tsx`, shared with Social's own
-    read-only `/app/pets` view — no Edit/Delete/health-links, just photo +
-    name + subtitle), with the selected card visibly marked (a check
-    badge over its photo plus a ring, not just a subtle border — easy to
-    tell at a glance which pet the page below is about). Right below the
-    cards, a plain header names the selected pet (`<h2>`) with a
-    sub-header reading "Age Gender Species (Breed)" (e.g. "3 yrs Female
-    Dog (Labrador)") — the one place that identifying info appears now.
-    Next, a "Summary" card (no pet name in its own title — the header
-    above it already gives that) holds just the *selected* pet's short
-    deterministic-template narration, starting straight at the health
-    facts rather than re-stating who the pet is (e.g. "4 visits logged,
-    most recent 12-Aug-2026. 1 vaccination due (Rabies). On 1 medication
-    (Heartworm prevention)." — `lib/vet-view.ts`'s `buildVetSummaries`,
-    built from the exact same tenant-wide fetchers `/app/health` already
-    uses, grouped by pet the same way `lib/pet-links.ts` does; no AI/LLM
-    call, this codebase has no AI integration) — switching the selected
-    card swaps this card's text, it doesn't show every pet stacked. Then
-    Basic details, restyled as an icon-bulleted list (new `WeightIcon`/
-    `ChipIcon` plus the existing `ShieldIcon`/`ClipboardIcon` in place of
-    literal bullet markers, `IconBullet` in `VetView.tsx`) covering
-    whatever's left once age/gender/species/breed moved to the header
-    above: Weight (the weight tracker's *latest reading*, "12.4 kg (as on
-    05-Sep-2026)", not the separate manually-set `pets.weight_kg`
-    snapshot, which can go stale), Microchip, Neutered/spayed, Notes —
-    each row omitted entirely when empty, "No additional details." shown
-    only if all four are. The remaining sections run Vaccinations,
+  - **`/app/vet-view`** (new, page name unchanged — see below for the
+    *role* rename) — a read-only, mobile-first one-pager, cards first: a
+    tappable pet-card grid at the top (`components/pets/
+    PetSummaryCards.tsx`, shared with Social's own read-only `/app/pets`
+    view — new `showSubtitle` prop, defaulting `true` for Social; Vet View
+    passes `false` so its cards show just the photo and name, nothing
+    else), with the selected card visibly marked (a check badge over its
+    photo plus a ring, not just a subtle border — easy to tell at a
+    glance which pet the page below is about). Right below the cards, a
+    plain header names the selected pet (`<h2>`) with a bold sub-header
+    reading "Age Gender Species (Breed), Spayed/Neutered status, Weight
+    as on Date" (e.g. "3 yrs Female Dog (Labrador), Spayed, 12.4 kg as on
+    05-Sep-2026" — `sterilizationLabel()` in `VetView.tsx` picks
+    Spayed/Not Spayed vs. Neutered/Not Neutered from the pet's gender) —
+    the one place that identifying info appears now. Next, a "Summary"
+    card (no pet name in its own title — the header above it already
+    gives that) presents the *selected* pet's health facts as icon-led
+    rows rather than a paragraph — one icon per fact kind (visits,
+    vaccinations, illnesses, medications, weight — `summaryIcons` in
+    `VetView.tsx`), built by `lib/vet-view.ts`'s `buildVetSummaries` from
+    the exact same tenant-wide fetchers `/app/health` already uses,
+    grouped by pet the same way `lib/pet-links.ts` does (no AI/LLM call,
+    this codebase has no AI integration) — switching the selected card
+    swaps these rows, it doesn't show every pet stacked. Every remaining
+    section title now carries a matching icon too. They run Vaccinations,
     Illnesses, then Visits (in that order): Vaccinations (vaccine name,
     date, clinic — no status badge), Illnesses (just "date — reason",
     nothing else), Visits (led by the date, not the reason — provider and
-    doctor beneath it, then Services/Vaccinations/Illnesses/Medications
-    each as one comma-joined line by *name only*, no cost/dosage/status
-    clutter; Consultation is filtered out of Services since nearly every
-    visit carries it as a default catch-all and it adds nothing to a
-    summary meant to be scanned in seconds; only the 3 most recent show,
-    with a "View all N visits" toggle below — client-side, not a link to
-    `/app/health`, since a `vet_view`-role viewer can't reach that page at
-    all), and finally Growth (the chart reuses `GrowthPanel`'s exported
-    `WeightChart` directly, skipping its own redundant pet-selector). No
-    Medications section — deliberately skipped here (Vet View is meant to
-    be scanned in seconds; the Summary narration already mentions active
-    medication count). Reachable by every role from the sidebar (an owner
-    can open it themselves to show
+    doctor beneath it, then Services/Vaccinations given/illnesses treated
+    on one condensed line, name-only and pipe-separated — Consultation
+    filtered out of Services since nearly every visit carries it as a
+    default catch-all and adds nothing to a summary meant to be scanned
+    in seconds — plus a Comments line from the visit's own notes when
+    set; only the 3 most recent show, with a "View all N visits" toggle
+    below — client-side, not a link to `/app/health`, since a `vet_view`
+    -role viewer can't reach that page at all), and finally Growth (the
+    chart reuses `GrowthPanel`'s exported `WeightChart` directly,
+    skipping its own redundant pet-selector). No standalone Medications
+    section — deliberately skipped (Vet View is meant to be scanned in
+    seconds; the Summary already surfaces active medication count, and a
+    visit's own prescriptions show inline on that visit). Reachable by
+    every role from the sidebar (an owner can open it themselves to show
     a vet in person) — only the `vet_view` *role* is restricted to seeing
-    nothing else. "Sex" is "Gender" everywhere in the product now (the
-    roster form's label and this page) — `PetSex`/the `sex` column/
-    `SEX_LABEL` keep their existing names, only the user-facing label
-    changed.
+    nothing else. That role's own display label is just **"Vet"**
+    everywhere it's shown as a role (the Team page's invite dropdown,
+    member list, and Roles reference, plus the invite email's "as a
+    vet" wording) — the page itself keeps its "Vet View" name, and the
+    `vet_view` enum value/identifier is unchanged, only the label seen by
+    people changed (same treatment as the Sex → Gender rename above).
+    "Sex" is "Gender" everywhere in the product now (the roster form's
+    label and this page) — `PetSex`/the `sex` column/`SEX_LABEL` keep
+    their existing names, only the user-facing label changed.
   - **Social's read-only surfaces** — `/app/pets` renders
     `PetSummaryCards` instead of the normal `PetsGrid` for this role
     (`app/app/pets/page.tsx` branches on `active.role`); `GalleryView`
@@ -295,7 +297,7 @@ A Next.js (App Router) build of the marketing site and app shell described in
     linked back to the visit, so it shows up on the Illnesses/Medications
     tabs exactly like a directly-logged entry — just with its origin
     remembered.
-  
+
   A visit still has its own reason, provider (vet **or** grooming, picked
   from one combined list), consulting doctor (`vet_name`,
   `0019_vet_visit_doctor.sql` — the facility is fixed, who actually saw

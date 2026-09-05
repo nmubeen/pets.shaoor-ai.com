@@ -16,7 +16,7 @@ const ROLE_LABEL: Record<string, string> = {
   owner: "owner",
   caregiver: "caregiver",
   viewer: "viewer",
-  vet_view: "vet view",
+  vet_view: "vet",
   social: "social",
 };
 
@@ -90,7 +90,7 @@ export default async function TeamPage() {
             <span>Read-only on everything — for a pet-sitter or co-parent who needs the full picture.</span>
           </div>
           <div className="grid grid-cols-[110px_1fr] gap-3">
-            <span className="text-muted">vet view</span>
+            <span className="text-muted">vet</span>
             <span>
               Locked to a single read-only page (<code className="text-xs">Vet View</code>) — a mobile-friendly
               one-page summary per pet, meant to be opened by or shown to a vet.

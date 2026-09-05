@@ -9,7 +9,7 @@ import { enforcePetsLimit, PlanLimitExceededError } from "@/lib/entitlements";
 const ROLE_LABEL: Record<string, string> = {
   caregiver: "a caregiver",
   viewer: "a viewer",
-  vet_view: "a vet (read-only Vet View)",
+  vet_view: "a vet",
   social: "a social member (pet cards & gallery)",
 };
 

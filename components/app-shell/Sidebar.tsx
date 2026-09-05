@@ -25,10 +25,10 @@ const nav = [
   { href: "/app/pets", label: "Pets", icon: PawIcon },
   { href: "/app/habitats", label: "Habitats", icon: HabitatIcon },
   { href: "/app/health", label: "Health", icon: StethoIcon },
-  { href: "/app/vet-view", label: "Vet View", icon: ClipboardIcon },
   { href: "/app/shopping", label: "Shopping", icon: CartIcon },
   { href: "/app/gallery", label: "Gallery", icon: ImageIcon },
   { href: "/app/providers", label: "Providers", icon: PinIcon },
+  { href: "/app/vet-view", label: "Vet View", icon: ClipboardIcon },
 ];
 
 const settingsNav = [
@@ -63,9 +63,8 @@ export function Sidebar({
 
   return (
     <aside
-      className={`w-[220px] flex-none bg-primary text-primary-ink flex flex-col min-h-screen fixed inset-y-0 left-0 z-40 transition-transform duration-200 md:static md:translate-x-0 ${
-        mobileOpen ? "translate-x-0" : "-translate-x-full"
-      }`}
+      className={`w-[220px] flex-none bg-primary text-primary-ink flex flex-col min-h-screen fixed inset-y-0 left-0 z-40 transition-transform duration-200 md:static md:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
     >
       <div className="px-4 pt-5 pb-4 relative">
         <Link href="/app" className="flex items-center gap-2 font-serif font-semibold text-base opacity-95 mb-4">
@@ -85,9 +84,8 @@ export function Sidebar({
               <button
                 key={m.tenantId}
                 onClick={() => switchTenant(m.tenantId)}
-                className={`w-full text-left px-3 py-2 text-xs hover:bg-surface-2 transition ${
-                  m.tenantId === active.tenantId ? "font-semibold" : ""
-                }`}
+                className={`w-full text-left px-3 py-2 text-xs hover:bg-surface-2 transition ${m.tenantId === active.tenantId ? "font-semibold" : ""
+                  }`}
               >
                 🏠 {m.tenantName}
               </button>
@@ -104,9 +102,8 @@ export function Sidebar({
               key={item.href}
               href={item.href}
               onClick={onNavigate}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition ${
-                isNavActive ? "bg-white/15 opacity-100" : "opacity-72 hover:opacity-100 hover:bg-white/10"
-              }`}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition ${isNavActive ? "bg-white/15 opacity-100" : "opacity-72 hover:opacity-100 hover:bg-white/10"
+                }`}
             >
               <item.icon className="w-4 h-4" />
               {item.label}
@@ -125,9 +122,8 @@ export function Sidebar({
                 key={item.href}
                 href={item.href}
                 onClick={onNavigate}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition ${
-                  isNavActive ? "bg-white/15 opacity-100" : "opacity-72 hover:opacity-100 hover:bg-white/10"
-                }`}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition ${isNavActive ? "bg-white/15 opacity-100" : "opacity-72 hover:opacity-100 hover:bg-white/10"
+                  }`}
               >
                 <item.icon className="w-4 h-4" />
                 {item.label}

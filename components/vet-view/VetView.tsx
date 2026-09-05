@@ -4,12 +4,27 @@ import { useState } from "react";
 import { Card } from "@/components/ui";
 import { PetSummaryCards } from "@/components/pets/PetSummaryCards";
 import { WeightChart } from "@/components/health/GrowthPanel";
-import { WeightIcon, ChipIcon, ShieldIcon, ClipboardIcon } from "@/components/icons";
+import { WeightIcon, ShieldIcon, ClipboardIcon, StethoIcon, VialIcon, HeartIcon } from "@/components/icons";
 import { SPECIES_LABEL } from "@/lib/species-labels";
 import { SEX_LABEL, ageLabel } from "@/lib/pet-labels";
-import type { PetVetSummary } from "@/lib/vet-view";
+import type { PetVetSummary, VetSummaryItem } from "@/lib/vet-view";
+import type { PetSex } from "@/lib/database.types";
 
 const sectionLabel = "text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold mb-2";
+const summaryIcons: Record<VetSummaryItem["kind"], typeof WeightIcon> = {
+  visits: StethoIcon,
+  vaccinations: ShieldIcon,
+  illnesses: HeartIcon,
+  medications: VialIcon,
+  weight: WeightIcon,
+  records: ClipboardIcon,
+};
+
+function sterilizationLabel(sex: PetSex, neutered: boolean | null): string | null {
+  if (neutered === null) return null;
+  if (sex === "female") return neutered ? "Spayed" : "Not Spayed";
+  return neutered ? "Neutered" : "Not Neutered";
+}
 
 function IconBullet({ icon: Icon, children }: { icon: typeof WeightIcon; children: React.ReactNode }) {
   return (
@@ -20,10 +35,13 @@ function IconBullet({ icon: Icon, children }: { icon: typeof WeightIcon; childre
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, icon: Icon, children }: { title: string; icon?: typeof WeightIcon; children: React.ReactNode }) {
   return (
     <Card className="p-4">
-      <div className={sectionLabel}>{title}</div>
+      <div className={`${sectionLabel} flex items-center gap-1.5`}>
+        {Icon && <Icon className="w-[1em] h-[1em]" />}
+        <span>{title}</span>
+      </div>
       {children}
     </Card>
   );
@@ -31,9 +49,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 /**
  * Read-only, mobile-first one-pager: pet cards up top (tap one to select
- * it — the selected card gets a check badge + ring), a narration for
- * just that pet, then its full basic-details + Visits/Illnesses/
- * Vaccinations/Medications/Growth summary below. Deliberately a
+ * it — the selected card gets a check badge + ring), an icon-led health
+ * summary for just that pet, then Visits/Illnesses/Vaccinations/Growth
+ * details below. Deliberately a
  * single-column stack throughout, not HealthView's multi-tab layout —
  * this is meant to be handed to (or opened by) someone on a phone, in
  * one scroll, not navigated tab by tab.
@@ -48,16 +66,8 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
     setShowAllVisits(false);
   }
 
-  // Basic details' Weight row shows the weight tracker's latest reading
-  // (visit weigh-ins), not pets.weight_kg — that field is a separate,
-  // manually-set "current weight" snapshot that's never auto-synced from
-  // visit history (see lib/growth.ts), so it can silently go stale.
   const points = selected?.weightHistory?.points ?? [];
   const lastWeight = points.length > 0 ? points[points.length - 1] : null;
-  const petDetails = selected?.pet.pet;
-  const hasBasicDetails = Boolean(
-    lastWeight || petDetails?.microchipId || (petDetails && petDetails.neutered !== null) || petDetails?.notes
-  );
 
   const VISIT_PREVIEW_COUNT = 3;
   const visits = selected?.visits ?? [];
@@ -83,19 +93,26 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
         pets={summaries.map((s) => s.pet)}
         selectedId={selected?.pet.id}
         onSelect={handleSelectPet}
+        showSubtitle={false}
       />
 
       {selected && selected.pet.pet && (
         <div>
           <h2 className="text-xl font-semibold">{selected.pet.name}</h2>
-          <p className="text-sm text-muted">
+          <p className="text-sm font-bold text-muted">
             {[
-              ageLabel(selected.pet.pet.birthDate),
-              SEX_LABEL[selected.pet.pet.sex],
-              `${SPECIES_LABEL[selected.pet.pet.species]} (${selected.pet.pet.breed})`,
+              [
+                ageLabel(selected.pet.pet.birthDate),
+                SEX_LABEL[selected.pet.pet.sex],
+                `${SPECIES_LABEL[selected.pet.pet.species]} (${selected.pet.pet.breed})`,
+              ]
+                .filter(Boolean)
+                .join(" "),
+              sterilizationLabel(selected.pet.pet.sex, selected.pet.pet.neutered),
+              lastWeight ? `${lastWeight.weightKg} kg as on ${lastWeight.date}` : null,
             ]
               .filter(Boolean)
-              .join(" ")}
+              .join(", ")}
           </p>
         </div>
       )}
@@ -103,55 +120,34 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
       {selected && (
         <Card className="p-4">
           <div className={sectionLabel}>Summary</div>
-          <p className="text-sm">{selected.narration}</p>
+          <ul className="flex flex-col gap-2">
+            {selected.summaryItems.map((item) => (
+              <IconBullet key={item.kind} icon={summaryIcons[item.kind]}>
+                {item.text}
+              </IconBullet>
+            ))}
+          </ul>
         </Card>
       )}
 
       {selected && (
         <div className="flex flex-col gap-4">
-          <Section title="Basic details">
-            {selected.pet.pet && (
-              <>
-                {hasBasicDetails ? (
-                  <ul className="flex flex-col gap-2">
-                    {lastWeight && (
-                      <IconBullet icon={WeightIcon}>
-                        {lastWeight.weightKg} kg (as on {lastWeight.date})
-                      </IconBullet>
-                    )}
-                    {selected.pet.pet.microchipId && (
-                      <IconBullet icon={ChipIcon}>Microchip {selected.pet.pet.microchipId}</IconBullet>
-                    )}
-                    {selected.pet.pet.neutered !== null && (
-                      <IconBullet icon={ShieldIcon}>
-                        {selected.pet.pet.neutered ? "Neutered / spayed" : "Not neutered / spayed"}
-                      </IconBullet>
-                    )}
-                    {selected.pet.pet.notes && <IconBullet icon={ClipboardIcon}>{selected.pet.pet.notes}</IconBullet>}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-muted">No additional details.</p>
-                )}
-              </>
-            )}
-          </Section>
-
-          <Section title="Vaccinations">
+          <Section title="Vaccinations" icon={ShieldIcon}>
             {selected.vaccinations.length === 0 ? (
               <p className="text-sm text-muted">No vaccinations on record.</p>
             ) : (
               <div className="flex flex-col divide-y divide-line">
                 {selected.vaccinations.map((v) => (
                   <div key={v.id} className="py-2 text-sm">
-                    <div className="font-medium">{v.reason}</div>
-                    <div className="text-xs text-muted">{v.date}{v.provider ? ` · ${v.provider}` : ""}</div>
+                    <span className="font-semibold">{v.reason}</span> - {v.date}
+                    {v.provider ? ` (${v.provider})` : ""}
                   </div>
                 ))}
               </div>
             )}
           </Section>
 
-          <Section title="Illnesses">
+          <Section title="Illnesses" icon={HeartIcon}>
             {selected.illnesses.length === 0 ? (
               <p className="text-sm text-muted">No illnesses on record.</p>
             ) : (
@@ -165,7 +161,7 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
             )}
           </Section>
 
-          <Section title="Visits">
+          <Section title="Visits" icon={StethoIcon}>
             {visits.length === 0 ? (
               <p className="text-sm text-muted">No visits logged.</p>
             ) : (
@@ -177,33 +173,26 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
                     // services (Deworming, Grooming, ...) just adds noise
                     // to a summary meant to be scanned quickly.
                     const services = v.services.filter((s) => s.name.trim().toLowerCase() !== "consultation");
+                    const details = [
+                      services.length > 0 ? `Services: ${services.map((s) => s.name).join(", ")}` : null,
+                      v.vaccinations.length > 0
+                        ? `Vaccinations: ${v.vaccinations.map((x) => x.name).join(", ")}`
+                        : null,
+                      v.illnesses.length > 0 ? `Treatment for: ${v.illnesses.map((x) => x.name).join(", ")}` : null,
+                    ].filter((detail): detail is string => detail !== null);
                     return (
                       <div key={v.id} className="py-2.5 text-sm">
-                        <div className="font-semibold">{v.date}</div>
-                        {v.provider && <div className="text-xs text-muted mt-0.5">{v.provider}</div>}
-                        {v.doctor && <div className="text-xs text-muted">Dr. {v.doctor}</div>}
-                        {services.length > 0 && (
-                          <div className="text-xs mt-1">
-                            <span className="text-muted">Services: </span>
-                            {services.map((s) => s.name).join(", ")}
-                          </div>
+                        <div>
+                          <span className="font-semibold">{v.date}</span>
+                          {v.provider && ` - ${v.provider}`}
+                          {v.doctor && ` (Dr. ${v.doctor})`}
+                        </div>
+                        {details.length > 0 && (
+                          <div className="text-xs mt-1">{details.join(" | ")}</div>
                         )}
-                        {v.vaccinations.length > 0 && (
+                        {v.notes && (
                           <div className="text-xs mt-1">
-                            <span className="text-muted">Vaccinations: </span>
-                            {v.vaccinations.map((x) => x.name).join(", ")}
-                          </div>
-                        )}
-                        {v.illnesses.length > 0 && (
-                          <div className="text-xs mt-1">
-                            <span className="text-muted">Illnesses: </span>
-                            {v.illnesses.map((x) => x.name).join(", ")}
-                          </div>
-                        )}
-                        {v.medications.length > 0 && (
-                          <div className="text-xs mt-1">
-                            <span className="text-muted">Medications: </span>
-                            {v.medications.map((x) => x.name).join(", ")}
+                            <span className="font-semibold">Comments:</span> {v.notes}
                           </div>
                         )}
                       </div>
@@ -223,7 +212,7 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
             )}
           </Section>
 
-          <Section title="Growth">
+          <Section title="Growth" icon={WeightIcon}>
             {!selected.weightHistory || selected.weightHistory.points.length === 0 ? (
               <p className="text-sm text-muted">No weight logged yet.</p>
             ) : (

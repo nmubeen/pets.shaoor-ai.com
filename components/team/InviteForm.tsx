@@ -9,7 +9,7 @@ const roles = ["caregiver", "viewer", "vet_view", "social"];
 const ROLE_OPTION_LABEL: Record<string, string> = {
   caregiver: "Caregiver",
   viewer: "Viewer",
-  vet_view: "Vet View",
+  vet_view: "Vet",
   social: "Social",
 };
 
