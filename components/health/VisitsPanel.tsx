@@ -95,9 +95,12 @@ export function VisitsPanel({
   const pets = roster.filter((r) => r.kind === "pet");
   const filtered = petFilter === "all" ? visits : visits.filter((v) => v.petId === petFilter);
 
-  // Set right after logging a new visit — scrolls to and briefly
-  // highlights it, so "Save" doesn't just leave you scanning the list for
-  // what you just added.
+  // Set right after logging a new visit — highlights it if it's visible
+  // under whatever pet filter was already active (deliberately not
+  // forced to change: the filtered view you had before opening "Log a
+  // visit" is the one you should come back to). Does nothing when the
+  // new visit doesn't match the current filter — it was still added,
+  // just not shown right now.
   const [highlightId, setHighlightId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -156,12 +159,10 @@ export function VisitsPanel({
             setShowForm(false);
             setEditingVisit(null);
             setFocusRowId(null);
-            if (createdId) {
-              // "all" guarantees the new visit is visible regardless of
-              // which pet the filter was scoped to.
-              setPetFilter("all");
-              setHighlightId(createdId);
-            }
+            // Pet filter is left exactly as it was — the effect above
+            // already only scrolls/highlights when the new visit happens
+            // to be visible under it, and otherwise leaves the view alone.
+            if (createdId) setHighlightId(createdId);
           }}
         />
       )}

@@ -642,37 +642,34 @@ A Next.js (App Router) build of the marketing site and app shell described in
   read, with a plain effect alongside it only for the one real side
   effect, `URL.revokeObjectURL` on the previous blob once a new one
   replaces it.
-- **Jump to a newly-added Shopping order or Visit** — logging a new order
-  or visit and returning to the list now scrolls to and briefly
-  highlights the row you just added, instead of leaving you to hunt for
-  it. `addShoppingOrder`/`addVisit` now return the new row's `id` on
-  success (`updateShoppingOrder`/`updateVisit` don't — this is add-only,
-  not also on edit); `LogOrderForm`/`VisitForm`'s `onDone` callback is now
+- **Jump to a newly-added Shopping order or Visit — without disturbing
+  your filters** — logging a new order or visit and returning to the
+  list now briefly highlights the row you just added, *if* it happens to
+  be visible under whatever scope/year/seller (Shopping) or pet filter
+  (Visits) and page you already had set — it deliberately does **not**
+  change any of those to force the new row into view. Went through two
+  iterations: the first version switched every filter to "all" and, for
+  Shopping, jumped to whichever page the new order landed on; a follow-up
+  request reversed that specifically because it threw away filters you'd
+  just set — "go back to what was already shown," not "show me the new
+  one at any cost." If the new row doesn't match the current filters, it
+  was still added, it's just not visible right now (same as it would be
+  for anything else you'd logged earlier that doesn't match). `addShopping
+  Order`/`addVisit` return the new row's `id` on success
+  (`updateShoppingOrder`/`updateVisit` don't — add-only, not also on
+  edit); `LogOrderForm`/`VisitForm`'s `onDone` callback is now
   `(createdId?: string) => void`, called with that id only on a genuine
   create (the Cancel button's `onClick={onDone}` had to become
   `onClick={() => onDone()}` once `onDone` took a parameter, or the click
   event itself would've been passed as `createdId`). `ShoppingView`/
-  `VisitsPanel` switch their scope/pet filter to "all" and remember the id
-  as `highlightId`, which fades a background tint on the matching row for
-  2.5s and — Shopping only, since Visits isn't paginated — jumps to
-  whichever page it landed on. The two things this needed that don't fit
-  neatly in an effect: finding out an order's *page* is an "adjust state
-  from a derived value" case, done inline during render (guarded by a
-  `jumpedForId` state so it only fires once per new id) rather than in a
-  `useEffect`, since a conditional `setState` in an effect body is
-  exactly the "cascading render" pattern this project's lint config
-  flags — and it flags plain `useRef` access during render just as
-  strictly, so the guard is itself `useState`, not a ref. Scrolling
-  itself *is* a real effect (querying the live DOM for the row, once it
-  exists, to call `scrollIntoView`) — keyed on `page`/`petFilter` rather
-  than the filtered/sliced list itself, since slicing a table into pages
-  produces a fresh array every render and would otherwise restart the
-  effect's 2.5s timer on any unrelated re-render while still highlighted.
-  Server-action result narrowing hit its own small snag: `if (result.
-  error)` doesn't let TypeScript rule out the error-shaped branch
-  afterward (an empty string is falsy but still typed `string`, not
-  `null`), so accessing `result.id` needs `if (result.error !== null)`
-  instead.
+  `VisitsPanel` just remember the id as `highlightId`; an effect queries
+  the live DOM for a matching row (rather than checking the filtered/
+  paginated list directly) and, if found, fades a background tint on it
+  for 2.5s — if not found, it quietly does nothing. Server-action result
+  narrowing hit its own small snag along the way: `if (result.error)`
+  doesn't let TypeScript rule out the error-shaped branch afterward (an
+  empty string is falsy but still typed `string`, not `null`), so
+  accessing `result.id` needs `if (result.error !== null)` instead.
 - **Shopping: Year and Seller filters, qty dropped from the list, "Bought
   from" → "Seller"** — two more `<select>` filters sit below the existing
   All/Pet/Habitat/Household scope row: Year (every distinct year present

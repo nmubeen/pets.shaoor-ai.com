@@ -83,18 +83,13 @@ export function ShoppingView({
   const [showForm, setShowForm] = useState(false);
   const [editingOrder, setEditingOrder] = useState<ShoppingOrderRow | null>(null);
   const [page, setPage] = useState(1);
-  // Set right after adding a new order — jumps the list to whichever page
-  // holds it and briefly highlights the row, so "Save" doesn't just leave
-  // you wondering where it landed.
+  // Set right after adding a new order — highlights the row if it's
+  // visible under whatever scope/year/seller/page was already active
+  // (deliberately not forced to change: the filtered view you had before
+  // opening "Log an order" is the one you should come back to). Does
+  // nothing when the new order doesn't happen to match the current
+  // filters/page — it was still added, just not shown right now.
   const [highlightId, setHighlightId] = useState<string | null>(null);
-  // Which highlightId `page` has already been jumped for — without this,
-  // re-computing the jump on every render would fight the Previous/Next
-  // buttons the moment someone clicks away while still highlighted. Plain
-  // state, not a ref: React's own "adjusting state when a prop changes"
-  // pattern (see the useState docs) calls for state here specifically —
-  // this project's lint rules forbid touching a ref's `.current` during
-  // render at all, even for this exact purpose.
-  const [jumpedForId, setJumpedForId] = useState<string | null>(null);
 
   // Newest first, same as orders are already sorted — the years drop
   // naturally out of the (already-sorted) order dates, no extra sort
@@ -135,27 +130,15 @@ export function ShoppingView({
     setPage(1);
   }
 
-  // Once the freshly-added order shows up in `filtered` (after the form's
-  // own router.refresh() completes — `filtered`, not `orders`, so this
-  // also re-checks when `scope` flips to "all" in onDone below, in case
-  // the new order's own scope wasn't visible under whatever tab was
-  // active when it was added), jump to whichever page contains it. Done
-  // inline during render — an official React-supported way to adjust
-  // state in response to a prop/derived-value change — rather than in an
-  // effect, since a *conditional* setState call in an effect body is
-  // exactly the "cascading render" pattern the lint rule (rightly) flags.
-  if (highlightId && jumpedForId !== highlightId) {
-    const idx = filtered.findIndex((o) => o.id === highlightId);
-    if (idx !== -1) {
-      setJumpedForId(highlightId);
-      setPage(Math.floor(idx / PAGE_SIZE) + 1);
-    }
-  }
-
-  // Scrolls to and fades the highlight once the row actually exists in
-  // the DOM — i.e. once `page` has settled on the one computed above.
-  // Queried live rather than via a ref map, since which page (and thus
-  // whether this row is even mounted) can change between renders.
+  // Scrolls to and fades the highlight, but only if the new order is
+  // actually present on the current page under the current filters —
+  // checked by querying the live DOM (does an element with this id
+  // exist right now), not by inspecting `pageItems` directly. `pageItems`
+  // is still a dependency, though: it's what changes once `orders`
+  // refreshes with the new row in it, which is what should make this
+  // effect re-check. If the row isn't on this page, this quietly does
+  // nothing — the view stays exactly as it was, per the whole point of
+  // not forcing the filters/page to change on save.
   useEffect(() => {
     if (!highlightId) return;
     const el = document.getElementById(`shopping-order-${highlightId}`);
@@ -163,10 +146,7 @@ export function ShoppingView({
     el.scrollIntoView({ behavior: "smooth", block: "center" });
     const timer = setTimeout(() => setHighlightId(null), 2500);
     return () => clearTimeout(timer);
-    // `page`, not `pageItems` — the latter is a fresh array every render,
-    // which would restart this effect (and its 2.5s timer) on any
-    // unrelated re-render while highlighted.
-  }, [page, highlightId]);
+  }, [pageItems, highlightId]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -235,14 +215,9 @@ export function ShoppingView({
           onDone={(createdId) => {
             setShowForm(false);
             setEditingOrder(null);
-            if (createdId) {
-              // "all" on every filter guarantees the new order is visible
-              // regardless of its own scope/year/seller.
-              setScope("all");
-              setYear(YEAR_ALL);
-              setSeller(SELLER_ALL);
-              setHighlightId(createdId);
-            }
+            // Filters/page are left exactly as they were — see
+            // highlightId's own comment above for why.
+            if (createdId) setHighlightId(createdId);
           }}
         />
       )}
