@@ -80,13 +80,19 @@ A Next.js (App Router) build of the marketing site and app shell described in
     with prev/next arrow buttons, dot indicators, swipe, and left/right
     arrow keys to move between pets — no name, subtitle, or card chrome on
     the photo itself, since the header right below it already names the
-    pet. The swipe listeners live on the carousel's full-width wrapper
-    (the row of buttons + photo + the dots below it), not just the
-    narrow buttons-and-photo row itself — on a phone-width screen that
-    row is only ~200px of the ~380px+ column, so a real "swipe anywhere
-    across the carousel" gesture was landing outside the listened area
-    more often than not before this. (Social's own read-only `/app/pets`
-    view still uses the earlier tappable pet-card grid,
+    pet. The swipe listeners went through two rounds of widening: first
+    from just the ~112px photo to the carousel's full-width wrapper (the
+    button+photo row plus the dots below it), then — since that's still
+    only the top of a page meant to be scanned in one long scroll — up to
+    the page's own top-level container, so a left/right swipe switches
+    pets from anywhere on the page, not only over the carousel. Telling a
+    horizontal swipe apart from an ordinary vertical scroll matters a lot
+    more at that scope: `onTouchStart`/`onTouchEnd` in `VetView.tsx` track
+    both x and y, and only call `goTo()` once the horizontal movement
+    clearly dominates the vertical — never `preventDefault()`, so normal
+    scrolling, and tapping any button/link on the page, are both
+    completely unaffected. (Social's own read-only `/app/pets` view still
+    uses the earlier tappable pet-card grid,
     `components/pets/PetSummaryCards.tsx` — unchanged; Vet View no
     longer uses that component at all.) Right below
     the carousel, a plain header names the selected pet (`<h2>`) with a

@@ -41,18 +41,20 @@ function Section({ title, icon: Icon, children }: { title: string; icon?: typeof
 
 /**
  * Read-only, mobile-first one-pager: a one-pet-at-a-time carousel up top
- * (circular photo, prev/next + dots + swipe + arrow keys — same
- * hand-rolled carousel pattern as the Pet Passport, no library), an
- * icon-led health summary for just that pet, then Visits/Illnesses/
- * Vaccinations/Growth details below. Deliberately a single-column stack
- * throughout, not HealthView's multi-tab layout — this is meant to be
- * handed to (or opened by) someone on a phone, in one scroll, not
- * navigated tab by tab.
+ * (circular photo, prev/next + dots + arrow keys — same hand-rolled
+ * carousel pattern as the Pet Passport, no library), an icon-led health
+ * summary for just that pet, then Visits/Illnesses/Vaccinations/Growth
+ * details below. Deliberately a single-column stack throughout, not
+ * HealthView's multi-tab layout — this is meant to be handed to (or
+ * opened by) someone on a phone, in one scroll, not navigated tab by
+ * tab. Left/right swipe to switch pets works anywhere on the page, not
+ * just over the carousel itself — the touch listeners sit on the page's
+ * own top-level container (see onTouchStart/onTouchEnd below).
  */
 export function VetView({ tenantName, summaries }: { tenantName: string; summaries: PetVetSummary[] }) {
   const [index, setIndex] = useState(0);
   const [showAllVisits, setShowAllVisits] = useState(false);
-  const touchStartX = useRef<number | null>(null);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
   const total = summaries.length;
   const selected = summaries[index] ?? null;
 
@@ -71,15 +73,24 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, total]);
 
+  // Attached to the whole page (see the JSX below), not just the pet
+  // carousel — so left/right swiping switches pets no matter where on
+  // the page the gesture starts. Tracks y as well as x so it can tell a
+  // horizontal swipe apart from an ordinary vertical scroll (this page is
+  // taller than one screen): only fires goTo() when the horizontal
+  // movement clearly dominates the vertical, and never calls
+  // preventDefault, so scrolling itself is completely unaffected.
   function onTouchStart(e: React.TouchEvent) {
-    touchStartX.current = e.touches[0].clientX;
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   }
   function onTouchEnd(e: React.TouchEvent) {
-    if (touchStartX.current === null) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    if (dx > 40) goTo(index - 1);
-    else if (dx < -40) goTo(index + 1);
-    touchStartX.current = null;
+    if (touchStart.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStart.current.x;
+    const dy = e.changedTouches[0].clientY - touchStart.current.y;
+    touchStart.current = null;
+    if (Math.abs(dx) <= 40 || Math.abs(dx) <= Math.abs(dy)) return;
+    if (dx > 0) goTo(index - 1);
+    else goTo(index + 1);
   }
 
   const points = selected?.weightHistory?.points ?? [];
@@ -99,13 +110,13 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
   }
 
   return (
-    <div className="flex flex-col gap-5 max-w-xl mx-auto">
+    <div className="flex flex-col gap-5 max-w-xl mx-auto" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <div>
         <h1 className="text-2xl mb-1">Vet View</h1>
         <p className="text-sm text-muted">{tenantName} · read-only summary</p>
       </div>
 
-      <div className="w-full flex flex-col items-center gap-3" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className="w-full flex flex-col items-center gap-3">
         <div className="relative flex items-center justify-center gap-4">
           <button
             type="button"
