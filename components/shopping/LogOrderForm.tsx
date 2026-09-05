@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card } from "@/components/ui";
 import { MultiScopePicker } from "@/components/scope/MultiScopePicker";
 import { ProviderPicker } from "@/components/providers/ProviderPicker";
 import { addShoppingOrder, updateShoppingOrder } from "@/lib/actions/shopping";
-import { SHOPPING_CATEGORIES } from "@/lib/shopping-categories";
+import type { ShoppingCategory } from "@/lib/shopping-categories";
 import type { RosterItem } from "@/lib/roster";
 import type { Provider } from "@/lib/providers";
 import type { ShoppingOrderRow } from "@/lib/shopping";
@@ -18,12 +19,14 @@ export function LogOrderForm({
   tenantId,
   roster,
   providers,
+  categories,
   onDone,
   editing,
 }: {
   tenantId: string;
   roster: RosterItem[];
   providers: Provider[];
+  categories: ShoppingCategory[];
   onDone: () => void;
   /** Present when editing an existing order instead of logging a new one. */
   editing?: ShoppingOrderRow;
@@ -31,6 +34,15 @@ export function LogOrderForm({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+
+  // Delivered date defaults to whatever's typed into Ordered date, right
+  // up until the person actually touches the Delivered field themselves
+  // — after that we leave their choice alone. Editing an order that
+  // already has an explicit delivered date starts "touched" so opening
+  // Edit and tweaking the ordered date doesn't silently overwrite it.
+  const [orderDate, setOrderDate] = useState(editing?.orderedDateIso ?? new Date().toISOString().slice(0, 10));
+  const [deliveredDate, setDeliveredDate] = useState(editing?.deliveredDateIso ?? "");
+  const deliveredTouched = useRef(!!editing?.deliveredDateIso);
 
   function handleSubmit(formData: FormData) {
     setError(null);
@@ -59,12 +71,15 @@ export function LogOrderForm({
           <span className={label}>Category (optional)</span>
           <select name="category" defaultValue={editing?.category ?? ""} className={field}>
             <option value="">No category</option>
-            {SHOPPING_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
+            {categories.map((c) => (
+              <option key={c.id} value={c.name}>
+                {c.name}
               </option>
             ))}
           </select>
+          <Link href="/app/settings/care/categories" className="text-[.7rem] text-primary hover:underline w-fit">
+            Manage categories
+          </Link>
         </label>
 
         <MultiScopePicker roster={roster} initialSelectedIds={editing?.scopeIds} />
@@ -78,12 +93,25 @@ export function LogOrderForm({
               type="date"
               name="order_date"
               className={field}
-              defaultValue={editing?.orderedDateIso ?? new Date().toISOString().slice(0, 10)}
+              value={orderDate}
+              onChange={(e) => {
+                setOrderDate(e.target.value);
+                if (!deliveredTouched.current) setDeliveredDate(e.target.value);
+              }}
             />
           </label>
           <label className="flex flex-col gap-1.5">
             <span className={label}>Delivered date (optional)</span>
-            <input type="date" name="delivered_date" className={field} defaultValue={editing?.deliveredDateIso ?? ""} />
+            <input
+              type="date"
+              name="delivered_date"
+              className={field}
+              value={deliveredDate}
+              onChange={(e) => {
+                deliveredTouched.current = true;
+                setDeliveredDate(e.target.value);
+              }}
+            />
           </label>
         </div>
 

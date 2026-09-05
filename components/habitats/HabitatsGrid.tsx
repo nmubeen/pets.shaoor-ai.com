@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
 import { AddRosterForm } from "@/components/roster/AddRosterForm";
 import { HabitatCarePanel } from "@/components/habitats/HabitatCarePanel";
+import { PencilIcon, TrashIcon } from "@/components/icons";
 import { deleteHabitat } from "@/lib/actions/roster";
 import type { RosterItem } from "@/lib/roster";
 import type { HabitatCare } from "@/lib/habitat-care-shared";
@@ -22,9 +23,11 @@ function DeleteButton({ tenantId, item }: { tenantId: string; item: RosterItem }
           router.refresh();
         })
       }
-      className="text-xs text-muted hover:text-coral transition disabled:opacity-60 flex-none"
+      className="text-muted hover:text-coral transition disabled:opacity-60 flex-none"
+      aria-label={`Delete ${item.name}`}
+      title="Delete"
     >
-      {pending ? "…" : "Delete"}
+      {pending ? "…" : <TrashIcon className="w-4 h-4" />}
     </button>
   );
 }
@@ -89,9 +92,11 @@ export function HabitatsGrid({
                     <div className="flex items-center gap-3 flex-none">
                       <button
                         onClick={() => setEditingId(r.id)}
-                        className="text-xs text-muted hover:text-ink transition"
+                        className="text-muted hover:text-ink transition"
+                        aria-label={`Edit ${r.name}`}
+                        title="Edit"
                       >
-                        Edit
+                        <PencilIcon className="w-4 h-4" />
                       </button>
                       <DeleteButton tenantId={tenantId} item={r} />
                     </div>

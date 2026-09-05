@@ -556,20 +556,56 @@ A Next.js (App Router) build of the marketing site and app shell described in
   always 2 decimal places — `₹1,234.50`) instead of the five slightly
   different, decimal-dropping inline formatters this used to be.
 - **Shopping: order category** — a `category` field on each order,
-  optional, picked from a `<select>` dropdown in `LogOrderForm` and shown
-  as its own column in the orders table. `shopping_orders.category`
-  (`0030_shopping_order_category.sql`) is a plain nullable text column,
-  deliberately *not* a Postgres enum like `service_providers.category` —
-  that one needs its own migration (and, per Postgres's own rule, a
-  *separate* one from anything that uses the new value in the same
-  transaction) every time a category is added. The option list instead
-  lives in application code (`lib/shopping-categories.ts`'s
-  `SHOPPING_CATEGORIES`, seeded with Food/Treats/Toys/Grooming &
-  Hygiene/Health & Medicine/Accessories/Bedding & Litter/Other) — adding
-  one there going forward is a one-line change, no migration, no
-  downtime. That file's own comment warns against ever removing or
-  renaming a shipped entry, since an order already saved with it would
-  otherwise show a `<select>` silently falling back to the first option.
+  optional, picked from a `<select>` dropdown in `LogOrderForm`. Went
+  through two iterations in one session: first a hardcoded option list in
+  application code, then — once it became clear the *user*, not just a
+  developer, should be able to keep adding categories — a proper
+  tenant-editable catalog, a third Settings → Care tab alongside Service
+  Types and Vaccinations (`/app/settings/care/categories`,
+  `ShoppingCategoriesView.tsx`, `lib/actions/shopping-categories.ts`).
+  `menagerie.shopping_categories` (`0031_shopping_categories.sql`) is a
+  small per-tenant table — id, name, nothing else — same shape/RLS/grant
+  pattern as `care_service_types`, case-insensitively unique per tenant.
+  `shopping_orders.category` itself stays the plain nullable text column
+  `0030_shopping_order_category.sql` added, *not* a foreign key to the
+  new table — same "type it, it's just a label" glue as an order's own
+  item name, so renaming or deleting a category from the catalog never
+  touches an order that already recorded one. Every existing tenant was
+  backfilled with the same 8 starter categories (Food, Treats, Toys,
+  Grooming & Hygiene, Health & Medicine, Accessories, Bedding & Litter,
+  Other) the hardcoded list used to ship with, and `handle_new_user()`
+  now seeds the same 8 into every brand-new tenant too — so the catalog
+  is never empty on day one, just editable from then on.
+  `LogOrderForm`'s Category field links to the Settings page ("Manage
+  categories") so adding a new one is one click away while logging an
+  order.
+- **Edit/Delete as icons, everywhere** — every card/table row's Edit and
+  Delete controls across the app (Pets, Habitats, Service Providers,
+  Shopping orders, Health's Visits/Illnesses/Vaccinations, Settings'
+  Service Types/Vaccination Plans/Categories, Gallery's Delete, the
+  Adoption note's Edit) now render as a bare `PencilIcon`/`TrashIcon`
+  (new in `components/icons.tsx`) instead of the word "Edit"/"Delete" —
+  same click behavior, confirm dialogs, and pending-state "…" as before,
+  just an icon instead of text, with an `aria-label`/`title` carrying the
+  same word for accessibility and on hover. `RowActions`-style bordered
+  buttons keep their border, just icon-only now; plain-text card actions
+  (Pets, Habitats, Providers) lost the `text-xs` sizing since there's no
+  more label text to size. Left alone: buttons worded something other
+  than literally "Edit"/"Delete" — Gallery's "Unlist", Team's "Remove
+  member", Medications/Habitat-care's "Remove" — since those weren't
+  what was asked to change, and "Remove" already reads fine as text.
+- **Shopping: dropped the Delivered column, orders table** — still
+  captured in `LogOrderForm` (still useful data), just no longer shown as
+  its own column in the compact orders list.
+- **Shopping: delivered date defaults to ordered date** — typing or
+  changing Ordered date in `LogOrderForm` also fills Delivered date with
+  the same value, right up until the person actually edits Delivered
+  date themselves — after that their own choice is left alone (tracked
+  with a `deliveredTouched` ref, not state, since touching it shouldn't
+  itself trigger a re-render). Editing an order that already has an
+  explicit delivered date starts "touched", so opening Edit and tweaking
+  the ordered date doesn't silently overwrite a real delivered date that
+  was already on record.
 - **Care tasks** — `care_tasks` table with RLS, exactly one of pet/habitat
   required (`0017_scope_rework.sql` tightened this from "pet, habitat, or
   household" — the vague household catch-all is gone, so every task is

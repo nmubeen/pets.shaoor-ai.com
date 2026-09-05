@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
-import { PlusIcon } from "@/components/icons";
+import { PlusIcon, PencilIcon, TrashIcon } from "@/components/icons";
 import { VisitForm } from "@/components/health/VisitForm";
 import { PetFilterSelect } from "@/components/health/PetFilterSelect";
 import { deleteVisit } from "@/lib/actions/health";
@@ -35,8 +35,8 @@ function VisitActions({ tenantId, visitId, onEdit }: { tenantId: string; visitId
   const router = useRouter();
   return (
     <div className="flex items-center gap-2 flex-none">
-      <button onClick={onEdit} className="text-xs text-muted hover:text-ink border border-line rounded-md px-2 py-1 transition">
-        Edit
+      <button onClick={onEdit} className="text-muted hover:text-ink border border-line rounded-md p-1.5 transition" aria-label="Edit visit" title="Edit">
+        <PencilIcon className="w-4 h-4" />
       </button>
       <button
         disabled={pending}
@@ -47,9 +47,11 @@ function VisitActions({ tenantId, visitId, onEdit }: { tenantId: string; visitId
             router.refresh();
           })
         }
-        className="text-xs text-muted hover:text-coral border border-line rounded-md px-2 py-1 transition disabled:opacity-60"
+        className="text-muted hover:text-coral border border-line rounded-md p-1.5 transition disabled:opacity-60"
+        aria-label="Delete visit"
+        title="Delete"
       >
-        {pending ? "…" : "Delete"}
+        {pending ? "…" : <TrashIcon className="w-4 h-4" />}
       </button>
     </div>
   );

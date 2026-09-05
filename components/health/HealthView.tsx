@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui";
-import { PlusIcon, StethoIcon, HeartIcon, DropIcon, VialIcon, ChartIcon } from "@/components/icons";
+import { PlusIcon, StethoIcon, HeartIcon, DropIcon, VialIcon, ChartIcon, PencilIcon, TrashIcon } from "@/components/icons";
 import { LogHealthForm, type HealthTabKey } from "@/components/health/LogHealthForm";
 import { PetFilterSelect } from "@/components/health/PetFilterSelect";
 import { VisitsPanel } from "@/components/health/VisitsPanel";
@@ -77,18 +77,19 @@ function RowActions({
     return (
       <button
         onClick={() => onEditViaVisit({ visitId: row.visitId!, focusId: row.id })}
-        className="text-xs text-muted hover:text-ink border border-line rounded-md px-2 py-1 transition"
+        className="text-muted hover:text-ink border border-line rounded-md p-1.5 transition"
+        aria-label="Edit (in visit) — logged as part of a visit, opens that visit"
         title="Logged as part of a visit — opens that visit"
       >
-        Edit (in visit)
+        <PencilIcon className="w-4 h-4" />
       </button>
     );
   }
 
   return (
     <div className="flex items-center gap-2">
-      <button onClick={onEdit} className="text-xs text-muted hover:text-ink border border-line rounded-md px-2 py-1 transition">
-        Edit
+      <button onClick={onEdit} className="text-muted hover:text-ink border border-line rounded-md p-1.5 transition" aria-label="Edit" title="Edit">
+        <PencilIcon className="w-4 h-4" />
       </button>
       <button
         disabled={pending}
@@ -99,9 +100,11 @@ function RowActions({
             router.refresh();
           })
         }
-        className="text-xs text-muted hover:text-coral border border-line rounded-md px-2 py-1 transition disabled:opacity-60"
+        className="text-muted hover:text-coral border border-line rounded-md p-1.5 transition disabled:opacity-60"
+        aria-label="Delete"
+        title="Delete"
       >
-        {pending ? "…" : "Delete"}
+        {pending ? "…" : <TrashIcon className="w-4 h-4" />}
       </button>
     </div>
   );

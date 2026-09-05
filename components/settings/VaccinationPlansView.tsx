@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
-import { PlusIcon } from "@/components/icons";
+import { PlusIcon, PencilIcon, TrashIcon } from "@/components/icons";
 import { CareTabs } from "@/components/settings/CareTabs";
 import { SpeciesFilterSelect } from "@/components/settings/SpeciesFilterSelect";
 import { addVaccinationPlan, updateVaccinationPlan, deleteVaccinationPlan } from "@/lib/actions/vaccination-plans";
@@ -116,8 +116,8 @@ function RowActions({ tenantId, planId, onEdit }: { tenantId: string; planId: st
   const router = useRouter();
   return (
     <div className="flex items-center gap-2">
-      <button onClick={onEdit} className="text-xs text-muted hover:text-ink border border-line rounded-md px-2 py-1 transition">
-        Edit
+      <button onClick={onEdit} className="text-muted hover:text-ink border border-line rounded-md p-1.5 transition" aria-label="Edit plan" title="Edit">
+        <PencilIcon className="w-4 h-4" />
       </button>
       <button
         disabled={pending}
@@ -128,9 +128,11 @@ function RowActions({ tenantId, planId, onEdit }: { tenantId: string; planId: st
             router.refresh();
           })
         }
-        className="text-xs text-muted hover:text-coral border border-line rounded-md px-2 py-1 transition disabled:opacity-60"
+        className="text-muted hover:text-coral border border-line rounded-md p-1.5 transition disabled:opacity-60"
+        aria-label="Delete plan"
+        title="Delete"
       >
-        {pending ? "…" : "Delete"}
+        {pending ? "…" : <TrashIcon className="w-4 h-4" />}
       </button>
     </div>
   );

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setAdoptable } from "@/lib/actions/gallery";
+import { PencilIcon } from "@/components/icons";
 
 export function AdoptionToggle({
   tenantId,
@@ -38,8 +39,8 @@ export function AdoptionToggle({
       <div className="flex items-center justify-between gap-2 text-xs">
         <span className="text-good font-medium">🏡 Listed for adoption</span>
         <div className="flex gap-2">
-          <button onClick={() => setEditing(true)} className="text-muted hover:text-ink transition">
-            Edit
+          <button onClick={() => setEditing(true)} className="text-muted hover:text-ink transition" aria-label="Edit adoption note" title="Edit">
+            <PencilIcon className="w-4 h-4" />
           </button>
           <button
             disabled={pending}

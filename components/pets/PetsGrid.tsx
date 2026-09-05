@@ -8,7 +8,7 @@ import { AdoptionToggle } from "@/components/pets/AdoptionToggle";
 import { SuggestScheduleButton } from "@/components/pets/SuggestScheduleButton";
 import { PetHealthLinks } from "@/components/pets/PetHealthLinks";
 import { AddRosterForm } from "@/components/roster/AddRosterForm";
-import { PassportIcon } from "@/components/icons";
+import { PassportIcon, PencilIcon, TrashIcon } from "@/components/icons";
 import { deletePet } from "@/lib/actions/roster";
 import type { RosterItem } from "@/lib/roster";
 import type { PetLinks } from "@/lib/pet-links";
@@ -26,9 +26,11 @@ function DeleteButton({ tenantId, item }: { tenantId: string; item: RosterItem }
           router.refresh();
         })
       }
-      className="text-xs text-muted hover:text-coral transition disabled:opacity-60 flex-none"
+      className="text-muted hover:text-coral transition disabled:opacity-60 flex-none"
+      aria-label={`Delete ${item.name}`}
+      title="Delete"
     >
-      {pending ? "…" : "Delete"}
+      {pending ? "…" : <TrashIcon className="w-4 h-4" />}
     </button>
   );
 }
@@ -97,9 +99,11 @@ export function PetsGrid({
                   </Link>
                   <button
                     onClick={() => setEditingId(r.id)}
-                    className="text-xs text-muted hover:text-ink transition"
+                    className="text-muted hover:text-ink transition"
+                    aria-label={`Edit ${r.name}`}
+                    title="Edit"
                   >
-                    Edit
+                    <PencilIcon className="w-4 h-4" />
                   </button>
                   <DeleteButton tenantId={tenantId} item={r} />
                 </div>

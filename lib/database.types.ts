@@ -316,6 +316,18 @@ export interface Database {
         },
         "tenant_id" | "order_id"
       >;
+      // Tenant-editable options for shopping_orders.category (a plain
+      // text column, not a foreign key to this table — see
+      // lib/shopping-categories.ts).
+      shopping_categories: Table<
+        {
+          id: string;
+          tenant_id: string;
+          name: string;
+          created_at: string;
+        },
+        "tenant_id" | "name"
+      >;
       // pet_id/habitat_id: exactly one required — see 0017_scope_rework.sql.
       care_tasks: Table<
         {

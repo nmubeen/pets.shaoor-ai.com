@@ -3,10 +3,11 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
-import { PlusIcon } from "@/components/icons";
+import { PlusIcon, PencilIcon, TrashIcon } from "@/components/icons";
 import { LogOrderForm } from "@/components/shopping/LogOrderForm";
 import { deleteShoppingOrder } from "@/lib/actions/shopping";
 import type { ShoppingOrderRow, SpendSummary } from "@/lib/shopping";
+import type { ShoppingCategory } from "@/lib/shopping-categories";
 import type { RosterItem } from "@/lib/roster";
 import type { Provider } from "@/lib/providers";
 import type { MembershipRole } from "@/lib/database.types";
@@ -26,8 +27,8 @@ function OrderActions({ tenantId, orderId, onEdit }: { tenantId: string; orderId
   const router = useRouter();
   return (
     <div className="flex items-center gap-2">
-      <button onClick={onEdit} className="text-xs text-muted hover:text-ink border border-line rounded-md px-2 py-1 transition">
-        Edit
+      <button onClick={onEdit} className="text-muted hover:text-ink border border-line rounded-md p-1.5 transition" aria-label="Edit order" title="Edit">
+        <PencilIcon className="w-4 h-4" />
       </button>
       <button
         disabled={pending}
@@ -38,9 +39,11 @@ function OrderActions({ tenantId, orderId, onEdit }: { tenantId: string; orderId
             router.refresh();
           })
         }
-        className="text-xs text-muted hover:text-coral border border-line rounded-md px-2 py-1 transition disabled:opacity-60"
+        className="text-muted hover:text-coral border border-line rounded-md p-1.5 transition disabled:opacity-60"
+        aria-label="Delete order"
+        title="Delete"
       >
-        {pending ? "…" : "Delete"}
+        {pending ? "…" : <TrashIcon className="w-4 h-4" />}
       </button>
     </div>
   );
@@ -51,6 +54,7 @@ export function ShoppingView({
   role,
   roster,
   providers,
+  categories,
   orders,
   summary,
 }: {
@@ -58,6 +62,7 @@ export function ShoppingView({
   role: MembershipRole;
   roster: RosterItem[];
   providers: Provider[];
+  categories: ShoppingCategory[];
   orders: ShoppingOrderRow[];
   summary: SpendSummary;
 }) {
@@ -115,6 +120,7 @@ export function ShoppingView({
           tenantId={tenantId}
           roster={roster}
           providers={providers}
+          categories={categories}
           editing={editingOrder ?? undefined}
           onDone={() => {
             setShowForm(false);
@@ -152,7 +158,6 @@ export function ShoppingView({
                 <th className={th}>Scope</th>
                 <th className={th}>Bought from</th>
                 <th className={th}>Ordered</th>
-                <th className={th}>Delivered</th>
                 <th className={th}>Cost</th>
                 {canWrite && <th className={th}></th>}
               </tr>
@@ -188,7 +193,6 @@ export function ShoppingView({
                   <td className="px-4 py-3 text-muted max-w-[200px]">{o.scope}</td>
                   <td className="px-4 py-3 text-muted whitespace-nowrap">{o.provider ?? "—"}</td>
                   <td className="px-4 py-3 text-muted whitespace-nowrap">{o.orderedDate}</td>
-                  <td className="px-4 py-3 text-muted whitespace-nowrap">{o.deliveredDate ?? "—"}</td>
                   <td className="px-4 py-3 font-mono whitespace-nowrap">{o.cost ?? "—"}</td>
                   {canWrite && (
                     <td className="px-4 py-3">

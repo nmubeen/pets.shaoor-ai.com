@@ -273,3 +273,17 @@ export const WhatsAppIcon = (p: IconProps) => (
     <path d="M8.3 8.6c.2-.5.4-.5.7-.5h.5c.2 0 .4 0 .6.4s.7 1.6.7 1.8 0 .3-.2.5l-.5.6c-.1.2-.2.3 0 .6.2.4.8 1.2 1.7 1.9 1.1 1 1.6 1.1 1.9 1s.4-.3.6-.6l.4-.6c.2-.3.4-.3.6-.2l1.5.7c.2.1.4.2.4.4 0 .5 0 1.1-.3 1.5-.3.4-1 .8-1.6.8-1.5.1-3.5-.6-5.2-2.2-1.7-1.6-2.6-3.4-2.7-4.9 0-.6.2-1.3.7-1.7Z" fill="currentColor" stroke="none" />
   </svg>
 );
+
+export const PencilIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="m14.5 4.5 5 5L8 21H3v-5Z" />
+    <path d="m12.5 6.5 5 5" />
+  </svg>
+);
+
+export const TrashIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M4 7h16M9 7V4.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V7M18.5 7 17.7 19.4a2 2 0 0 1-2 1.9H8.3a2 2 0 0 1-2-1.9L5.5 7" />
+    <path d="M10 11v6M14 11v6" />
+  </svg>
+);

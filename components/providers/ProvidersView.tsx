@@ -3,7 +3,7 @@
 import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Avatar } from "@/components/ui";
-import { PlusIcon, GlobeIcon, PinIcon, MailIcon, PhoneIcon, WhatsAppIcon } from "@/components/icons";
+import { PlusIcon, GlobeIcon, PinIcon, MailIcon, PhoneIcon, WhatsAppIcon, PencilIcon, TrashIcon } from "@/components/icons";
 import { ProviderForm } from "@/components/providers/ProviderForm";
 import { deleteProvider } from "@/lib/actions/providers";
 import type { Provider } from "@/lib/providers";
@@ -44,9 +44,11 @@ function DeleteButton({ tenantId, providerId }: { tenantId: string; providerId: 
           router.refresh();
         })
       }
-      className="text-xs text-muted hover:text-coral transition disabled:opacity-60"
+      className="text-muted hover:text-coral transition disabled:opacity-60"
+      aria-label="Delete provider"
+      title="Delete"
     >
-      {pending ? "…" : "Delete"}
+      {pending ? "…" : <TrashIcon className="w-4 h-4" />}
     </button>
   );
 }
@@ -160,8 +162,8 @@ export function ProvidersView({ tenantId, providers }: { tenantId: string; provi
                         <GlobeIcon className="w-4 h-4" />
                       </ContactIcon>
                     )}
-                    <button onClick={() => setEditingId(p.id)} className="text-xs text-muted hover:text-ink transition">
-                      Edit
+                    <button onClick={() => setEditingId(p.id)} className="text-muted hover:text-ink transition" aria-label="Edit provider" title="Edit">
+                      <PencilIcon className="w-4 h-4" />
                     </button>
                     <DeleteButton tenantId={tenantId} providerId={p.id} />
                   </div>

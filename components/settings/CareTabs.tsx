@@ -1,18 +1,19 @@
 import Link from "next/link";
-import { ScissorsIcon, DropIcon } from "@/components/icons";
+import { ScissorsIcon, DropIcon, CartIcon } from "@/components/icons";
 
 /**
- * Service Types and Vaccinations are two real pages now (not two panels
- * stacked on one /app/settings/care screen) — this is their shared tab
- * row, styled like Health's own TabRow but navigating via real links
- * instead of client-side tab state, since each is its own route.
+ * Service Types, Vaccinations, and Categories are three real pages now
+ * (not panels stacked on one /app/settings/care screen) — this is their
+ * shared tab row, styled like Health's own TabRow but navigating via real
+ * links instead of client-side tab state, since each is its own route.
  */
 const TABS = [
   { href: "/app/settings/care/service-types", key: "service-types" as const, label: "Service Types", icon: ScissorsIcon },
   { href: "/app/settings/care/vaccinations", key: "vaccinations" as const, label: "Vaccinations", icon: DropIcon },
+  { href: "/app/settings/care/categories", key: "categories" as const, label: "Categories", icon: CartIcon },
 ];
 
-export function CareTabs({ active }: { active: "service-types" | "vaccinations" }) {
+export function CareTabs({ active }: { active: "service-types" | "vaccinations" | "categories" }) {
   return (
     <div className="flex gap-1.5 flex-wrap">
       {TABS.map((t) => (

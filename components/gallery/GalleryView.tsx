@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
-import { ImageIcon, PlusIcon, HeartIcon, HeartFillIcon } from "@/components/icons";
+import { ImageIcon, PlusIcon, HeartIcon, HeartFillIcon, TrashIcon } from "@/components/icons";
 import { UploadForm } from "@/components/gallery/UploadForm";
 import { CommentThread } from "@/components/gallery/CommentThread";
 import { deleteMedia, likeMedia, unlikeMedia } from "@/lib/actions/gallery";
@@ -184,9 +184,11 @@ export function GalleryView({
                         router.refresh();
                       })
                     }
-                    className="text-xs text-muted hover:text-coral transition disabled:opacity-60"
+                    className="text-muted hover:text-coral transition disabled:opacity-60"
+                    aria-label="Delete photo"
+                    title="Delete"
                   >
-                    {pending ? "…" : "Delete"}
+                    {pending ? "…" : <TrashIcon className="w-4 h-4" />}
                   </button>
                 )}
               </div>
