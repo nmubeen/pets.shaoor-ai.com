@@ -624,6 +624,24 @@ A Next.js (App Router) build of the marketing site and app shell described in
   and slices out the 30-day window in JS instead of issuing four
   range-filtered queries — cheaper, and it's what made the all-time
   totals available from the same round trip.
+- **Shopping: paste an image, not just pick one** — `LogOrderForm`'s Item
+  photo field is now a dashed drop-zone-style box: the same native file
+  picker as before, plus a paste target right below it — click into the
+  box and Ctrl+V (⌘V on Mac) a screenshot or an image copied from a
+  shopping site, and it's picked up the same way a chosen file would be,
+  with a small thumbnail preview and a "Remove" link to undo it. Both
+  paths funnel into one `imageFile` state (`onPaste` reads the first
+  image item off `ClipboardEvent.clipboardData`, `getAsFile()`s it,
+  clears the native input so the two don't visually conflict); on submit
+  that state — when set — overwrites the form's own "image" field via
+  `formData.set()` before the existing server action runs unchanged, so
+  `addShoppingOrder`/`updateShoppingOrder` needed no changes at all. The
+  preview URL is computed with `useMemo` (not `useState`+`useEffect`)
+  specifically to avoid a "setState inside an effect" lint error —
+  `URL.createObjectURL` is cheap enough to treat as a pure render-time
+  read, with a plain effect alongside it only for the one real side
+  effect, `URL.revokeObjectURL` on the previous blob once a new one
+  replaces it.
 - **Care tasks** — `care_tasks` table with RLS, exactly one of pet/habitat
   required (`0017_scope_rework.sql` tightened this from "pet, habitat, or
   household" — the vague household catch-all is gone, so every task is

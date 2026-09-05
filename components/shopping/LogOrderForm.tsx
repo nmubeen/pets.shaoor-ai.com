@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui";
@@ -44,8 +44,54 @@ export function LogOrderForm({
   const [deliveredDate, setDeliveredDate] = useState(editing?.deliveredDateIso ?? "");
   const deliveredTouched = useRef(!!editing?.deliveredDateIso);
 
+  // Item photo can come from the native file picker or be pasted straight
+  // from the clipboard (a screenshot, or an image copied off a shopping
+  // site) — both funnel into this one piece of state, which is what
+  // actually gets sent as the "image" field on submit, overriding
+  // whatever (if anything) the native input itself holds.
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Derived, not stateful — createObjectURL is a pure-enough read for
+  // render, and computing it here (rather than via setState inside an
+  // effect) avoids an extra cascading render. The effect below only
+  // handles the one real side effect: revoking the previous URL once
+  // it's no longer the current one.
+  const previewUrl = useMemo(() => (imageFile ? URL.createObjectURL(imageFile) : null), [imageFile]);
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  function handlePaste(e: React.ClipboardEvent<HTMLDivElement>) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          if (fileInputRef.current) fileInputRef.current.value = "";
+          setImageFile(file);
+        }
+        break;
+      }
+    }
+  }
+
+  function clearImage() {
+    setImageFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
   function handleSubmit(formData: FormData) {
     setError(null);
+    // The native input's own "image" entry (if any) came from the file
+    // picker; a pasted image never touches that input, so it always
+    // takes precedence here when present.
+    if (imageFile) formData.set("image", imageFile);
     startTransition(async () => {
       const result = editing
         ? await updateShoppingOrder(tenantId, editing.id, formData)
@@ -146,12 +192,32 @@ export function LogOrderForm({
 
         <label className="flex flex-col gap-1.5">
           <span className={label}>Item photo (optional{editing ? " — leave blank to keep the current one" : ""})</span>
-          <input
-            type="file"
-            name="image"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            className={`${field} file:mr-3 file:border-0 file:bg-surface-2 file:text-ink file:rounded-md file:px-2.5 file:py-1 file:text-xs`}
-          />
+          <div
+            onPaste={handlePaste}
+            tabIndex={0}
+            className="flex flex-col gap-2 border border-dashed border-line rounded-lg p-3 outline-none focus:border-primary transition"
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              name="image"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+              className={`${field} file:mr-3 file:border-0 file:bg-surface-2 file:text-ink file:rounded-md file:px-2.5 file:py-1 file:text-xs`}
+            />
+            <p className="text-[.7rem] text-muted">
+              …or click in this box and press Ctrl+V (⌘V on Mac) to paste an image from your clipboard
+            </p>
+            {previewUrl && (
+              <div className="flex items-center gap-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={previewUrl} alt="Selected item photo" className="w-14 h-14 rounded-md object-cover border border-line" />
+                <button type="button" onClick={clearImage} className="text-xs text-coral hover:underline">
+                  Remove
+                </button>
+              </div>
+            )}
+          </div>
         </label>
 
         <label className="flex flex-col gap-1.5">
