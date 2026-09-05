@@ -606,6 +606,24 @@ A Next.js (App Router) build of the marketing site and app shell described in
   explicit delivered date starts "touched", so opening Edit and tweaking
   the ordered date doesn't silently overwrite a real delivered date that
   was already on record.
+- **Shopping: pagination + an all-time stats row** — the orders table now
+  paginates client-side (`PAGE_SIZE = 10` in `ShoppingView.tsx`, Previous/
+  Next + a "Page X of Y · N orders" line, only shown once there's more
+  than one page) instead of rendering every filtered order at once;
+  switching the All/Pet/Habitat/Household scope resets back to page 1,
+  and the current page clamps down automatically if a delete shrinks the
+  list out from under it. A second row of 3 cards sits below the
+  existing 30-day one: **Total spent** (shopping + health, all-time),
+  **Total orders** (all-time `shopping_orders` count, same "shopping
+  only, not visits" scope as the 30-day card), and **Avg. order amount /
+  month** — `totalSpent` divided by the number of calendar months from
+  the earliest order/visit on record through the current month
+  inclusive, a budgeting figure (average *monthly* spend) rather than a
+  per-order average, which the 30-day row already covers. `lib/
+  shopping.ts`'s `getSpendSummary` now fetches each table once, unfiltered,
+  and slices out the 30-day window in JS instead of issuing four
+  range-filtered queries — cheaper, and it's what made the all-time
+  totals available from the same round trip.
 - **Care tasks** — `care_tasks` table with RLS, exactly one of pet/habitat
   required (`0017_scope_rework.sql` tightened this from "pet, habitat, or
   household" — the vague household catch-all is gone, so every task is

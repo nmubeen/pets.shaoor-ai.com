@@ -117,6 +117,12 @@ export type SpendSummary = {
   spentLast30d: number;
   ordersLogged: number;
   avgOrder: number | null;
+  /** All-time total across shopping_orders + visits, no date cutoff. */
+  totalSpent: number;
+  /** All-time shopping_orders count — same "shopping only, not visits" scope as ordersLogged. */
+  totalOrdersCount: number;
+  /** totalSpent divided by the number of calendar months from the earliest order/visit on record through the current month (inclusive) — a budgeting figure, not a per-order average. Null with no history at all. */
+  avgPerMonth: number | null;
 };
 
 export async function getSpendSummary(
@@ -125,16 +131,37 @@ export async function getSpendSummary(
 ): Promise<SpendSummary> {
   const since = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
 
+  // Fetch every row once, unfiltered, and slice the last-30-days window
+  // out in JS — cheaper than two separate range queries per table, and
+  // gives us the all-time totals from the same round trip.
   const [orders, visits] = await Promise.all([
-    supabase.from("shopping_orders").select("cost, order_date").eq("tenant_id", tenantId).gte("order_date", since),
-    supabase.from("visits").select("cost, visit_date").eq("tenant_id", tenantId).gte("visit_date", since),
+    supabase.from("shopping_orders").select("cost, order_date").eq("tenant_id", tenantId),
+    supabase.from("visits").select("cost, visit_date").eq("tenant_id", tenantId),
   ]);
 
-  const orderCosts = (orders.data ?? []).map((r) => r.cost ?? 0);
-  const otherCosts = (visits.data ?? []).map((r) => r.cost ?? 0);
-  const spentLast30d = [...orderCosts, ...otherCosts].reduce((sum, c) => sum + c, 0);
-  const ordersLogged = orders.data?.length ?? 0;
-  const avgOrder = ordersLogged > 0 ? orderCosts.reduce((s, c) => s + c, 0) / ordersLogged : null;
+  const allOrders = orders.data ?? [];
+  const allVisits = visits.data ?? [];
 
-  return { spentLast30d, ordersLogged, avgOrder };
+  const ordersLast30d = allOrders.filter((r) => r.order_date >= since);
+  const visitsLast30d = allVisits.filter((r) => r.visit_date >= since);
+
+  const spentLast30d = [...ordersLast30d, ...visitsLast30d].reduce((sum, r) => sum + (r.cost ?? 0), 0);
+  const ordersLogged = ordersLast30d.length;
+  const avgOrder = ordersLogged > 0 ? ordersLast30d.reduce((s, r) => s + (r.cost ?? 0), 0) / ordersLogged : null;
+
+  const totalSpent = [...allOrders, ...allVisits].reduce((sum, r) => sum + (r.cost ?? 0), 0);
+  const totalOrdersCount = allOrders.length;
+
+  const allDates = [...allOrders.map((r) => r.order_date), ...allVisits.map((r) => r.visit_date)];
+  let avgPerMonth: number | null = null;
+  if (allDates.length > 0) {
+    const earliest = allDates.reduce((min, d) => (d < min ? d : min));
+    const earliestDate = new Date(earliest + "T00:00:00");
+    const now = new Date();
+    const monthsSpanned =
+      (now.getFullYear() - earliestDate.getFullYear()) * 12 + (now.getMonth() - earliestDate.getMonth()) + 1;
+    avgPerMonth = totalSpent / Math.max(1, monthsSpanned);
+  }
+
+  return { spentLast30d, ordersLogged, avgOrder, totalSpent, totalOrdersCount, avgPerMonth };
 }

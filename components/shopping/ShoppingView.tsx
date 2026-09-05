@@ -20,6 +20,8 @@ const SCOPES = [
   { key: "household", label: "Household" },
 ] as const;
 
+const PAGE_SIZE = 10;
+
 const th = "text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line whitespace-nowrap";
 
 function OrderActions({ tenantId, orderId, onEdit }: { tenantId: string; orderId: string; onEdit: () => void }) {
@@ -70,6 +72,7 @@ export function ShoppingView({
   const [scope, setScope] = useState<(typeof SCOPES)[number]["key"]>("all");
   const [showForm, setShowForm] = useState(false);
   const [editingOrder, setEditingOrder] = useState<ShoppingOrderRow | null>(null);
+  const [page, setPage] = useState(1);
 
   const filtered =
     scope === "all"
@@ -77,6 +80,15 @@ export function ShoppingView({
       : scope === "household"
         ? orders.filter((o) => o.scopeKinds.length === 0)
         : orders.filter((o) => o.scopeKinds.includes(scope));
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageSafe = Math.min(page, totalPages);
+  const pageItems = filtered.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
+
+  function changeScope(next: (typeof SCOPES)[number]["key"]) {
+    setScope(next);
+    setPage(1);
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -103,7 +115,7 @@ export function ShoppingView({
         {SCOPES.map((s) => (
           <button
             key={s.key}
-            onClick={() => setScope(s.key)}
+            onClick={() => changeScope(s.key)}
             className={`text-xs font-medium px-3.5 py-1.5 rounded-lg border transition ${
               scope === s.key
                 ? "bg-primary text-primary-ink border-primary"
@@ -146,6 +158,23 @@ export function ShoppingView({
         </Card>
       </div>
 
+      <div className="grid md:grid-cols-3 gap-4">
+        <Card className="p-4">
+          <div className="font-mono font-semibold text-xl">{formatCurrency(summary.totalSpent)}</div>
+          <div className="text-[.66rem] uppercase text-muted mt-1">Total spent (shopping + health)</div>
+        </Card>
+        <Card className="p-4">
+          <div className="font-mono font-semibold text-xl">{summary.totalOrdersCount}</div>
+          <div className="text-[.66rem] uppercase text-muted mt-1">Total orders</div>
+        </Card>
+        <Card className="p-4">
+          <div className="font-mono font-semibold text-xl">
+            {summary.avgPerMonth !== null ? formatCurrency(summary.avgPerMonth) : "—"}
+          </div>
+          <div className="text-[.66rem] uppercase text-muted mt-1">Avg. order amount / month</div>
+        </Card>
+      </div>
+
       {filtered.length === 0 ? (
         <Card className="p-6 text-center text-sm text-muted">Nothing logged here yet.</Card>
       ) : (
@@ -163,7 +192,7 @@ export function ShoppingView({
               </tr>
             </thead>
             <tbody>
-              {filtered.map((o) => (
+              {pageItems.map((o) => (
                 <tr key={o.id} className="border-b border-line last:border-none">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
@@ -211,6 +240,32 @@ export function ShoppingView({
             </tbody>
           </table>
         </Card>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs text-muted">
+            Page {pageSafe} of {totalPages} · {filtered.length} order{filtered.length === 1 ? "" : "s"}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={pageSafe === 1}
+              className="text-xs text-muted hover:text-ink border border-line rounded-md px-3 py-1.5 transition disabled:opacity-40"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={pageSafe === totalPages}
+              className="text-xs text-muted hover:text-ink border border-line rounded-md px-3 py-1.5 transition disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
