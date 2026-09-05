@@ -1,18 +1,38 @@
 import { Card } from "@/components/ui";
 import { AddRosterPanel } from "@/components/roster/AddRosterPanel";
 import { PetsGrid } from "@/components/pets/PetsGrid";
+import { PetSummaryCards } from "@/components/pets/PetSummaryCards";
 import { requireActiveMembership } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
 import { getPetLinks } from "@/lib/pet-links";
 
 export default async function PetsPage() {
   const { supabase, active } = await requireActiveMembership();
-  const [roster, petLinks] = await Promise.all([
-    getRoster(supabase, active.tenantId),
-    getPetLinks(supabase, active.tenantId),
-  ]);
-  const isOrg = active.workspaceType === "organization";
+  const roster = await getRoster(supabase, active.tenantId);
   const pets = roster.filter((r) => r.kind === "pet");
+
+  // Social is read-only here — no Edit/Delete, no Health quick-links, no
+  // Add button — so there's no need for petLinks or the org/adoption bits
+  // PetsGrid carries; a plain card grid (shared with /app/vet-view's own
+  // pet chooser) is both simpler and the actual point of the role.
+  if (active.role === "social") {
+    return (
+      <div className="flex flex-col gap-6">
+        <div>
+          <h1 className="text-2xl mb-1">Pets</h1>
+          <p className="text-sm text-muted">Every individual pet in this workspace</p>
+        </div>
+        {pets.length === 0 ? (
+          <Card className="p-6 text-center text-sm text-muted">No pets yet.</Card>
+        ) : (
+          <PetSummaryCards pets={pets} />
+        )}
+      </div>
+    );
+  }
+
+  const petLinks = await getPetLinks(supabase, active.tenantId);
+  const isOrg = active.workspaceType === "organization";
 
   return (
     <div className="flex flex-col gap-6">

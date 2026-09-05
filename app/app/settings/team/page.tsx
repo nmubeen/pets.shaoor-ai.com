@@ -4,6 +4,14 @@ import { RemoveMemberButton } from "@/components/team/RemoveMemberButton";
 import { ResendInviteButton } from "@/components/team/ResendInviteButton";
 import { requireActiveMembership } from "@/lib/tenant";
 
+const ROLE_LABEL: Record<string, string> = {
+  owner: "owner",
+  caregiver: "caregiver",
+  viewer: "viewer",
+  vet_view: "vet view",
+  social: "social",
+};
+
 export default async function TeamPage() {
   const { supabase, active } = await requireActiveMembership();
 
@@ -29,7 +37,7 @@ export default async function TeamPage() {
             <div key={m.id} className="flex items-center justify-between py-2.5 text-sm">
               <span>{m.invited_email}</span>
               <div className="flex items-center gap-2">
-                <Pill>{m.role}</Pill>
+                <Pill>{ROLE_LABEL[m.role] ?? m.role}</Pill>
                 {m.status === "invited" && <Pill dotColor="var(--accent)">pending</Pill>}
                 {isOwner && m.status === "invited" && (
                   <ResendInviteButton tenantId={active.tenantId} membershipId={m.id} />
@@ -62,7 +70,18 @@ export default async function TeamPage() {
           </div>
           <div className="grid grid-cols-[110px_1fr] gap-3">
             <span className="text-muted">viewer</span>
-            <span>Read-only — for a pet-sitter, co-parent, or a vet given temporary access.</span>
+            <span>Read-only on everything — for a pet-sitter or co-parent who needs the full picture.</span>
+          </div>
+          <div className="grid grid-cols-[110px_1fr] gap-3">
+            <span className="text-muted">vet view</span>
+            <span>
+              Locked to a single read-only page (<code className="text-xs">Vet View</code>) — a mobile-friendly
+              one-page summary per pet, meant to be opened by or shown to a vet.
+            </span>
+          </div>
+          <div className="grid grid-cols-[110px_1fr] gap-3">
+            <span className="text-muted">social</span>
+            <span>Locked to Pets (read-only cards) and Gallery — can like and comment, but not upload or edit. For family and friends.</span>
           </div>
         </div>
       </Card>

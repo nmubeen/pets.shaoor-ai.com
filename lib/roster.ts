@@ -7,6 +7,7 @@ import "server-only";
 import type { createClient } from "@/lib/supabase/server";
 import type { PetSex, Species } from "@/lib/database.types";
 import { SPECIES_LABEL } from "@/lib/species-labels";
+import { SEX_LABEL, ageLabel } from "@/lib/pet-labels";
 
 /** Fields that only ever apply to kind: "pet" — null for habitats. */
 export type PetDetails = {
@@ -56,20 +57,6 @@ function initialsFor(name: string): string {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
-
-function ageLabel(birthDate: string | null): string | null {
-  if (!birthDate) return null;
-  const months = Math.floor(
-    (Date.now() - new Date(birthDate + "T00:00:00").getTime()) / (30.44 * 86_400_000)
-  );
-  if (months < 0) return null;
-  if (months < 1) return "<1 mo";
-  if (months < 24) return `${months} mo`;
-  const years = Math.floor(months / 12);
-  return `${years} yr${years === 1 ? "" : "s"}`;
-}
-
-const SEX_LABEL: Record<PetSex, string | null> = { male: "Male", female: "Female", unknown: null };
 
 function petSubtitle(species: Species, breed: string, sex: PetSex, birthDate: string | null, lifeStage: string | null) {
   return [breed, SPECIES_LABEL[species], SEX_LABEL[sex], ageLabel(birthDate) ?? lifeStage].filter(Boolean).join(" · ");

@@ -3,7 +3,7 @@
 //   npx supabase gen types typescript --db-url "$DATABASE_URL" --schema menagerie
 
 export type WorkspaceType = "household" | "organization";
-export type MembershipRole = "owner" | "caregiver" | "viewer";
+export type MembershipRole = "owner" | "caregiver" | "viewer" | "vet_view" | "social";
 export type MembershipStatus = "invited" | "active" | "removed";
 export type SubscriptionStatus = "trialing" | "active" | "past_due" | "canceled";
 export type RosterKind = "pet" | "habitat";
@@ -364,6 +364,18 @@ export interface Database {
           created_at: string;
         },
         "tenant_id" | "media_id" | "body"
+      >;
+      // Binary — insert to like, delete to unlike, unique (media_id, user_id).
+      // No update; see 0028_social_interactions.sql.
+      media_likes: Table<
+        {
+          id: string;
+          tenant_id: string;
+          media_id: string;
+          user_id: string;
+          created_at: string;
+        },
+        "tenant_id" | "media_id" | "user_id"
       >;
     };
     Functions: {

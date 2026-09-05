@@ -6,8 +6,8 @@ import type { PetWeightHistory, WeightPoint } from "@/lib/growth";
 
 const th = "text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line";
 
-/** Hand-rolled SVG line chart — no charting dependency for one simple plot. */
-function WeightChart({ points }: { points: WeightPoint[] }) {
+/** Hand-rolled SVG line chart — no charting dependency for one simple plot. Exported for /app/vet-view, which reuses this directly (skipping GrowthPanel's own pet-selector, since Vet View already has its own pet chooser via the card grid above it). */
+export function WeightChart({ points }: { points: WeightPoint[] }) {
   const W = 640;
   const H = 220;
   const PAD_L = 44;

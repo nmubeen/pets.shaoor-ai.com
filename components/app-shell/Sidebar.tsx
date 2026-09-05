@@ -14,8 +14,10 @@ import {
   UsersIcon,
   PinIcon,
   VialIcon,
+  ClipboardIcon,
 } from "@/components/icons";
 import { switchTenant } from "@/lib/actions/tenant";
+import { isPathAllowedForRole } from "@/lib/role-access";
 import type { ActiveMembership } from "@/lib/tenant";
 
 const nav = [
@@ -23,6 +25,7 @@ const nav = [
   { href: "/app/pets", label: "Pets", icon: PawIcon },
   { href: "/app/habitats", label: "Habitats", icon: HabitatIcon },
   { href: "/app/health", label: "Health", icon: StethoIcon },
+  { href: "/app/vet-view", label: "Vet View", icon: ClipboardIcon },
   { href: "/app/shopping", label: "Shopping", icon: CartIcon },
   { href: "/app/gallery", label: "Gallery", icon: ImageIcon },
   { href: "/app/providers", label: "Providers", icon: PinIcon },
@@ -51,6 +54,12 @@ export function Sidebar({
 
   const isActive = (href: string) =>
     href === "/app" ? pathname === "/app" : pathname.startsWith(href);
+
+  // A restricted role (vet_view, social) only ever sees the nav entry
+  // (or entries) it's actually allowed to reach — same allowlist
+  // app/app/layout.tsx enforces server-side, so the two can't drift.
+  const visibleNav = nav.filter((item) => isPathAllowedForRole(active.role, item.href));
+  const visibleSettingsNav = settingsNav.filter((item) => isPathAllowedForRole(active.role, item.href));
 
   return (
     <aside
@@ -88,7 +97,7 @@ export function Sidebar({
       </div>
 
       <nav className="flex-1 px-3 flex flex-col gap-0.5">
-        {nav.map((item) => {
+        {visibleNav.map((item) => {
           const isNavActive = isActive(item.href);
           return (
             <Link
@@ -106,25 +115,27 @@ export function Sidebar({
         })}
       </nav>
 
-      <div className="px-3 pb-4 pt-2 border-t border-white/10 flex flex-col gap-0.5">
-        <div className="px-3 pb-1 text-[.62rem] uppercase tracking-[.06em] opacity-55">Settings</div>
-        {settingsNav.map((item) => {
-          const isNavActive = isActive(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavigate}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition ${
-                isNavActive ? "bg-white/15 opacity-100" : "opacity-72 hover:opacity-100 hover:bg-white/10"
-              }`}
-            >
-              <item.icon className="w-4 h-4" />
-              {item.label}
-            </Link>
-          );
-        })}
-      </div>
+      {visibleSettingsNav.length > 0 && (
+        <div className="px-3 pb-4 pt-2 border-t border-white/10 flex flex-col gap-0.5">
+          <div className="px-3 pb-1 text-[.62rem] uppercase tracking-[.06em] opacity-55">Settings</div>
+          {visibleSettingsNav.map((item) => {
+            const isNavActive = isActive(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onNavigate}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition ${
+                  isNavActive ? "bg-white/15 opacity-100" : "opacity-72 hover:opacity-100 hover:bg-white/10"
+                }`}
+              >
+                <item.icon className="w-4 h-4" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </aside>
   );
 }

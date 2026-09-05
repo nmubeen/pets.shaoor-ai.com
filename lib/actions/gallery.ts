@@ -112,6 +112,46 @@ export async function addComment(tenantId: string, mediaId: string, formData: Fo
   return { error: null };
 }
 
+/** Toggle-on. RLS (menagerie.can_social_interact_tenant()) is what actually enforces who's allowed — owner/caregiver/social; viewer/vet_view get a policy-violation error, which the UI avoids by not rendering the button for them in the first place. */
+export async function likeMedia(tenantId: string, mediaId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const { error } = await supabase.from("media_likes").insert({
+    tenant_id: tenantId,
+    media_id: mediaId,
+    user_id: user.id,
+  });
+  // Already liked (unique constraint) isn't a real error — same end state either way.
+  if (error && error.code !== "23505") return { error: error.message };
+
+  revalidatePath("/app/gallery");
+  return { error: null };
+}
+
+/** Toggle-off — a like is only ever removed by its own owner (RLS also enforces user_id = auth.uid()). */
+export async function unlikeMedia(tenantId: string, mediaId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  const { error } = await supabase
+    .from("media_likes")
+    .delete()
+    .eq("tenant_id", tenantId)
+    .eq("media_id", mediaId)
+    .eq("user_id", user.id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/app/gallery");
+  return { error: null };
+}
+
 export async function setAdoptable(tenantId: string, petId: string, isAdoptable: boolean, adoptionNote: string | null) {
   const supabase = await createClient();
 

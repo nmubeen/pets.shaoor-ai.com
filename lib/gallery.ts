@@ -21,6 +21,9 @@ export type MediaItem = {
   clickedDateIso: string;
   createdAt: string;
   commentCount: number;
+  likeCount: number;
+  /** Whether the current viewer has liked this — drives the Like button's toggled state. */
+  likedByMe: boolean;
 };
 
 export type CommentItem = {
@@ -40,7 +43,9 @@ export async function getMediaItems(
   supabase: Awaited<ReturnType<typeof createClient>>,
   tenantId: string
 ): Promise<MediaItem[]> {
-  const [{ data }, { data: scopeRows }, roster, { data: comments }] = await Promise.all([
+  const [{ data }, { data: scopeRows }, roster, { data: comments }, { data: likes }, {
+    data: { user },
+  }] = await Promise.all([
     supabase
       .from("media")
       .select("id, storage_path, caption, clicked_date, created_at")
@@ -49,6 +54,8 @@ export async function getMediaItems(
     supabase.from("media_scopes").select("media_id, pet_id, habitat_id").eq("tenant_id", tenantId),
     getRoster(supabase, tenantId),
     supabase.from("comments").select("media_id").eq("tenant_id", tenantId),
+    supabase.from("media_likes").select("media_id, user_id").eq("tenant_id", tenantId),
+    supabase.auth.getUser(),
   ]);
 
   const byId = new Map(roster.map((r) => [r.id, r.name]));
@@ -66,6 +73,13 @@ export async function getMediaItems(
   const commentCounts = new Map<string, number>();
   for (const c of comments ?? []) {
     commentCounts.set(c.media_id, (commentCounts.get(c.media_id) ?? 0) + 1);
+  }
+
+  const likeCounts = new Map<string, number>();
+  const likedByMe = new Set<string>();
+  for (const l of likes ?? []) {
+    likeCounts.set(l.media_id, (likeCounts.get(l.media_id) ?? 0) + 1);
+    if (l.user_id === user?.id) likedByMe.add(l.media_id);
   }
 
   const { data: signed } = items.length
@@ -89,6 +103,8 @@ export async function getMediaItems(
       clickedDateIso: m.clicked_date,
       createdAt: m.created_at,
       commentCount: commentCounts.get(m.id) ?? 0,
+      likeCount: likeCounts.get(m.id) ?? 0,
+      likedByMe: likedByMe.has(m.id),
     };
   });
 }

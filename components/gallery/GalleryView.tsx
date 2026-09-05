@@ -3,25 +3,71 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
-import { ImageIcon, PlusIcon } from "@/components/icons";
+import { ImageIcon, PlusIcon, HeartIcon, HeartFillIcon } from "@/components/icons";
 import { UploadForm } from "@/components/gallery/UploadForm";
 import { CommentThread } from "@/components/gallery/CommentThread";
-import { deleteMedia } from "@/lib/actions/gallery";
+import { deleteMedia, likeMedia, unlikeMedia } from "@/lib/actions/gallery";
 import type { MediaItem } from "@/lib/gallery";
 import type { RosterItem } from "@/lib/roster";
+import type { MembershipRole } from "@/lib/database.types";
 
 const FILTER_ALL = "all";
 const FILTER_HOUSEHOLD = "household";
 
+function LikeButton({
+  tenantId,
+  media,
+  canLike,
+}: {
+  tenantId: string;
+  media: MediaItem;
+  canLike: boolean;
+}) {
+  const [pending, startTransition] = useTransition();
+  const router = useRouter();
+  const Icon = media.likedByMe ? HeartFillIcon : HeartIcon;
+
+  if (!canLike) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-muted">
+        <HeartIcon className="w-[.9em] h-[.9em]" />
+        {media.likeCount}
+      </span>
+    );
+  }
+
+  return (
+    <button
+      disabled={pending}
+      onClick={() =>
+        startTransition(async () => {
+          await (media.likedByMe ? unlikeMedia : likeMedia)(tenantId, media.id);
+          router.refresh();
+        })
+      }
+      className={`inline-flex items-center gap-1.5 text-xs border border-line rounded-md px-2 py-1 transition disabled:opacity-60 ${
+        media.likedByMe ? "text-coral" : "text-muted hover:text-coral"
+      }`}
+    >
+      <Icon className="w-[.9em] h-[.9em]" />
+      {media.likeCount}
+    </button>
+  );
+}
+
 export function GalleryView({
   tenantId,
+  role,
   roster,
   media,
 }: {
   tenantId: string;
+  role: MembershipRole;
   roster: RosterItem[];
   media: MediaItem[];
 }) {
+  const canManage = role === "owner" || role === "caregiver";
+  const canInteract = canManage || role === "social";
   const [showUpload, setShowUpload] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [filter, setFilter] = useState(FILTER_ALL);
@@ -43,7 +89,7 @@ export function GalleryView({
           <h1 className="text-2xl mb-1">Gallery</h1>
           <p className="text-sm text-muted">Photos and memories — newest clicked date first</p>
         </div>
-        {roster.length > 0 && (
+        {canManage && roster.length > 0 && (
           <button
             onClick={() => setShowUpload((v) => !v)}
             className="inline-flex items-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition"
@@ -100,6 +146,7 @@ export function GalleryView({
               <div className="text-xs font-medium truncate">{item.caption || item.who}</div>
               <div className="text-[.68rem] text-muted truncate">
                 {item.who} · {item.clickedDate}
+                {item.likeCount > 0 && ` · ❤ ${item.likeCount}`}
                 {item.commentCount > 0 && ` · ${item.commentCount} comment${item.commentCount === 1 ? "" : "s"}`}
               </div>
             </button>
@@ -125,21 +172,26 @@ export function GalleryView({
                   {open.who} · {open.clickedDate}
                 </div>
               </div>
-              <button
-                disabled={pending}
-                onClick={() =>
-                  startTransition(async () => {
-                    await deleteMedia(tenantId, open.id);
-                    setOpenId(null);
-                    router.refresh();
-                  })
-                }
-                className="text-xs text-muted hover:text-coral transition disabled:opacity-60"
-              >
-                {pending ? "…" : "Delete"}
-              </button>
+              <div className="flex items-center gap-2 flex-none">
+                <LikeButton tenantId={tenantId} media={open} canLike={canInteract} />
+                {canManage && (
+                  <button
+                    disabled={pending}
+                    onClick={() =>
+                      startTransition(async () => {
+                        await deleteMedia(tenantId, open.id);
+                        setOpenId(null);
+                        router.refresh();
+                      })
+                    }
+                    className="text-xs text-muted hover:text-coral transition disabled:opacity-60"
+                  >
+                    {pending ? "…" : "Delete"}
+                  </button>
+                )}
+              </div>
             </div>
-            <CommentThread tenantId={tenantId} mediaId={open.id} />
+            <CommentThread tenantId={tenantId} mediaId={open.id} canPost={canInteract} />
           </div>
         </Card>
       )}

@@ -194,6 +194,20 @@ export const CloseIcon = (p: IconProps) => (
   </svg>
 );
 
+export const ClipboardIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="5" y="4" width="14" height="17" rx="2" />
+    <path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" />
+    <path d="M8 10h8M8 14h8M8 18h5" />
+  </svg>
+);
+
+export const HeartFillIcon = (p: IconProps) => (
+  <svg {...base(p)} fill={p.fill ?? "currentColor"}>
+    <path d="M12 20s-7.5-4.6-9.7-9.3C.6 6.9 3 3.5 6.6 3.5c2 0 3.6 1.1 5.4 3.1 1.8-2 3.4-3.1 5.4-3.1 3.6 0 6 3.4 4.3 7.2C19.5 15.4 12 20 12 20Z" />
+  </svg>
+);
+
 export const HabitatIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <rect x="3" y="5" width="18" height="14" rx="2" />

@@ -6,7 +6,12 @@ import { sendEmail } from "@/lib/email";
 import { emailShell, emailButton } from "@/lib/email-templates";
 import { enforcePetsLimit, PlanLimitExceededError } from "@/lib/entitlements";
 
-const ROLE_LABEL: Record<string, string> = { caregiver: "a caregiver", viewer: "a viewer" };
+const ROLE_LABEL: Record<string, string> = {
+  caregiver: "a caregiver",
+  viewer: "a viewer",
+  vet_view: "a vet (read-only Vet View)",
+  social: "a social member (pet cards & gallery)",
+};
 
 // Shared by inviteMember (first send) and resendInvite (a pending invite
 // whose email never arrived — see lib/email.ts's soft-fail behavior when
@@ -43,7 +48,9 @@ export async function inviteMember(tenantId: string, formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const role = String(formData.get("role") ?? "caregiver");
   if (!email || !email.includes("@")) return { error: "Enter a valid email." };
-  if (role !== "caregiver" && role !== "viewer") return { error: "Invalid role." };
+  if (role !== "caregiver" && role !== "viewer" && role !== "vet_view" && role !== "social") {
+    return { error: "Invalid role." };
+  }
 
   const supabase = await createClient();
 

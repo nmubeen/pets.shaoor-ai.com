@@ -13,8 +13,9 @@ A Next.js (App Router) build of the marketing site and app shell described in
   matching §10. Real Supabase Auth (email + password); a database trigger
   creates the tenant, owner membership, and trial subscription row
   atomically at signup.
-- **App shell** — `/app`, `/app/pets`, `/app/health`, `/app/shopping`,
-  `/app/gallery`, `/app/providers`, with a sidebar workspace switcher,
+- **App shell** — `/app`, `/app/pets`, `/app/habitats`, `/app/health`,
+  `/app/vet-view`, `/app/shopping`, `/app/gallery`, `/app/providers`, with
+  a sidebar workspace switcher,
   trial-countdown header, and sign-out — all backed by real data. Responsive
   down to phone widths: the sidebar becomes a fixed slide-out drawer behind
   a hamburger button below the `md` breakpoint (`components/app-shell/
@@ -40,6 +41,64 @@ A Next.js (App Router) build of the marketing site and app shell described in
   and a `handle_new_user` trigger that creates the workspace + owner
   membership + trial subscription on signup and reconciles pending invites
   by email. See `supabase/migrations/`.
+- **Two read-mostly roles: Vet View and Social** (`0027_add_vet_view_
+  social_roles.sql`, `0028_social_interactions.sql`) — both new
+  `menagerie.membership_role` values, invited from `/app/settings/team`
+  exactly like caregiver/viewer (`lib/actions/team.ts`, `components/team/
+  InviteForm.tsx`). Neither needed any change to `can_write_tenant()` or
+  any existing SELECT policy: every tenant-scoped table's generic
+  `tenant isolation - select` policy already admits *any* active
+  membership regardless of role, so both roles get full read access to
+  pets/health/etc. for free, and `can_write_tenant()` staying
+  owner/caregiver-only means both get zero write access everywhere,
+  again for free. The one real gap — Social needs to like and comment,
+  which is narrower than full write but wider than read-only — got a new
+  helper, `menagerie.can_social_interact_tenant()`
+  (`role in ('owner','caregiver','social')`), used only by `comments`'
+  insert policy and the brand-new `media_likes` table (binary — insert to
+  like, delete to unlike, RLS additionally requires `user_id = auth.uid()`
+  so one member can't unlike another's). "Like" didn't exist in the app
+  at all before this.
+  - **Route restriction**: a restricted role is locked to its own page(s)
+    — enforced in `app/app/layout.tsx` (every `/app/*` page's shared
+    layout), not by hiding UI alone. Since a Server Component layout has
+    no direct way to see the current pathname, `lib/supabase/proxy.ts`
+    forwards it as an `x-pathname` request header (the documented Next.js
+    pattern for passing data from middleware upstream); the layout reads
+    it back via `headers()` and redirects if `lib/role-access.ts`'s
+    `isPathAllowedForRole()` says no. `components/app-shell/Sidebar.tsx`
+    filters its nav links through the exact same function, so the two
+    can't drift out of sync. Vet View is locked to `/app/vet-view`; Social
+    to `/app/pets` and `/app/gallery`; every other role is unrestricted.
+    `/app/pending` is always reachable regardless of role — otherwise a
+    commercially-blocked restricted-role user would bounce forever
+    between their role's redirect and the pending redirect.
+  - **`/app/vet-view`** (new) — a read-only, mobile-first one-pager: a
+    short deterministic-template narration per pet at the top (e.g. "Bella
+    is a 3 yr old female Labrador (Dog). 4 visits logged, most recent
+    12-Aug-2026. 1 vaccination due (Rabies). On 1 medication (Heartworm
+    prevention)." — `lib/vet-view.ts`'s `buildVetSummaries`, built from
+    the exact same tenant-wide fetchers `/app/health` already uses,
+    grouped by pet the same way `lib/pet-links.ts` does; no AI/LLM call,
+    this codebase has no AI integration), then a tappable card grid
+    (`components/pets/PetSummaryCards.tsx`, shared with Social's own
+    read-only `/app/pets` view — no Edit/Delete/health-links, just photo +
+    name + subtitle) to pick a pet, then that pet's full basic-details
+    plus Visits/Illnesses/Vaccinations/Medications/Growth below (the
+    Growth chart reuses `GrowthPanel`'s exported `WeightChart` directly,
+    skipping its own redundant pet-selector). Reachable by every role from
+    the sidebar (an owner can open it themselves to show a vet in
+    person) — only the `vet_view` *role* is restricted to seeing nothing
+    else.
+  - **Social's read-only surfaces** — `/app/pets` renders
+    `PetSummaryCards` instead of the normal `PetsGrid` for this role
+    (`app/app/pets/page.tsx` branches on `active.role`); `GalleryView`
+    hides Upload/Delete unless `owner`/`caregiver`, and gates the comment
+    form (`CommentThread`'s new `canPost` prop) and a new Like button
+    (heart icon + count, `HeartIcon`/`HeartFillIcon`) to
+    `owner`/`caregiver`/`social` — fixing a pre-existing gap along the way
+    where `viewer` could see a comment box that would've failed
+    server-side anyway.
 - **Core records** — `pets` and `habitats` tables with RLS, Server Actions
   to add, edit, *and delete* them (`lib/actions/roster.ts` — delete cascades
   every health/shopping/task/media row scoped to that pet or habitat at the

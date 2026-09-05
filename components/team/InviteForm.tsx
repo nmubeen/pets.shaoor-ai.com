@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { PlusIcon } from "@/components/icons";
 import { inviteMember } from "@/lib/actions/team";
 
-const roles = ["caregiver", "viewer"];
+const roles = ["caregiver", "viewer", "vet_view", "social"];
+const ROLE_OPTION_LABEL: Record<string, string> = {
+  caregiver: "Caregiver",
+  viewer: "Viewer",
+  vet_view: "Vet View",
+  social: "Social",
+};
 
 export function InviteForm({ tenantId }: { tenantId: string }) {
   const [role, setRole] = useState("caregiver");
@@ -46,7 +52,7 @@ export function InviteForm({ tenantId }: { tenantId: string }) {
         >
           {roles.map((r) => (
             <option key={r} value={r}>
-              {r}
+              {ROLE_OPTION_LABEL[r]}
             </option>
           ))}
         </select>

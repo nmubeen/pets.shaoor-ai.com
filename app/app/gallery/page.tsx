@@ -11,5 +11,5 @@ export default async function GalleryPage() {
     getMediaItems(supabase, active.tenantId),
   ]);
 
-  return <GalleryView tenantId={active.tenantId} roster={roster} media={media} />;
+  return <GalleryView tenantId={active.tenantId} role={active.role} roster={roster} media={media} />;
 }
