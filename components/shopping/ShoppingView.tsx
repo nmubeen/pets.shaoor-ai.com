@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
 import { PlusIcon, PencilIcon, TrashIcon } from "@/components/icons";
@@ -73,6 +73,18 @@ export function ShoppingView({
   const [showForm, setShowForm] = useState(false);
   const [editingOrder, setEditingOrder] = useState<ShoppingOrderRow | null>(null);
   const [page, setPage] = useState(1);
+  // Set right after adding a new order — jumps the list to whichever page
+  // holds it and briefly highlights the row, so "Save" doesn't just leave
+  // you wondering where it landed.
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  // Which highlightId `page` has already been jumped for — without this,
+  // re-computing the jump on every render would fight the Previous/Next
+  // buttons the moment someone clicks away while still highlighted. Plain
+  // state, not a ref: React's own "adjusting state when a prop changes"
+  // pattern (see the useState docs) calls for state here specifically —
+  // this project's lint rules forbid touching a ref's `.current` during
+  // render at all, even for this exact purpose.
+  const [jumpedForId, setJumpedForId] = useState<string | null>(null);
 
   const filtered =
     scope === "all"
@@ -89,6 +101,39 @@ export function ShoppingView({
     setScope(next);
     setPage(1);
   }
+
+  // Once the freshly-added order shows up in `filtered` (after the form's
+  // own router.refresh() completes — `filtered`, not `orders`, so this
+  // also re-checks when `scope` flips to "all" in onDone below, in case
+  // the new order's own scope wasn't visible under whatever tab was
+  // active when it was added), jump to whichever page contains it. Done
+  // inline during render — an official React-supported way to adjust
+  // state in response to a prop/derived-value change — rather than in an
+  // effect, since a *conditional* setState call in an effect body is
+  // exactly the "cascading render" pattern the lint rule (rightly) flags.
+  if (highlightId && jumpedForId !== highlightId) {
+    const idx = filtered.findIndex((o) => o.id === highlightId);
+    if (idx !== -1) {
+      setJumpedForId(highlightId);
+      setPage(Math.floor(idx / PAGE_SIZE) + 1);
+    }
+  }
+
+  // Scrolls to and fades the highlight once the row actually exists in
+  // the DOM — i.e. once `page` has settled on the one computed above.
+  // Queried live rather than via a ref map, since which page (and thus
+  // whether this row is even mounted) can change between renders.
+  useEffect(() => {
+    if (!highlightId) return;
+    const el = document.getElementById(`shopping-order-${highlightId}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    const timer = setTimeout(() => setHighlightId(null), 2500);
+    return () => clearTimeout(timer);
+    // `page`, not `pageItems` — the latter is a fresh array every render,
+    // which would restart this effect (and its 2.5s timer) on any
+    // unrelated re-render while highlighted.
+  }, [page, highlightId]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -134,9 +179,15 @@ export function ShoppingView({
           providers={providers}
           categories={categories}
           editing={editingOrder ?? undefined}
-          onDone={() => {
+          onDone={(createdId) => {
             setShowForm(false);
             setEditingOrder(null);
+            if (createdId) {
+              // "all" guarantees the new order is visible regardless of
+              // which scope it belongs to.
+              setScope("all");
+              setHighlightId(createdId);
+            }
           }}
         />
       )}
@@ -193,7 +244,13 @@ export function ShoppingView({
             </thead>
             <tbody>
               {pageItems.map((o) => (
-                <tr key={o.id} className="border-b border-line last:border-none">
+                <tr
+                  key={o.id}
+                  id={`shopping-order-${o.id}`}
+                  className={`border-b border-line last:border-none transition-colors duration-500 ${
+                    o.id === highlightId ? "bg-accent/15" : ""
+                  }`}
+                >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
                       {o.imageUrl ? (

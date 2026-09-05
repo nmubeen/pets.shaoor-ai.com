@@ -109,7 +109,7 @@ export async function addShoppingOrder(tenantId: string, formData: FormData) {
 
   revalidatePath("/app");
   revalidatePath("/app/shopping");
-  return { error: null };
+  return { error: null, id: order.id };
 }
 
 /**

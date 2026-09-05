@@ -155,7 +155,8 @@ export function VisitForm({
   providers: Provider[];
   serviceTypes: ServiceType[];
   dueVaccinationNames: string[];
-  onDone: () => void;
+  /** Called with the new visit's id when one was just created, so the list can jump to and highlight it — omitted on edit/cancel. */
+  onDone: (createdId?: string) => void;
   /** Present when editing an existing visit instead of logging a new one — every line item below is editable too, not just the visit's own fields. */
   editing?: VisitRow;
   /** A vaccination/illness/medication record id to scroll to and focus — set when this form was opened via that row's "Edit (in visit)" link rather than the visit's own Edit button. */
@@ -177,13 +178,30 @@ export function VisitForm({
   function handleSubmit(formData: FormData) {
     setError(null);
     startTransition(async () => {
-      const result = editing ? await updateVisit(tenantId, editing.id, formData) : await addVisit(tenantId, formData);
-      if (result?.error) {
-        setError(result.error);
-        return;
+      // Split rather than a shared `result` — addVisit's success shape
+      // carries an `id` (so the list can jump to it) that updateVisit's
+      // doesn't, and a single ternary'd result variable can't narrow to
+      // that per-branch.
+      if (editing) {
+        const result = await updateVisit(tenantId, editing.id, formData);
+        if (result.error !== null) {
+          setError(result.error);
+          return;
+        }
+        router.refresh();
+        onDone();
+      } else {
+        const result = await addVisit(tenantId, formData);
+        // !== null, not a truthy check — TS otherwise can't rule out the
+        // {error: string} branch here (an empty string is falsy but still
+        // a string, not null), so `result.id` below wouldn't narrow.
+        if (result.error !== null) {
+          setError(result.error);
+          return;
+        }
+        router.refresh();
+        onDone(result.id);
       }
-      router.refresh();
-      onDone();
     });
   }
 
@@ -294,7 +312,7 @@ export function VisitForm({
           >
             {pending ? "Saving…" : editing ? "Save changes" : "Save"}
           </button>
-          <button type="button" onClick={onDone} className="text-xs text-muted hover:text-ink">
+          <button type="button" onClick={() => onDone()} className="text-xs text-muted hover:text-ink">
             Cancel
           </button>
         </div>

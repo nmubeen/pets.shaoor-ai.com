@@ -27,7 +27,8 @@ export function LogOrderForm({
   roster: RosterItem[];
   providers: Provider[];
   categories: ShoppingCategory[];
-  onDone: () => void;
+  /** Called with the new order's id when one was just created, so the list can jump to and highlight it — omitted on edit/cancel. */
+  onDone: (createdId?: string) => void;
   /** Present when editing an existing order instead of logging a new one. */
   editing?: ShoppingOrderRow;
 }) {
@@ -93,15 +94,30 @@ export function LogOrderForm({
     // takes precedence here when present.
     if (imageFile) formData.set("image", imageFile);
     startTransition(async () => {
-      const result = editing
-        ? await updateShoppingOrder(tenantId, editing.id, formData)
-        : await addShoppingOrder(tenantId, formData);
-      if (result?.error) {
-        setError(result.error);
-        return;
+      // Split rather than a shared `result` — addShoppingOrder's success
+      // shape carries an `id` (so the list can jump to it) that
+      // updateShoppingOrder's doesn't, and a single ternary'd result
+      // variable can't narrow to that per-branch.
+      if (editing) {
+        const result = await updateShoppingOrder(tenantId, editing.id, formData);
+        if (result.error !== null) {
+          setError(result.error);
+          return;
+        }
+        router.refresh();
+        onDone();
+      } else {
+        const result = await addShoppingOrder(tenantId, formData);
+        // !== null, not a truthy check — TS otherwise can't rule out the
+        // {error: string} branch here (an empty string is falsy but still
+        // a string, not null), so `result.id` below wouldn't narrow.
+        if (result.error !== null) {
+          setError(result.error);
+          return;
+        }
+        router.refresh();
+        onDone(result.id);
       }
-      router.refresh();
-      onDone();
     });
   }
 
@@ -235,7 +251,7 @@ export function LogOrderForm({
           >
             {pending ? "Saving…" : editing ? "Save changes" : "Save"}
           </button>
-          <button type="button" onClick={onDone} className="text-xs text-muted hover:text-ink">
+          <button type="button" onClick={() => onDone()} className="text-xs text-muted hover:text-ink">
             Cancel
           </button>
         </div>

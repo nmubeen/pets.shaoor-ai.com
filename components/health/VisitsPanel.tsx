@@ -95,6 +95,25 @@ export function VisitsPanel({
   const pets = roster.filter((r) => r.kind === "pet");
   const filtered = petFilter === "all" ? visits : visits.filter((v) => v.petId === petFilter);
 
+  // Set right after logging a new visit — scrolls to and briefly
+  // highlights it, so "Save" doesn't just leave you scanning the list for
+  // what you just added.
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!highlightId) return;
+    if (!filtered.some((v) => v.id === highlightId)) return;
+    const el = document.getElementById(`visit-${highlightId}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    const timer = setTimeout(() => setHighlightId(null), 2500);
+    return () => clearTimeout(timer);
+    // `visits`/`petFilter`, not `filtered` — the latter is a fresh array
+    // whenever petFilter isn't "all", which would restart this effect
+    // (and its 2.5s timer) on any unrelated re-render while highlighted.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visits, petFilter, highlightId]);
+
   useEffect(() => {
     // Consumes the pendingEdit this instance was mounted with, if any —
     // notifying the parent (not our own state) so a stale value can't leak
@@ -133,10 +152,16 @@ export function VisitsPanel({
           dueVaccinationNames={dueVaccinationNames}
           editing={editingVisit ?? undefined}
           focusRowId={focusRowId}
-          onDone={() => {
+          onDone={(createdId) => {
             setShowForm(false);
             setEditingVisit(null);
             setFocusRowId(null);
+            if (createdId) {
+              // "all" guarantees the new visit is visible regardless of
+              // which pet the filter was scoped to.
+              setPetFilter("all");
+              setHighlightId(createdId);
+            }
           }}
         />
       )}
@@ -148,7 +173,11 @@ export function VisitsPanel({
       ) : (
         <div className="flex flex-col gap-3">
           {filtered.map((v) => (
-            <Card key={v.id} className="p-4">
+            <Card
+              key={v.id}
+              id={`visit-${v.id}`}
+              className={`p-4 transition-colors duration-500 ${v.id === highlightId ? "bg-accent/15" : ""}`}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="font-medium">{v.reason}</div>

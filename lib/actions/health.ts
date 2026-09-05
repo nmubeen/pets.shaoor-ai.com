@@ -325,7 +325,7 @@ export async function addVisit(tenantId: string, formData: FormData) {
   }
 
   revalidateHealth();
-  return { error: null };
+  return { error: null, id: visit.id };
 }
 
 export async function addIllness(tenantId: string, formData: FormData) {
