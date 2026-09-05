@@ -18,9 +18,9 @@ export default async function PetPassportPage({ params }: { params: Promise<{ pe
   const pet = roster.find((r) => r.id === petId && r.kind === "pet");
   if (!pet) notFound();
 
-  // Oldest first — a passport's stamps accumulate in chronological order,
-  // not newest-first like Health's own Visits list.
-  const petVisits = visits.filter((v) => v.petId === petId).sort((a, b) => a.dateIso.localeCompare(b.dateIso));
+  // Newest first — matches Health's own Visits list (and reads as "most
+  // recent stamp first" when flipping through the passport).
+  const petVisits = visits.filter((v) => v.petId === petId).sort((a, b) => b.dateIso.localeCompare(a.dateIso));
   const petVaccinations = vaccinations
     .filter((v) => v.petId === petId)
     .sort((a, b) => a.dateIso.localeCompare(b.dateIso));

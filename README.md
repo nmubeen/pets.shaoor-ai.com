@@ -148,20 +148,29 @@ A Next.js (App Router) build of the marketing site and app shell described in
     Vet View into `lib/pet-labels.ts` so both share it), styled like a
     passport's ID page (photo box, dashed-rule label/value fields,
     serif "PET PASSPORT" heading).
-  - **One page per visit, oldest first** (unlike Health's own
-    newest-first Visits list — a passport's stamps accumulate forward in
-    time) — a rotated, double-ringed "rubber stamp" circle holds the
-    visit's date and clinic/hospital (plus consulting doctor, if set);
-    below it, the rest of that visit's facts (services minus
-    Consultation, vaccinations given, illnesses treated, medications
-    prescribed, weight, notes) render as one loosely-tilted narrative
-    sentence rather than a structured list — `lib/passport.ts`'s
-    `buildVisitSummaryText` (prose, not literal randomness) and
-    `passportTilt` (a small, deterministic per-visit rotation hashed from
-    the visit's own id — stable across re-renders, not `Math.random()`)
-    give it a handwritten-annotation feel.
-  - **Last page** — a vaccination record: vaccine name, date, and status,
-    oldest first.
+  - **Page 2 — vaccination record.** Each vaccine name renders as a small
+    printed label, with its date and clinic underneath on a dotted line
+    in a handwriting font (`--font-hand`, Google's "Caveat" — added to
+    `app/globals.css` alongside the app's other `@import`ed fonts), like
+    a real record book filled in by hand at each visit. One ink shade per
+    page (`handwritingInk`, keyed by pet id — see below), not per row —
+    a real booklet is filled in with the same pen in one sitting.
+  - **One page per visit after that, newest first** (matching Health's
+    own Visits list — `app/app/pets/[petId]/passport/page.tsx` now sorts
+    descending) — a rotated, double-ringed "rubber stamp" circle in the
+    top-center of the page holds the visit's date and clinic/hospital
+    (plus consulting doctor, if set); below it, the rest of that visit's
+    facts (services minus Consultation, vaccinations given, illnesses
+    treated, medications prescribed, weight, notes) render as one
+    loosely-tilted, larger handwriting-font sentence rather than a
+    structured list — `lib/passport.ts`'s `buildVisitSummaryText` (prose,
+    not literal randomness), `passportTilt` (a small, deterministic
+    per-visit rotation), and new `handwritingInk` (a small palette of pen
+    blues, picked deterministically per page from a hash of the visit's
+    own id — same idea as `passportTilt`, and for the same reason: a true
+    `Math.random()` shade would reroll on every hydration/re-render and
+    risk exactly the kind of server/client mismatch fixed elsewhere this
+    session) give it a handwritten-annotation feel.
   - No schema or query changes — reuses `getVisits`/`getVaccinations`
     exactly as `/app/vet-view` does, filtered to the one pet server-side
     in the new page's own `page.tsx`.

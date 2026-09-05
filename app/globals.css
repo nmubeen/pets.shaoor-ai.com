@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Caveat:wght@500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -57,6 +57,9 @@
   --font-serif: "Fraunces", Georgia, "Iowan Old Style", serif;
   --font-sans: "Public Sans", -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  /* Handwritten annotation feel on the Pet Passport pages only (visit
+     narrative text, vaccination page entries) — not used elsewhere. */
+  --font-hand: "Caveat", "Segoe Script", cursive;
 }
 
 @layer base {

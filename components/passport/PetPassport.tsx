@@ -6,7 +6,7 @@ import { BackIcon } from "@/components/icons";
 import { SPECIES_LABEL } from "@/lib/species-labels";
 import { SEX_LABEL, sterilizationLabel } from "@/lib/pet-labels";
 import { formatDate } from "@/lib/format";
-import { buildVisitSummaryText, passportTilt } from "@/lib/passport";
+import { buildVisitSummaryText, passportTilt, handwritingInk } from "@/lib/passport";
 import type { RosterItem } from "@/lib/roster";
 import type { VisitRow, HealthRow } from "@/lib/health";
 
@@ -16,7 +16,6 @@ const COVER = "#1F4B3F";
 const PAPER = "#F6F1E4";
 const INK = "#1F332B";
 const STAMP = "#8B2E2E";
-const GOOD = "#2E6B45";
 
 type PassportPage = { kind: "data" } | { kind: "visit"; visit: VisitRow } | { kind: "vaccinations" };
 
@@ -122,9 +121,13 @@ function DataPage({
 function VisitPage({ visit, n, total }: { visit: VisitRow; n: number; total: number }) {
   const tilt = passportTilt(visit.id);
   const summary = buildVisitSummaryText(visit);
+  const ink = handwritingInk(visit.id);
   return (
     <PassportPageShell>
-      <div className="absolute top-8 right-5" style={{ transform: `rotate(${-10 + tilt}deg)` }}>
+      <div
+        className="absolute top-5 left-1/2 w-32 h-32"
+        style={{ transform: `translateX(-50%) rotate(${-4 + tilt}deg)` }}
+      >
         <div
           className="w-32 h-32 rounded-full border-[3px] flex flex-col items-center justify-center text-center px-3"
           style={{ borderColor: STAMP, borderStyle: "double", color: STAMP, opacity: 0.82 }}
@@ -136,8 +139,8 @@ function VisitPage({ visit, n, total }: { visit: VisitRow; n: number; total: num
         </div>
       </div>
       <div
-        className="mt-44 text-[11px] leading-6 pr-4 italic"
-        style={{ color: INK, transform: `rotate(${tilt}deg)` }}
+        className="mt-40 text-[19px] leading-7"
+        style={{ color: ink, fontFamily: "var(--font-hand)", transform: `rotate(${tilt}deg)` }}
       >
         {summary}
       </div>
@@ -146,7 +149,10 @@ function VisitPage({ visit, n, total }: { visit: VisitRow; n: number; total: num
   );
 }
 
-function VaccinationsPage({ vaccinations, n, total }: { vaccinations: HealthRow[]; n: number; total: number }) {
+function VaccinationsPage({ petId, vaccinations, n, total }: { petId: string; vaccinations: HealthRow[]; n: number; total: number }) {
+  // One ink shade for the whole page (not re-picked per row) — a real
+  // vaccination booklet is filled in with the same pen across a sitting.
+  const ink = handwritingInk(`vax-${petId}`);
   return (
     <PassportPageShell>
       <div className="text-center text-sm font-bold uppercase tracking-[0.2em] mb-4" style={{ color: COVER, fontFamily: "var(--font-serif)" }}>
@@ -157,18 +163,19 @@ function VaccinationsPage({ vaccinations, n, total }: { vaccinations: HealthRow[
           No vaccinations on record.
         </p>
       ) : (
-        <div className="flex flex-col gap-0.5 overflow-y-auto flex-1">
+        <div className="flex flex-col gap-1 overflow-y-auto flex-1">
           {vaccinations.map((v) => (
-            <div
-              key={v.id}
-              className="flex justify-between gap-2 py-1.5 border-b border-dashed text-[10px]"
-              style={{ borderColor: `${INK}33`, color: INK }}
-            >
-              <span className="font-semibold truncate">{v.reason}</span>
-              <span className="flex-none">{v.date}</span>
-              <span className="flex-none uppercase font-semibold" style={{ color: v.statusRaw === "complete" ? GOOD : STAMP }}>
-                {v.status}
-              </span>
+            <div key={v.id} className="py-1">
+              <div className="text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: `${INK}99` }}>
+                {v.reason}
+              </div>
+              <div
+                className="border-b border-dotted pb-1 text-[19px] leading-tight"
+                style={{ borderColor: `${INK}55`, color: ink, fontFamily: "var(--font-hand)" }}
+              >
+                {v.date}
+                {v.provider ? ` · ${v.provider}` : ""}
+              </div>
             </div>
           ))}
         </div>
@@ -182,12 +189,19 @@ function VaccinationsPage({ vaccinations, n, total }: { vaccinations: HealthRow[
  * A pet's health history styled and paged like an actual passport, opened
  * as a carousel (one page visible, prev/next + swipe + dots, not a
  * scrolling document): a data page (photo, breed, DOB, passport no. —
- * mirroring a real passport's ID page), one "visa" page per visit (a
- * rotated rubber-stamp for date + hospital, then the rest of that visit's
- * facts as one loosely-tilted narrative line — lib/passport.ts's
- * buildVisitSummaryText/passportTilt), and a closing vaccination record
- * page. Fixed light/dark colors throughout (not the app's theme tokens) —
- * a passport looks the same regardless of the viewer's color scheme.
+ * mirroring a real passport's ID page), then the vaccination record page,
+ * then one "visa" page per visit (newest first — visits are handed in
+ * already sorted that way), each with a top-center rubber-stamp for date +
+ * hospital and the rest of that visit's facts as one loosely-tilted
+ * handwritten-style narrative line — lib/passport.ts's
+ * buildVisitSummaryText/passportTilt/handwritingInk. The "filled in by
+ * hand" bits (visit narrative, and the date/hospital line under each
+ * vaccination) render in a handwriting font, each page's own deterministic
+ * shade of blue (handwritingInk, keyed by visit/pet id — not
+ * Math.random(), which would reroll and mismatch between the server's
+ * render and the client's hydration pass). Fixed light/dark colors
+ * throughout otherwise (not the app's theme tokens) — a passport looks the
+ * same regardless of the viewer's color scheme.
  */
 export function PetPassport({
   tenantName,
@@ -205,8 +219,8 @@ export function PetPassport({
 }) {
   const pages: PassportPage[] = [
     { kind: "data" },
-    ...visits.map((visit): PassportPage => ({ kind: "visit", visit })),
     { kind: "vaccinations" },
+    ...visits.map((visit): PassportPage => ({ kind: "visit", visit })),
   ];
   const total = pages.length;
   const [index, setIndex] = useState(0);
@@ -258,7 +272,9 @@ export function PetPassport({
         >
           {page.kind === "data" && <DataPage pet={pet} tenantName={tenantName} ageLabel={ageLabel} n={index + 1} total={total} />}
           {page.kind === "visit" && <VisitPage visit={page.visit} n={index + 1} total={total} />}
-          {page.kind === "vaccinations" && <VaccinationsPage vaccinations={vaccinations} n={index + 1} total={total} />}
+          {page.kind === "vaccinations" && (
+            <VaccinationsPage petId={pet.id} vaccinations={vaccinations} n={index + 1} total={total} />
+          )}
         </div>
 
         <button
