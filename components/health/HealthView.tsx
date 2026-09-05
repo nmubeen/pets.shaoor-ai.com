@@ -247,7 +247,7 @@ export function HealthView({
                   Who
                 </th>
                 <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line">
-                  {isVaccinations ? "Vaccine" : "Reason"}
+                  {isVaccinations ? "Vaccine" : "Illness"}
                 </th>
                 {isVaccinations && (
                   <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line">
