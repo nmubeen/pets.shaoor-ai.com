@@ -101,22 +101,23 @@ A Next.js (App Router) build of the marketing site and app shell described in
     05-Sep-2026)", not the separate manually-set `pets.weight_kg`
     snapshot, which can go stale), Microchip, Neutered/spayed, Notes —
     each row omitted entirely when empty, "No additional details." shown
-    only if all four are. Then Visits (led by the date, not the reason —
-    provider and doctor beneath it, then Services/Vaccinations/Illnesses/
-    Medications each as one comma-joined line by *name only*, no
-    cost/dosage/status clutter; Consultation is filtered out of Services
-    since nearly every visit carries it as a default catch-all and it
-    adds nothing to a summary meant to be scanned in seconds; only the 3
-    most recent show, with a "View all N visits" toggle below —
-    client-side, not a link to `/app/health`, since a `vet_view`-role
-    viewer can't reach that page at all), then Illnesses (just
-    "date — reason", nothing else), Vaccinations (vaccine name, date,
-    clinic — no status badge), and Growth (the chart reuses
-    `GrowthPanel`'s exported `WeightChart` directly, skipping its own
-    redundant pet-selector). No Medications section — deliberately
-    skipped here (Vet View is meant to be scanned in seconds; the Summary
-    narration already mentions active medication count). Reachable by
-    every role from the sidebar (an owner can open it themselves to show
+    only if all four are. The remaining sections run Vaccinations,
+    Illnesses, then Visits (in that order): Vaccinations (vaccine name,
+    date, clinic — no status badge), Illnesses (just "date — reason",
+    nothing else), Visits (led by the date, not the reason — provider and
+    doctor beneath it, then Services/Vaccinations/Illnesses/Medications
+    each as one comma-joined line by *name only*, no cost/dosage/status
+    clutter; Consultation is filtered out of Services since nearly every
+    visit carries it as a default catch-all and it adds nothing to a
+    summary meant to be scanned in seconds; only the 3 most recent show,
+    with a "View all N visits" toggle below — client-side, not a link to
+    `/app/health`, since a `vet_view`-role viewer can't reach that page at
+    all), and finally Growth (the chart reuses `GrowthPanel`'s exported
+    `WeightChart` directly, skipping its own redundant pet-selector). No
+    Medications section — deliberately skipped here (Vet View is meant to
+    be scanned in seconds; the Summary narration already mentions active
+    medication count). Reachable by every role from the sidebar (an owner
+    can open it themselves to show
     a vet in person) — only the `vet_view` *role* is restricted to seeing
     nothing else. "Sex" is "Gender" everywhere in the product now (the
     roster form's label and this page) — `PetSex`/the `sex` column/

@@ -136,6 +136,35 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
             )}
           </Section>
 
+          <Section title="Vaccinations">
+            {selected.vaccinations.length === 0 ? (
+              <p className="text-sm text-muted">No vaccinations on record.</p>
+            ) : (
+              <div className="flex flex-col divide-y divide-line">
+                {selected.vaccinations.map((v) => (
+                  <div key={v.id} className="py-2 text-sm">
+                    <div className="font-medium">{v.reason}</div>
+                    <div className="text-xs text-muted">{v.date}{v.provider ? ` · ${v.provider}` : ""}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
+
+          <Section title="Illnesses">
+            {selected.illnesses.length === 0 ? (
+              <p className="text-sm text-muted">No illnesses on record.</p>
+            ) : (
+              <div className="flex flex-col divide-y divide-line">
+                {selected.illnesses.map((i) => (
+                  <div key={i.id} className="py-2 text-sm">
+                    {i.date} — {i.reason}
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
+
           <Section title="Visits">
             {visits.length === 0 ? (
               <p className="text-sm text-muted">No visits logged.</p>
@@ -191,35 +220,6 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
                   </button>
                 )}
               </>
-            )}
-          </Section>
-
-          <Section title="Illnesses">
-            {selected.illnesses.length === 0 ? (
-              <p className="text-sm text-muted">No illnesses on record.</p>
-            ) : (
-              <div className="flex flex-col divide-y divide-line">
-                {selected.illnesses.map((i) => (
-                  <div key={i.id} className="py-2 text-sm">
-                    {i.date} — {i.reason}
-                  </div>
-                ))}
-              </div>
-            )}
-          </Section>
-
-          <Section title="Vaccinations">
-            {selected.vaccinations.length === 0 ? (
-              <p className="text-sm text-muted">No vaccinations on record.</p>
-            ) : (
-              <div className="flex flex-col divide-y divide-line">
-                {selected.vaccinations.map((v) => (
-                  <div key={v.id} className="py-2 text-sm">
-                    <div className="font-medium">{v.reason}</div>
-                    <div className="text-xs text-muted">{v.date}{v.provider ? ` · ${v.provider}` : ""}</div>
-                  </div>
-                ))}
-              </div>
             )}
           </Section>
 
