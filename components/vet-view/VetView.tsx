@@ -4,19 +4,19 @@ import { useState } from "react";
 import { Card } from "@/components/ui";
 import { PetSummaryCards } from "@/components/pets/PetSummaryCards";
 import { WeightChart } from "@/components/health/GrowthPanel";
+import { WeightIcon, ChipIcon, ShieldIcon, ClipboardIcon } from "@/components/icons";
 import { SPECIES_LABEL } from "@/lib/species-labels";
 import { SEX_LABEL, ageLabel } from "@/lib/pet-labels";
 import type { PetVetSummary } from "@/lib/vet-view";
 
 const sectionLabel = "text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold mb-2";
 
-function DetailRow({ label, value }: { label: string; value: string | null }) {
-  if (!value) return null;
+function IconBullet({ icon: Icon, children }: { icon: typeof WeightIcon; children: React.ReactNode }) {
   return (
-    <div className="flex justify-between gap-3 text-sm py-1 border-b border-line last:border-none">
-      <span className="text-muted">{label}</span>
-      <span className="text-right">{value}</span>
-    </div>
+    <li className="flex items-start gap-2 text-sm">
+      <Icon className="w-[.9em] h-[.9em] text-muted flex-none mt-0.5" />
+      <span>{children}</span>
+    </li>
   );
 }
 
@@ -54,6 +54,10 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
   // visit history (see lib/growth.ts), so it can silently go stale.
   const points = selected?.weightHistory?.points ?? [];
   const lastWeight = points.length > 0 ? points[points.length - 1] : null;
+  const petDetails = selected?.pet.pet;
+  const hasBasicDetails = Boolean(
+    lastWeight || petDetails?.microchipId || (petDetails && petDetails.neutered !== null) || petDetails?.notes
+  );
 
   const VISIT_PREVIEW_COUNT = 3;
   const visits = selected?.visits ?? [];
@@ -81,9 +85,24 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
         onSelect={handleSelectPet}
       />
 
+      {selected && selected.pet.pet && (
+        <div>
+          <h2 className="text-xl font-semibold">{selected.pet.name}</h2>
+          <p className="text-sm text-muted">
+            {[
+              ageLabel(selected.pet.pet.birthDate),
+              SEX_LABEL[selected.pet.pet.sex],
+              `${SPECIES_LABEL[selected.pet.pet.species]} (${selected.pet.pet.breed})`,
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          </p>
+        </div>
+      )}
+
       {selected && (
         <Card className="p-4">
-          <div className={sectionLabel}>{selected.pet.name} — Summary</div>
+          <div className={sectionLabel}>Summary</div>
           <p className="text-sm">{selected.narration}</p>
         </Card>
       )}
@@ -91,24 +110,30 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
       {selected && (
         <div className="flex flex-col gap-4">
           <Section title="Basic details">
-            <div className="flex flex-col">
-              {selected.pet.pet && (
-                <>
-                  <DetailRow label="Breed" value={`${SPECIES_LABEL[selected.pet.pet.species]} (${selected.pet.pet.breed})`} />
-                  <DetailRow label="Gender" value={SEX_LABEL[selected.pet.pet.sex]} />
-                  <DetailRow label="Age" value={ageLabel(selected.pet.pet.birthDate)} />
-                  <DetailRow
-                    label="Weight"
-                    value={
-                      lastWeight ? `${lastWeight.weightKg} kg (as on ${lastWeight.date})` : null
-                    }
-                  />
-                  <DetailRow label="Microchip" value={selected.pet.pet.microchipId} />
-                  <DetailRow label="Neutered / spayed" value={selected.pet.pet.neutered === null ? null : selected.pet.pet.neutered ? "Yes" : "No"} />
-                  <DetailRow label="Notes" value={selected.pet.pet.notes} />
-                </>
-              )}
-            </div>
+            {selected.pet.pet && (
+              <>
+                {hasBasicDetails ? (
+                  <ul className="flex flex-col gap-2">
+                    {lastWeight && (
+                      <IconBullet icon={WeightIcon}>
+                        {lastWeight.weightKg} kg (as on {lastWeight.date})
+                      </IconBullet>
+                    )}
+                    {selected.pet.pet.microchipId && (
+                      <IconBullet icon={ChipIcon}>Microchip {selected.pet.pet.microchipId}</IconBullet>
+                    )}
+                    {selected.pet.pet.neutered !== null && (
+                      <IconBullet icon={ShieldIcon}>
+                        {selected.pet.pet.neutered ? "Neutered / spayed" : "Not neutered / spayed"}
+                      </IconBullet>
+                    )}
+                    {selected.pet.pet.notes && <IconBullet icon={ClipboardIcon}>{selected.pet.pet.notes}</IconBullet>}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-muted">No additional details.</p>
+                )}
+              </>
+            )}
           </Section>
 
           <Section title="Visits">

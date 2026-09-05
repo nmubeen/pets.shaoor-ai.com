@@ -208,6 +208,22 @@ export const HeartFillIcon = (p: IconProps) => (
   </svg>
 );
 
+export const WeightIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="2" y="9" width="4" height="6" rx="1.2" />
+    <rect x="18" y="9" width="4" height="6" rx="1.2" />
+    <path d="M6 12h3M15 12h3" />
+    <rect x="9" y="7" width="6" height="10" rx="1.5" />
+  </svg>
+);
+
+export const ChipIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="7" y="7" width="10" height="10" rx="1.5" />
+    <path d="M9 3v4M12 3v4M15 3v4M9 17v4M12 17v4M15 17v4M3 9h4M3 12h4M3 15h4M17 9h4M17 12h4M17 15h4" />
+  </svg>
+);
+
 export const HabitatIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <rect x="3" y="5" width="18" height="14" rx="2" />

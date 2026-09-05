@@ -6,11 +6,9 @@
 // their results by pet, the same way lib/pet-links.ts already does.
 import "server-only";
 import type { RosterItem } from "@/lib/roster";
-import { ageLabel, SEX_LABEL } from "@/lib/pet-labels";
 import type { HealthRow, VisitRow } from "@/lib/health";
 import type { MedicationRow } from "@/lib/medications";
 import type { PetWeightHistory } from "@/lib/growth";
-import { SPECIES_LABEL } from "@/lib/species-labels";
 
 export type PetVetSummary = {
   pet: RosterItem;
@@ -26,6 +24,10 @@ function plural(count: number, word: string): string {
   return `${count} ${word}${count === 1 ? "" : "s"}`;
 }
 
+// Age/gender/species/breed deliberately aren't repeated here — they're
+// already the header + sub-header shown right below the pet card
+// (components/vet-view/VetView.tsx), so this starts straight at the
+// actual health facts instead of re-stating who the pet is.
 function buildNarration(
   pet: RosterItem,
   visits: VisitRow[],
@@ -34,14 +36,9 @@ function buildNarration(
   medications: MedicationRow[],
   weightHistory: PetWeightHistory | null
 ): string {
-  const p = pet.pet;
-  if (!p) return `${pet.name}.`;
+  if (!pet.pet) return "No health records logged yet.";
 
-  const age = ageLabel(p.birthDate);
-  const sex = SEX_LABEL[p.sex];
-  const sentences: string[] = [
-    `${pet.name} is a${age ? ` ${age} old` : ""}${sex ? ` ${sex.toLowerCase()}` : ""} ${p.breed} (${SPECIES_LABEL[p.species]})${p.neutered ? ", neutered/spayed" : ""}.`,
-  ];
+  const sentences: string[] = [];
 
   if (visits.length > 0) {
     sentences.push(`${plural(visits.length, "visit")} logged, most recent ${visits[0].date}.`);
@@ -72,7 +69,7 @@ function buildNarration(
     sentences.push(`Last weighed ${last.weightKg} kg on ${last.date}.`);
   }
 
-  if (sentences.length === 1) sentences.push("No health records logged yet.");
+  if (sentences.length === 0) sentences.push("No health records logged yet.");
 
   return sentences.join(" ");
 }
