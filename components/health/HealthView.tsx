@@ -24,8 +24,8 @@ type TabKey = "visits" | HealthTabKey | "medications" | "growth";
 export type PendingVisitEdit = { visitId: string; focusId: string };
 
 // Same icon per section as the pet-card quick-links on /app/pets
-// (components/pets/RosterGrid.tsx) — one visual vocabulary for "this is
-// the Vaccinations section" wherever it shows up.
+// (components/pets/PetHealthLinks.tsx) — one visual vocabulary for "this
+// is the Vaccinations section" wherever it shows up.
 const TABS: { key: TabKey; label: string; logLabel: string; icon: typeof StethoIcon }[] = [
   { key: "visits", label: "Visits", logLabel: "", icon: StethoIcon },
   { key: "illnesses", label: "Illnesses", logLabel: "Log an illness", icon: HeartIcon },
@@ -138,7 +138,7 @@ export function HealthView({
 }) {
   const canWrite = role === "owner" || role === "caregiver";
 
-  // A pet card's Health quick-links (components/pets/RosterGrid.tsx) land
+  // A pet card's Health quick-links (components/pets/PetHealthLinks.tsx) land
   // here as /app/health?tab=<tab>&pet=<petId> — read once at mount to seed
   // which tab opens and which pet everything below starts filtered to.
   // Read once, not synced afterward: this page doesn't keep its own state

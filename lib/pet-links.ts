@@ -1,20 +1,22 @@
 // Powers the Health quick-links shown on each pet's card at /app/pets —
-// one bullet per Health sub-section (Visits, Illnesses, Vaccinations,
-// Medications, Growth), shown only when that pet actually has something
-// logged there. Growth reuses visits' own weight_kg column (same source
-// lib/growth.ts's getWeightHistory reads) rather than a separate table.
+// one link per Health sub-section (Visits, Illnesses, Vaccinations,
+// Medications, Growth), shown with a count badge only when that pet
+// actually has something logged there. Growth reuses visits' own
+// weight_kg column (same source lib/growth.ts's getWeightHistory reads)
+// rather than a separate table.
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
 
+/** How many records this pet has in each Health sub-section — 0 means the link isn't shown at all (see components/pets/PetHealthLinks.tsx). */
 export type PetLinks = {
-  visits: boolean;
-  illnesses: boolean;
-  vaccinations: boolean;
-  medications: boolean;
-  growth: boolean;
+  visits: number;
+  illnesses: number;
+  vaccinations: number;
+  medications: number;
+  growth: number;
 };
 
-const EMPTY: PetLinks = { visits: false, illnesses: false, vaccinations: false, medications: false, growth: false };
+const EMPTY: PetLinks = { visits: 0, illnesses: 0, vaccinations: 0, medications: 0, growth: 0 };
 
 export async function getPetLinks(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -38,12 +40,12 @@ export async function getPetLinks(
 
   for (const v of visits ?? []) {
     const l = forPet(v.pet_id);
-    l.visits = true;
-    if (v.weight_kg !== null) l.growth = true;
+    l.visits += 1;
+    if (v.weight_kg !== null) l.growth += 1;
   }
-  for (const i of illnesses ?? []) forPet(i.pet_id).illnesses = true;
-  for (const v of vaccinations ?? []) forPet(v.pet_id).vaccinations = true;
-  for (const m of medications ?? []) forPet(m.pet_id).medications = true;
+  for (const i of illnesses ?? []) forPet(i.pet_id).illnesses += 1;
+  for (const v of vaccinations ?? []) forPet(v.pet_id).vaccinations += 1;
+  for (const m of medications ?? []) forPet(m.pet_id).medications += 1;
 
   return links;
 }

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   PawIcon,
   HomeIcon,
+  HabitatIcon,
   StethoIcon,
   CartIcon,
   ImageIcon,
@@ -20,6 +21,7 @@ import type { ActiveMembership } from "@/lib/tenant";
 const nav = [
   { href: "/app", label: "Home", icon: HomeIcon },
   { href: "/app/pets", label: "Pets", icon: PawIcon },
+  { href: "/app/habitats", label: "Habitats", icon: HabitatIcon },
   { href: "/app/health", label: "Health", icon: StethoIcon },
   { href: "/app/shopping", label: "Shopping", icon: CartIcon },
   { href: "/app/gallery", label: "Gallery", icon: ImageIcon },

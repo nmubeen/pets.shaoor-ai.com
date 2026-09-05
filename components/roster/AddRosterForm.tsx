@@ -17,6 +17,7 @@ export function AddRosterForm({
   compact = false,
   mode = "add",
   initial,
+  fixedKind,
 }: {
   tenantId: string;
   onDone?: () => void;
@@ -25,8 +26,10 @@ export function AddRosterForm({
   mode?: "add" | "edit";
   /** Required when mode is "edit" — the existing item to pre-fill and update. */
   initial?: RosterItem;
+  /** Locks the kind and hides the Individual pet/Habitat toggle — set by /app/pets and /app/habitats, which each only ever add their own kind. Onboarding leaves this unset since it offers both. */
+  fixedKind?: Kind;
 }) {
-  const [kind, setKind] = useState<Kind>(initial?.kind ?? "pet");
+  const [kind, setKind] = useState<Kind>(initial?.kind ?? fixedKind ?? "pet");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -55,7 +58,7 @@ export function AddRosterForm({
 
   return (
     <Card className="p-5">
-      {mode === "add" && (
+      {mode === "add" && !fixedKind && (
         <div className="flex gap-2 mb-4">
           {(["pet", "habitat"] as const).map((k) => (
             <button

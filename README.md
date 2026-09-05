@@ -45,7 +45,19 @@ A Next.js (App Router) build of the marketing site and app shell described in
   every health/shopping/task/media row scoped to that pet or habitat at the
   DB level, plus best-effort cleanup of its Storage photos; the UI always
   confirms first), and a merged "roster" view (`lib/roster.ts`) powering the
-  dashboard, `/app/pets`, and onboarding. **`species` and `breed` were
+  dashboard and onboarding — a pet or habitat is still one row in one
+  merged concept there, and `getRoster()` itself is unchanged. **Pets and
+  Habitats are two separate pages now**, though (`/app/pets`,
+  `/app/habitats`, both new sidebar entries — previously one page, one
+  "Pets" link, mixing both kinds in a single grid): `components/pets/
+  PetsGrid.tsx` and `components/habitats/HabitatsGrid.tsx` each filter
+  the same `getRoster()` result down to their own kind, replacing the old
+  combined `RosterGrid.tsx`. `AddRosterForm` gained a `fixedKind` prop
+  (`AddRosterPanel` threads it through) that hides its Individual-pet/
+  Habitat toggle and locks the kind — set on both new pages, since each
+  only ever creates its own kind; onboarding's own "who lives here?" step
+  leaves it unset and keeps the toggle, since it genuinely offers both.
+  **`species` and `breed` were
   renamed and swapped from the original design** (`0022_rename_species_breed.sql`)
   — the old pair (a required free-text `species`, e.g. "Persian Cat", plus a
   separate optional `breed`) described the same thing at two different
@@ -66,22 +78,50 @@ A Next.js (App Router) build of the marketing site and app shell described in
   `lib/actions/gallery.ts`) — shown wherever its avatar circle appears
   instead of initials; replacing or removing a photo cleans up the old
   Storage object. Each pet's card also shows a compact, lightly-indented
-  list of quick-links into its own Health history — Visits, Illnesses,
-  Vaccinations, Medications, Growth, each with a thin outline icon
-  (Stetho/Heart/Drop/Vial/Chart) but no literal bullet marker (redundant
-  next to an icon) — for whichever of those five it actually has a record
-  in (`lib/pet-links.ts`'s `getPetLinks`, one existence check per table;
-  Growth reuses visits' own `weight_kg` rather than a separate table), so
-  a brand-new pet with nothing logged shows no dead links. Health's own
-  tab row (`TabRow`, `components/health/HealthView.tsx`) uses this exact
-  same five-icon set — one visual vocabulary for "this is the
-  Vaccinations section" wherever it appears. Clicking a pet-card link
-  navigates to `/app/health?tab=<tab>&pet=<petId>` — `HealthView` reads
-  that query once at mount (`useSearchParams`, plain client-side read
-  since the page is already fully dynamic) to open the right tab
-  pre-filtered to that pet, threading the same initial value into
-  `VisitsPanel`/`MedicationsPanel`/`GrowthPanel`'s own independent
-  pet-filter state.
+  list of quick-links into its own Health history (`components/pets/
+  PetHealthLinks.tsx`) — Visits, Illnesses, Vaccinations, Medications,
+  Growth, each with a thin outline icon (Stetho/Heart/Drop/Vial/Chart) and
+  a small count badge, but no literal bullet marker (redundant next to an
+  icon) — for whichever of those five it actually has entries in
+  (`lib/pet-links.ts`'s `getPetLinks`, one counting pass per table; Growth
+  reuses visits' own `weight_kg` rather than a separate table), so a
+  brand-new pet with nothing logged shows no dead links and every shown
+  link tells you how much is there before you click. Health's own tab row
+  (`TabRow`, `components/health/HealthView.tsx`) uses this exact same
+  five-icon set — one visual vocabulary for "this is the Vaccinations
+  section" wherever it appears. Clicking a pet-card link navigates to
+  `/app/health?tab=<tab>&pet=<petId>` — `HealthView` reads that query once
+  at mount (`useSearchParams`, plain client-side read since the page is
+  already fully dynamic) to open the right tab pre-filtered to that pet,
+  threading the same initial value into `VisitsPanel`/`MedicationsPanel`/
+  `GrowthPanel`'s own independent pet-filter state.
+- **Habitat Care panel** — `/app/habitats`' own card for each habitat,
+  built entirely on the existing `care_tasks` table (`lib/tasks.ts`,
+  already scoped to a pet *or* habitat — see Core records' Scope type)
+  rather than a new one: a habitat routine (feed, clean the enclosure,
+  change the water, or anything custom) is exactly a recurring task that
+  gets marked done and rescheduled, which `care_tasks` already models.
+  `lib/habitat-care.ts`'s `getHabitatCareByHabitat` groups every
+  habitat-scoped `care_tasks` row into open (not yet done) and a capped,
+  most-recent-first history per habitat, one query for the whole page
+  (same shape as `getPetLinks`). Three preset one-click buttons — Feed
+  (daily), Clean enclosure, Water change (weekly) — call
+  `lib/actions/tasks.ts`'s new `logHabitatCare(tenantId, habitatId,
+  title)`: it matches an already-open task with that title and completes
+  it (same reschedule logic `completeCareTask` already had), or, the
+  first time, records it as already-done *and* immediately schedules the
+  next occurrence at the preset's default cadence — so one click both
+  logs today's feeding and sets up tomorrow's reminder, no separate setup
+  step. A "Custom" form covers anything else via the existing
+  `addCareTask`, with an explicit due date and optional repeat interval,
+  scoped to that habitat via a hidden field rather than the dashboard
+  widget's `ScopePicker` (the habitat is already known). New
+  `deleteCareTask` removes a mistaken open entry; completed history rows
+  are read-only, matching Health's principle that a real record isn't
+  meant to be edited away. Verified against the live database: a preset's
+  first click yields exactly one history row and one open row due one
+  interval later, and a second click on the same preset advances that
+  same rolling schedule rather than accumulating duplicate open rows.
 - **Health & unified visits** — `visits` (renamed from `vet_visits`,
   `0020_unified_visits.sql`), `illnesses`, `vaccinations`, pet-only
   (`pet_id` required, `0017_scope_rework.sql` dropped `habitat_id` —

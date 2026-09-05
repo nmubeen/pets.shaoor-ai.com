@@ -10,11 +10,14 @@ export function AddRosterPanel({
   triggerClassName,
   triggerLabel = "Add pet or habitat",
   compact = false,
+  fixedKind,
 }: {
   tenantId: string;
   triggerClassName: string;
   triggerLabel?: string;
   compact?: boolean;
+  /** Locks the form to this kind — see AddRosterForm. */
+  fixedKind?: "pet" | "habitat";
 }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -33,6 +36,7 @@ export function AddRosterPanel({
       <AddRosterForm
         tenantId={tenantId}
         compact={compact}
+        fixedKind={fixedKind}
         onDone={() => {
           setOpen(false);
           router.refresh();

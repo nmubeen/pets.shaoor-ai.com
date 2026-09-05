@@ -194,6 +194,13 @@ export const CloseIcon = (p: IconProps) => (
   </svg>
 );
 
+export const HabitatIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="M3 14c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0" />
+  </svg>
+);
+
 export const ScissorsIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <circle cx="6" cy="6" r="2.2" />

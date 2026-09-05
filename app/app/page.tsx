@@ -36,7 +36,7 @@ export default async function AppHomePage() {
           className="inline-flex items-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition"
         >
           <PlusIcon className="w-[.9em] h-[.9em]" />
-          Add pet or habitat
+          Add pet
         </Link>
       </div>
 
