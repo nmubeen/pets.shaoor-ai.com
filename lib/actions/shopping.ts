@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { friendlyErrorMessage } from "@/lib/errors";
 import { uploadImage, removeImage } from "@/lib/storage";
 
 /**
@@ -97,14 +98,14 @@ export async function addShoppingOrder(tenantId: string, formData: FormData) {
     })
     .select("id")
     .single();
-  if (error || !order) return { error: error?.message ?? "Could not save that order." };
+  if (error || !order) return { error: error ? friendlyErrorMessage(error) : "Could not save that order." };
 
   const scopeRows = parseMultiScope(formData);
   if (scopeRows.length > 0) {
     const { error: scopeError } = await supabase
       .from("shopping_order_scopes")
       .insert(scopeRows.map((s) => ({ tenant_id: tenantId, order_id: order.id, ...s })));
-    if (scopeError) return { error: scopeError.message };
+    if (scopeError) return { error: friendlyErrorMessage(scopeError) };
   }
 
   revalidatePath("/app");
@@ -155,17 +156,17 @@ export async function updateShoppingOrder(tenantId: string, orderId: string, for
     })
     .eq("id", orderId)
     .eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   const { error: clearError } = await supabase.from("shopping_order_scopes").delete().eq("order_id", orderId).eq("tenant_id", tenantId);
-  if (clearError) return { error: clearError.message };
+  if (clearError) return { error: friendlyErrorMessage(clearError) };
 
   const scopeRows = parseMultiScope(formData);
   if (scopeRows.length > 0) {
     const { error: scopeError } = await supabase
       .from("shopping_order_scopes")
       .insert(scopeRows.map((s) => ({ tenant_id: tenantId, order_id: orderId, ...s })));
-    if (scopeError) return { error: scopeError.message };
+    if (scopeError) return { error: friendlyErrorMessage(scopeError) };
   }
 
   revalidatePath("/app");
@@ -177,7 +178,7 @@ export async function updateShoppingOrder(tenantId: string, orderId: string, for
 export async function deleteShoppingOrder(tenantId: string, orderId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("shopping_orders").delete().eq("id", orderId).eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidatePath("/app");
   revalidatePath("/app/shopping");

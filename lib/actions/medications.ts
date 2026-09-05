@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { friendlyErrorMessage } from "@/lib/errors";
 
 function str(formData: FormData, key: string): string | null {
   const v = formData.get(key);
@@ -39,7 +40,7 @@ export async function addMedication(tenantId: string, formData: FormData) {
     next_due_date: startDate,
     notes: str(formData, "notes"),
   });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidateMedications();
   return { error: null };
@@ -73,7 +74,7 @@ export async function logMedicationDose(tenantId: string, medicationId: string) 
     .update(pastEnd ? { status: "completed" } : { next_due_date: nextDate })
     .eq("id", medicationId)
     .eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidateMedications();
   return { error: null };
@@ -86,7 +87,7 @@ export async function discontinueMedication(tenantId: string, medicationId: stri
     .update({ status: "discontinued" })
     .eq("id", medicationId)
     .eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidateMedications();
   return { error: null };
@@ -124,7 +125,7 @@ export async function updateMedication(tenantId: string, medicationId: string, f
     })
     .eq("id", medicationId)
     .eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidateMedications();
   return { error: null };
@@ -145,7 +146,7 @@ export async function deleteMedication(tenantId: string, medicationId: string) {
   if (med.visit_id) return { error: "This was prescribed as part of a visit — edit that visit to change or remove it." };
 
   const { error } = await supabase.from("medications").delete().eq("id", medicationId).eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidateMedications();
   return { error: null };

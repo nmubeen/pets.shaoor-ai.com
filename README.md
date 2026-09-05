@@ -744,6 +744,46 @@ A Next.js (App Router) build of the marketing site and app shell described in
   has needed it — computed once server-side (`app/app/shopping/page.tsx`'s
   new `nowIso` prop) and passed down as a plain string, never read live
   via `Date.now()` inside the client component's own render.
+- **A viewer's failed save now reads like an error, not a stack trace** —
+  a real report: a `viewer`-role member saw the raw Postgres text `new
+  row violates row-level security policy for table "pets"` after trying
+  to edit a pet. Two things, together:
+  - **The actual bug**: `/app/pets`'s `PetsGrid.tsx` never checked the
+    role at all — Edit/Delete (and the Add pet button, and
+    `SuggestScheduleButton`/`AdoptionToggle`'s own write actions) showed
+    for every role, unlike `HabitatsGrid.tsx`/`ShoppingView.tsx`/
+    `ProvidersView.tsx`/`GalleryView.tsx`, which already gate the same
+    things behind a `canWrite`/`canManage` check computed from `role`. A
+    viewer could always reach the write action; RLS was the only thing
+    stopping it, and it stopped it with its own raw message, not a UI
+    one. Fixed the same way those other pages already do it:
+    `app/app/pets/page.tsx` computes `canWrite = role === "owner" ||
+    role === "caregiver"` and passes it to `PetsGrid`, which now hides
+    Edit/Delete/Add-pet-adjacent write actions for anyone else.
+    `AdoptionToggle` gained its own `canWrite` prop (default `true`,
+    the only call site passes it explicitly) so a read-only viewer still
+    *sees* "🏡 Listed for adoption" status on an org's pet card, just
+    without the Edit/Unlist/List-for-adoption controls next to it —
+    hiding the whole block would've also hidden information a viewer
+    should still have.
+  - **The defense-in-depth fix**: even with every write control
+    correctly hidden, a raw RLS message could still leak through some
+    future gap, or a role change mid-session, or a stale UI ref — so
+    `lib/errors.ts`'s new `friendlyErrorMessage(error)` now sits between
+    every write action's Postgres error and the `{ error }` a component
+    displays, translating SQLSTATE `42501` (insufficient_privilege —
+    verified live against the database that this is exactly the code an
+    RLS-policy-violating insert actually raises, same SQLSTATE for every
+    table) into "You don't have permission to make changes here."
+    Anything else still passes through as `error.message` unchanged, same
+    as before — this is a narrow, explicit allowlist, not a blanket
+    "hide all errors" layer. Applied at every raw `error.message`/
+    `someError.message` site across all of `lib/actions/*.ts` (roster,
+    health, shopping, shopping-categories, care-services, providers,
+    medications, tasks, gallery, team, vaccination-plans — about 50 call
+    sites) — left alone: `billing.ts`'s caught Razorpay exception (not a
+    Postgres error) and `PlanLimitExceededError`'s own message in
+    `roster.ts`/`team.ts` (already a custom, already-friendly message).
 - **Care tasks** — `care_tasks` table with RLS, exactly one of pet/habitat
   required (`0017_scope_rework.sql` tightened this from "pet, habitat, or
   household" — the vague household catch-all is gone, so every task is

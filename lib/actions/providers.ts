@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { friendlyErrorMessage } from "@/lib/errors";
 import { uploadImage, removeImage } from "@/lib/storage";
 import type { ServiceProviderCategory } from "@/lib/database.types";
 
@@ -60,7 +61,7 @@ export async function addProvider(tenantId: string, category: ServiceProviderCat
   });
   if (error) {
     if (error.code === "23505") return { error: "A provider with that name already exists in this category." };
-    return { error: error.message };
+    return { error: friendlyErrorMessage(error) };
   }
 
   revalidateProviders();
@@ -92,7 +93,7 @@ export async function updateProvider(tenantId: string, providerId: string, formD
     .eq("tenant_id", tenantId);
   if (error) {
     if (error.code === "23505") return { error: "A provider with that name already exists in this category." };
-    return { error: error.message };
+    return { error: friendlyErrorMessage(error) };
   }
 
   revalidateProviders();
@@ -114,7 +115,7 @@ export async function deleteProvider(tenantId: string, providerId: string) {
     .delete()
     .eq("id", providerId)
     .eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   await removeImage(supabase, provider?.logo_path);
 

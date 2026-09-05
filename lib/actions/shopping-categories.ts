@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { friendlyErrorMessage } from "@/lib/errors";
 
 function str(formData: FormData, key: string): string | null {
   const v = formData.get(key);
@@ -21,7 +22,7 @@ export async function addShoppingCategory(tenantId: string, formData: FormData) 
   const { error } = await supabase.from("shopping_categories").insert({ tenant_id: tenantId, name });
   if (error) {
     if (error.code === "23505") return { error: "A category with that name already exists." };
-    return { error: error.message };
+    return { error: friendlyErrorMessage(error) };
   }
 
   revalidate();
@@ -40,7 +41,7 @@ export async function updateShoppingCategory(tenantId: string, categoryId: strin
     .eq("tenant_id", tenantId);
   if (error) {
     if (error.code === "23505") return { error: "A category with that name already exists." };
-    return { error: error.message };
+    return { error: friendlyErrorMessage(error) };
   }
 
   revalidate();
@@ -51,7 +52,7 @@ export async function updateShoppingCategory(tenantId: string, categoryId: strin
 export async function deleteShoppingCategory(tenantId: string, categoryId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("shopping_categories").delete().eq("id", categoryId).eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidate();
   return { error: null };

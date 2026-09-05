@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { friendlyErrorMessage } from "@/lib/errors";
 import { sendEmail } from "@/lib/email";
 import { emailShell, emailButton } from "@/lib/email-templates";
 import { enforcePetsLimit, PlanLimitExceededError } from "@/lib/entitlements";
@@ -98,7 +99,7 @@ export async function inviteMember(tenantId: string, formData: FormData) {
       .from("memberships")
       .update({ role, status: "invited" })
       .eq("id", existing.id);
-    if (reactivateError) return { error: reactivateError.message };
+    if (reactivateError) return { error: friendlyErrorMessage(reactivateError) };
   } else {
     const { error: insertError } = await supabase.from("memberships").insert({
       tenant_id: tenantId,
@@ -108,7 +109,7 @@ export async function inviteMember(tenantId: string, formData: FormData) {
     });
     if (insertError) {
       if (insertError.code === "23505") return { error: "That person already has access." };
-      return { error: insertError.message };
+      return { error: friendlyErrorMessage(insertError) };
     }
   }
 
@@ -169,7 +170,7 @@ export async function removeMember(tenantId: string, membershipId: string) {
     .update({ status: "removed" })
     .eq("id", membershipId)
     .eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidatePath("/app/settings/team");
   return { error: null };

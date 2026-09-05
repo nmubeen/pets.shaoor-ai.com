@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { friendlyErrorMessage } from "@/lib/errors";
 import { parseScopeRequired } from "@/lib/scope";
 import { HABITAT_CARE_PRESETS } from "@/lib/habitat-care-shared";
 
@@ -34,7 +35,7 @@ export async function addCareTask(tenantId: string, formData: FormData) {
     notes: str(formData, "notes"),
     ...s,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidateTasks();
   return { error: null };
@@ -61,7 +62,7 @@ export async function completeCareTask(tenantId: string, taskId: string) {
     .update({ completed_at: new Date().toISOString() })
     .eq("id", taskId)
     .eq("tenant_id", tenantId);
-  if (updateError) return { error: updateError.message };
+  if (updateError) return { error: friendlyErrorMessage(updateError) };
 
   if (task.repeat_interval_days) {
     // UTC-safe: parsing/advancing/formatting all stay in UTC, so the next
@@ -78,7 +79,7 @@ export async function completeCareTask(tenantId: string, taskId: string) {
       pet_id: task.pet_id,
       habitat_id: task.habitat_id,
     });
-    if (insertError) return { error: insertError.message };
+    if (insertError) return { error: friendlyErrorMessage(insertError) };
   }
 
   revalidateTasks();
@@ -89,7 +90,7 @@ export async function completeCareTask(tenantId: string, taskId: string) {
 export async function deleteCareTask(tenantId: string, taskId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("care_tasks").delete().eq("id", taskId).eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidateTasks();
   return { error: null };
@@ -135,7 +136,7 @@ export async function logHabitatCare(tenantId: string, habitatId: string, title:
     completed_at: new Date().toISOString(),
     repeat_interval_days: repeatIntervalDays,
   });
-  if (logError) return { error: logError.message };
+  if (logError) return { error: friendlyErrorMessage(logError) };
 
   if (repeatIntervalDays) {
     const next = new Date(today + "T00:00:00Z");
@@ -147,7 +148,7 @@ export async function logHabitatCare(tenantId: string, habitatId: string, title:
       due_date: next.toISOString().slice(0, 10),
       repeat_interval_days: repeatIntervalDays,
     });
-    if (insertError) return { error: insertError.message };
+    if (insertError) return { error: friendlyErrorMessage(insertError) };
   }
 
   revalidateTasks();

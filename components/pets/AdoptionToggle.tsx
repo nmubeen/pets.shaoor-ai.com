@@ -10,11 +10,14 @@ export function AdoptionToggle({
   petId,
   isAdoptable,
   adoptionNote,
+  canWrite = true,
 }: {
   tenantId: string;
   petId: string;
   isAdoptable: boolean;
   adoptionNote: string | null;
+  /** Read-only viewers still see the "Listed for adoption" status — just not the Edit/Unlist/List controls. Defaults true since this is the only call site today. */
+  canWrite?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [note, setNote] = useState(adoptionNote ?? "");
@@ -32,6 +35,14 @@ export function AdoptionToggle({
       }
       router.refresh();
     });
+  }
+
+  if (isAdoptable && !canWrite) {
+    return <span className="text-good font-medium text-xs">🏡 Listed for adoption</span>;
+  }
+
+  if (!isAdoptable && !canWrite) {
+    return null;
   }
 
   if (isAdoptable && !editing) {

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { friendlyErrorMessage } from "@/lib/errors";
 import type { Species } from "@/lib/database.types";
 import { SPECIES_LIST } from "@/lib/species-labels";
 
@@ -41,7 +42,7 @@ export async function addServiceType(tenantId: string, formData: FormData) {
   });
   if (error) {
     if (error.code === "23505") return { error: "A service with that name (for that species) already exists." };
-    return { error: error.message };
+    return { error: friendlyErrorMessage(error) };
   }
 
   revalidate();
@@ -60,7 +61,7 @@ export async function updateServiceType(tenantId: string, serviceTypeId: string,
     .eq("tenant_id", tenantId);
   if (error) {
     if (error.code === "23505") return { error: "A service with that name (for that species) already exists." };
-    return { error: error.message };
+    return { error: friendlyErrorMessage(error) };
   }
 
   revalidate();
@@ -74,7 +75,7 @@ export async function deleteServiceType(tenantId: string, serviceTypeId: string)
     .delete()
     .eq("id", serviceTypeId)
     .eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidate();
   return { error: null };

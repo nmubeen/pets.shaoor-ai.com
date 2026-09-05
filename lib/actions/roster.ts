@@ -5,6 +5,7 @@
 // tenantId is only a routing hint, not a trust decision.
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { friendlyErrorMessage } from "@/lib/errors";
 import { uploadImage, removeImage } from "@/lib/storage";
 import type { PetSex, Species } from "@/lib/database.types";
 import { SPECIES_LIST } from "@/lib/species-labels";
@@ -114,7 +115,7 @@ export async function addPet(tenantId: string, formData: FormData) {
     ...petFields(formData),
     ...photo,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidateRoster();
   return { error: null };
@@ -136,7 +137,7 @@ export async function updatePet(tenantId: string, petId: string, formData: FormD
     .update({ name, species: s, breed, ...petFields(formData), ...photo })
     .eq("id", petId)
     .eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidateRoster();
   return { error: null };
@@ -158,7 +159,7 @@ export async function deletePet(tenantId: string, petId: string) {
   const { data: pet } = await supabase.from("pets").select("photo_path").eq("id", petId).eq("tenant_id", tenantId).maybeSingle();
 
   const { error } = await supabase.from("pets").delete().eq("id", petId).eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   await removeImage(supabase, pet?.photo_path ?? null);
 
@@ -182,7 +183,7 @@ export async function addHabitat(tenantId: string, formData: FormData) {
     capacity_note: str(formData, "capacity_note"),
     ...photo,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidateRoster();
   return { error: null };
@@ -202,7 +203,7 @@ export async function updateHabitat(tenantId: string, habitatId: string, formDat
     .update({ name, habitat_type: habitatType, capacity_note: str(formData, "capacity_note"), ...photo })
     .eq("id", habitatId)
     .eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidateRoster();
   return { error: null };
@@ -215,7 +216,7 @@ export async function deleteHabitat(tenantId: string, habitatId: string) {
   const { data: habitat } = await supabase.from("habitats").select("photo_path").eq("id", habitatId).eq("tenant_id", tenantId).maybeSingle();
 
   const { error } = await supabase.from("habitats").delete().eq("id", habitatId).eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   await removeImage(supabase, habitat?.photo_path ?? null);
 

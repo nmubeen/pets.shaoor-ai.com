@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { friendlyErrorMessage } from "@/lib/errors";
 import { getProtocols, dueDateFor } from "@/lib/protocols";
 import type { Species } from "@/lib/database.types";
 
@@ -182,7 +183,7 @@ async function scheduleBoosterIfDue(
     status: "due",
     due_date: next.toISOString().slice(0, 10),
   });
-  return { error: error?.message ?? null };
+  return { error: error ? friendlyErrorMessage(error) : null };
 }
 
 /**
@@ -215,7 +216,7 @@ async function recordVaccinationGiven(
       .from("vaccinations")
       .update({ status: "complete", administered_date: administeredDate, visit_id: visitId, cost })
       .eq("id", due.id);
-    if (error) return { error: error.message };
+    if (error) return { error: friendlyErrorMessage(error) };
     return scheduleBoosterIfDue(supabase, tenantId, due, administeredDate);
   }
 
@@ -228,7 +229,7 @@ async function recordVaccinationGiven(
     administered_date: administeredDate,
     cost,
   });
-  return { error: error?.message ?? null };
+  return { error: error ? friendlyErrorMessage(error) : null };
 }
 
 /**
@@ -278,7 +279,7 @@ export async function addVisit(tenantId: string, formData: FormData) {
     })
     .select("id")
     .single();
-  if (error || !visit) return { error: error?.message ?? "Could not save that visit." };
+  if (error || !visit) return { error: error ? friendlyErrorMessage(error) : "Could not save that visit." };
 
   for (const s of services) {
     const serviceType = await findOrCreateServiceType(supabase, tenantId, s.name, pet.species);
@@ -289,7 +290,7 @@ export async function addVisit(tenantId: string, formData: FormData) {
       name: s.name,
       cost: s.cost,
     });
-    if (insertError) return { error: insertError.message };
+    if (insertError) return { error: friendlyErrorMessage(insertError) };
     if (serviceType) await upsertServiceReminder(supabase, tenantId, petId, s.name, serviceType.frequencyDays, visitDate);
   }
 
@@ -307,7 +308,7 @@ export async function addVisit(tenantId: string, formData: FormData) {
       status: "active",
       diagnosed_date: visitDate,
     });
-    if (illnessError) return { error: illnessError.message };
+    if (illnessError) return { error: friendlyErrorMessage(illnessError) };
   }
 
   for (const m of medRows) {
@@ -321,7 +322,7 @@ export async function addVisit(tenantId: string, formData: FormData) {
       start_date: visitDate,
       next_due_date: visitDate,
     });
-    if (medError) return { error: medError.message };
+    if (medError) return { error: friendlyErrorMessage(medError) };
   }
 
   revalidateHealth();
@@ -343,7 +344,7 @@ export async function addIllness(tenantId: string, formData: FormData) {
     diagnosed_date: str(formData, "diagnosed_date") ?? new Date().toISOString().slice(0, 10),
     notes: str(formData, "notes"),
   });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidateHealth();
   return { error: null };
@@ -369,7 +370,7 @@ export async function addVaccination(tenantId: string, formData: FormData) {
     administered_date: validStatus === "complete" ? (str(formData, "due_date") ?? new Date().toISOString().slice(0, 10)) : null,
     notes: str(formData, "notes"),
   });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidateHealth();
   return { error: null };
@@ -419,7 +420,7 @@ export async function generateVaccinationSchedule(tenantId: string, petId: strin
   if (toInsert.length === 0) return { error: null, generated: 0 };
 
   const { error } = await supabase.from("vaccinations").insert(toInsert);
-  if (error) return { error: error.message, generated: 0 };
+  if (error) return { error: friendlyErrorMessage(error), generated: 0 };
 
   revalidateHealth();
   return { error: null, generated: toInsert.length };
@@ -448,7 +449,7 @@ export async function markVaccinationGiven(tenantId: string, vaccinationId: stri
     .update({ status: "complete", administered_date: administeredDate })
     .eq("id", vaccinationId)
     .eq("tenant_id", tenantId);
-  if (updateError) return { error: updateError.message };
+  if (updateError) return { error: friendlyErrorMessage(updateError) };
 
   const { error } = await scheduleBoosterIfDue(supabase, tenantId, vax, administeredDate);
   if (error) return { error };
@@ -511,7 +512,7 @@ export async function updateVisit(tenantId: string, visitId: string, formData: F
     })
     .eq("id", visitId)
     .eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   // --- Services: no independent lifecycle — safe to delete removed rows outright. ---
   const { data: existingServices } = await supabase.from("visit_services").select("id, name, cost").eq("visit_id", visitId).eq("tenant_id", tenantId);
@@ -523,7 +524,7 @@ export async function updateVisit(tenantId: string, visitId: string, formData: F
       const original = existingServices?.find((e) => e.id === s.id);
       if (original && (original.name !== s.name || original.cost !== s.cost)) {
         const { error: updateError } = await supabase.from("visit_services").update({ name: s.name, cost: s.cost }).eq("id", s.id);
-        if (updateError) return { error: updateError.message };
+        if (updateError) return { error: friendlyErrorMessage(updateError) };
       }
     } else {
       const serviceType = await findOrCreateServiceType(supabase, tenantId, s.name, pet.species);
@@ -534,7 +535,7 @@ export async function updateVisit(tenantId: string, visitId: string, formData: F
         name: s.name,
         cost: s.cost,
       });
-      if (insertError) return { error: insertError.message };
+      if (insertError) return { error: friendlyErrorMessage(insertError) };
       if (serviceType) await upsertServiceReminder(supabase, tenantId, petId, s.name, serviceType.frequencyDays, visitDate);
     }
   }
@@ -549,7 +550,7 @@ export async function updateVisit(tenantId: string, visitId: string, formData: F
       const original = existingVax?.find((e) => e.id === v.id);
       if (original && (original.reason !== v.name || original.cost !== v.cost)) {
         const { error: updateError } = await supabase.from("vaccinations").update({ reason: v.name, cost: v.cost }).eq("id", v.id);
-        if (updateError) return { error: updateError.message };
+        if (updateError) return { error: friendlyErrorMessage(updateError) };
       }
     } else {
       const { error: vaxError } = await recordVaccinationGiven(supabase, tenantId, petId, visitId, v.name, v.cost, visitDate);
@@ -567,7 +568,7 @@ export async function updateVisit(tenantId: string, visitId: string, formData: F
       const original = existingIllness?.find((e) => e.id === i.id);
       if (original && original.reason !== i.name) {
         const { error: updateError } = await supabase.from("illnesses").update({ reason: i.name }).eq("id", i.id);
-        if (updateError) return { error: updateError.message };
+        if (updateError) return { error: friendlyErrorMessage(updateError) };
       }
     } else {
       const { error: insertError } = await supabase.from("illnesses").insert({
@@ -578,7 +579,7 @@ export async function updateVisit(tenantId: string, visitId: string, formData: F
         status: "active",
         diagnosed_date: visitDate,
       });
-      if (insertError) return { error: insertError.message };
+      if (insertError) return { error: friendlyErrorMessage(insertError) };
     }
   }
 
@@ -592,7 +593,7 @@ export async function updateVisit(tenantId: string, visitId: string, formData: F
       const original = existingMeds?.find((e) => e.id === m.id);
       if (original && (original.name !== m.name || original.dosage !== m.dosage)) {
         const { error: updateError } = await supabase.from("medications").update({ name: m.name, dosage: m.dosage }).eq("id", m.id);
-        if (updateError) return { error: updateError.message };
+        if (updateError) return { error: friendlyErrorMessage(updateError) };
       }
     } else {
       const { error: insertError } = await supabase.from("medications").insert({
@@ -605,7 +606,7 @@ export async function updateVisit(tenantId: string, visitId: string, formData: F
         start_date: visitDate,
         next_due_date: visitDate,
       });
-      if (insertError) return { error: insertError.message };
+      if (insertError) return { error: friendlyErrorMessage(insertError) };
     }
   }
 
@@ -617,7 +618,7 @@ export async function updateVisit(tenantId: string, visitId: string, formData: F
 export async function deleteVisit(tenantId: string, visitId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("visits").delete().eq("id", visitId).eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidateHealth();
   return { error: null };
@@ -641,7 +642,7 @@ export async function updateIllness(tenantId: string, illnessId: string, formDat
     })
     .eq("id", illnessId)
     .eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidateHealth();
   return { error: null };
@@ -655,7 +656,7 @@ export async function deleteIllness(tenantId: string, illnessId: string) {
   if (illness.visit_id) return { error: "This was logged as part of a visit — edit that visit to change or remove it." };
 
   const { error } = await supabase.from("illnesses").delete().eq("id", illnessId).eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidateHealth();
   return { error: null };
@@ -685,7 +686,7 @@ export async function updateVaccination(tenantId: string, vaccinationId: string,
     })
     .eq("id", vaccinationId)
     .eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidateHealth();
   return { error: null };
@@ -699,7 +700,7 @@ export async function deleteVaccination(tenantId: string, vaccinationId: string)
   if (vax.visit_id) return { error: "This was logged as part of a visit — edit that visit to change or remove it." };
 
   const { error } = await supabase.from("vaccinations").delete().eq("id", vaccinationId).eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidateHealth();
   return { error: null };

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { friendlyErrorMessage } from "@/lib/errors";
 import type { Species } from "@/lib/database.types";
 import { SPECIES_LIST } from "@/lib/species-labels";
 
@@ -50,7 +51,7 @@ export async function addVaccinationPlan(tenantId: string, formData: FormData) {
     booster_interval_months: fields.booster_interval_months,
     notes: fields.notes,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidate();
   return { error: null };
@@ -73,7 +74,7 @@ export async function updateVaccinationPlan(tenantId: string, planId: string, fo
     })
     .eq("id", planId)
     .eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidate();
   return { error: null };
@@ -82,7 +83,7 @@ export async function updateVaccinationPlan(tenantId: string, planId: string, fo
 export async function deleteVaccinationPlan(tenantId: string, planId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("vaccine_protocols").delete().eq("id", planId).eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidate();
   return { error: null };

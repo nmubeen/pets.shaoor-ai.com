@@ -33,6 +33,13 @@ export default async function PetsPage() {
 
   const petLinks = await getPetLinks(supabase, active.tenantId);
   const isOrg = active.workspaceType === "organization";
+  // "social" already gets its own read-only branch above; this covers
+  // "viewer" — otherwise unrestricted (unlike vet_view/social, it's not
+  // locked to one page) and, until this fix, saw the full Add/Edit/
+  // Delete UI here anyway, which only failed once it actually tried to
+  // write and hit the same can_write_tenant() RLS policy every other
+  // page already gates around.
+  const canWrite = active.role === "owner" || active.role === "caregiver";
 
   return (
     <div className="flex flex-col gap-6">
@@ -41,18 +48,22 @@ export default async function PetsPage() {
           <h1 className="text-2xl mb-1">Pets</h1>
           <p className="text-sm text-muted">Every individual pet in this workspace</p>
         </div>
-        <AddRosterPanel
-          tenantId={active.tenantId}
-          triggerLabel="Add pet"
-          fixedKind="pet"
-          triggerClassName="inline-flex items-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition"
-        />
+        {canWrite && (
+          <AddRosterPanel
+            tenantId={active.tenantId}
+            triggerLabel="Add pet"
+            fixedKind="pet"
+            triggerClassName="inline-flex items-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition"
+          />
+        )}
       </div>
 
       {pets.length === 0 ? (
-        <Card className="p-6 text-center text-sm text-muted">No pets yet — use “Add pet” above to add your first one.</Card>
+        <Card className="p-6 text-center text-sm text-muted">
+          {canWrite ? "No pets yet — use “Add pet” above to add your first one." : "No pets yet."}
+        </Card>
       ) : (
-        <PetsGrid tenantId={active.tenantId} pets={pets} isOrg={isOrg} petLinks={Object.fromEntries(petLinks)} />
+        <PetsGrid tenantId={active.tenantId} pets={pets} isOrg={isOrg} petLinks={Object.fromEntries(petLinks)} canWrite={canWrite} />
       )}
     </div>
   );

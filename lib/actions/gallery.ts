@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { friendlyErrorMessage } from "@/lib/errors";
 import { getComments, type CommentItem } from "@/lib/gallery";
 import { uploadImage, removeImage } from "@/lib/storage";
 
@@ -51,7 +52,7 @@ export async function uploadMedia(tenantId: string, formData: FormData) {
     .single();
   if (error || !media) {
     await removeImage(supabase, path);
-    return { error: error?.message ?? "Could not save that photo." };
+    return { error: error ? friendlyErrorMessage(error) : "Could not save that photo." };
   }
 
   const scopeRows = parseMultiScope(formData);
@@ -59,7 +60,7 @@ export async function uploadMedia(tenantId: string, formData: FormData) {
     const { error: scopeError } = await supabase
       .from("media_scopes")
       .insert(scopeRows.map((s) => ({ tenant_id: tenantId, media_id: media.id, ...s })));
-    if (scopeError) return { error: scopeError.message };
+    if (scopeError) return { error: friendlyErrorMessage(scopeError) };
   }
 
   revalidatePath("/app/gallery");
@@ -78,7 +79,7 @@ export async function deleteMedia(tenantId: string, mediaId: string) {
   if (!media) return { error: "Not found." };
 
   const { error } = await supabase.from("media").delete().eq("id", mediaId).eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   await removeImage(supabase, media.storage_path);
 
@@ -106,7 +107,7 @@ export async function addComment(tenantId: string, mediaId: string, formData: Fo
     author_id: user?.id ?? null,
     body,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidatePath("/app/gallery");
   return { error: null };
@@ -126,7 +127,7 @@ export async function likeMedia(tenantId: string, mediaId: string) {
     user_id: user.id,
   });
   // Already liked (unique constraint) isn't a real error — same end state either way.
-  if (error && error.code !== "23505") return { error: error.message };
+  if (error && error.code !== "23505") return { error: friendlyErrorMessage(error) };
 
   revalidatePath("/app/gallery");
   return { error: null };
@@ -146,7 +147,7 @@ export async function unlikeMedia(tenantId: string, mediaId: string) {
     .eq("tenant_id", tenantId)
     .eq("media_id", mediaId)
     .eq("user_id", user.id);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidatePath("/app/gallery");
   return { error: null };
@@ -165,7 +166,7 @@ export async function setAdoptable(tenantId: string, petId: string, isAdoptable:
     .update({ is_adoptable: isAdoptable, adoption_note: adoptionNote })
     .eq("id", petId)
     .eq("tenant_id", tenantId);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyErrorMessage(error) };
 
   revalidatePath("/app/pets");
   return { error: null };
