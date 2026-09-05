@@ -2,11 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card } from "@/components/ui";
 import { AdoptionToggle } from "@/components/pets/AdoptionToggle";
 import { SuggestScheduleButton } from "@/components/pets/SuggestScheduleButton";
 import { PetHealthLinks } from "@/components/pets/PetHealthLinks";
 import { AddRosterForm } from "@/components/roster/AddRosterForm";
+import { PassportIcon } from "@/components/icons";
 import { deletePet } from "@/lib/actions/roster";
 import type { RosterItem } from "@/lib/roster";
 import type { PetLinks } from "@/lib/pet-links";
@@ -100,6 +102,13 @@ export function PetsGrid({
               )}
               {r.pet?.notes && <div className="text-xs text-muted">{r.pet.notes}</div>}
               <PetHealthLinks petId={r.id} links={petLinks[r.id]} />
+              <Link
+                href={`/app/pets/${r.id}/passport`}
+                className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline w-fit"
+              >
+                <PassportIcon className="w-[.9em] h-[.9em]" />
+                Passport
+              </Link>
               {r.pet?.birthDate && <SuggestScheduleButton tenantId={tenantId} petId={r.id} />}
               {isOrg && (
                 <div className="border-t border-line pt-2 mt-auto">

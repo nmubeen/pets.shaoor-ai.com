@@ -224,6 +224,14 @@ export const ChipIcon = (p: IconProps) => (
   </svg>
 );
 
+export const PassportIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="4" y="3" width="16" height="18" rx="2" />
+    <circle cx="12" cy="10" r="2.5" />
+    <path d="M9.5 16.5h5M8 3v2M16 3v2" />
+  </svg>
+);
+
 export const HabitatIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <rect x="3" y="5" width="18" height="14" rx="2" />

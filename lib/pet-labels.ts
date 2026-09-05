@@ -16,3 +16,10 @@ export function ageLabel(birthDate: string | null): string | null {
   const years = Math.floor(months / 12);
   return `${years} yr${years === 1 ? "" : "s"}`;
 }
+
+/** Spayed/Not Spayed for a female, Neutered/Not Neutered otherwise — shared by Vet View's sub-header and the Pet Passport's data page. */
+export function sterilizationLabel(sex: PetSex, neutered: boolean | null): string | null {
+  if (neutered === null) return null;
+  if (sex === "female") return neutered ? "Spayed" : "Not Spayed";
+  return neutered ? "Neutered" : "Not Neutered";
+}

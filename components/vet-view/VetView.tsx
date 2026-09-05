@@ -6,9 +6,8 @@ import { PetSummaryCards } from "@/components/pets/PetSummaryCards";
 import { WeightChart } from "@/components/health/GrowthPanel";
 import { WeightIcon, ShieldIcon, ClipboardIcon, StethoIcon, VialIcon, HeartIcon } from "@/components/icons";
 import { SPECIES_LABEL } from "@/lib/species-labels";
-import { SEX_LABEL, ageLabel } from "@/lib/pet-labels";
+import { SEX_LABEL, ageLabel, sterilizationLabel } from "@/lib/pet-labels";
 import type { PetVetSummary, VetSummaryItem } from "@/lib/vet-view";
-import type { PetSex } from "@/lib/database.types";
 
 const sectionLabel = "text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold mb-2";
 const summaryIcons: Record<VetSummaryItem["kind"], typeof WeightIcon> = {
@@ -19,12 +18,6 @@ const summaryIcons: Record<VetSummaryItem["kind"], typeof WeightIcon> = {
   weight: WeightIcon,
   records: ClipboardIcon,
 };
-
-function sterilizationLabel(sex: PetSex, neutered: boolean | null): string | null {
-  if (neutered === null) return null;
-  if (sex === "female") return neutered ? "Spayed" : "Not Spayed";
-  return neutered ? "Neutered" : "Not Neutered";
-}
 
 function IconBullet({ icon: Icon, children }: { icon: typeof WeightIcon; children: React.ReactNode }) {
   return (

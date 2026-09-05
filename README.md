@@ -134,6 +134,37 @@ A Next.js (App Router) build of the marketing site and app shell described in
     `owner`/`caregiver`/`social` — fixing a pre-existing gap along the way
     where `viewer` could see a comment box that would've failed
     server-side anyway.
+- **Pet Passport** (`/app/pets/[petId]/passport`, new) — a pet's health
+  history styled and paged like an actual passport, opened as a carousel
+  (one page visible at a time — prev/next buttons, dot indicators,
+  swipe, and left/right arrow keys — not a scrolling document). Linked
+  from a new "Passport" entry on each of `PetsGrid`'s own cards
+  (`components/pets/PetsGrid.tsx`). Fixed light/dark colors throughout,
+  not the app's theme tokens — a passport looks the same regardless of
+  the viewer's color scheme:
+  - **Page 1 (data page)** — photo, name, species/breed, gender, date of
+    birth, age, colour/markings, microchip ID as "Passport no.", and
+    sterilisation status (reusing `sterilizationLabel()`, promoted from
+    Vet View into `lib/pet-labels.ts` so both share it), styled like a
+    passport's ID page (photo box, dashed-rule label/value fields,
+    serif "PET PASSPORT" heading).
+  - **One page per visit, oldest first** (unlike Health's own
+    newest-first Visits list — a passport's stamps accumulate forward in
+    time) — a rotated, double-ringed "rubber stamp" circle holds the
+    visit's date and clinic/hospital (plus consulting doctor, if set);
+    below it, the rest of that visit's facts (services minus
+    Consultation, vaccinations given, illnesses treated, medications
+    prescribed, weight, notes) render as one loosely-tilted narrative
+    sentence rather than a structured list — `lib/passport.ts`'s
+    `buildVisitSummaryText` (prose, not literal randomness) and
+    `passportTilt` (a small, deterministic per-visit rotation hashed from
+    the visit's own id — stable across re-renders, not `Math.random()`)
+    give it a handwritten-annotation feel.
+  - **Last page** — a vaccination record: vaccine name, date, and status,
+    oldest first.
+  - No schema or query changes — reuses `getVisits`/`getVaccinations`
+    exactly as `/app/vet-view` does, filtered to the one pet server-side
+    in the new page's own `page.tsx`.
 - **Invite flow: a real "no password yet" bug, fixed** — a real invited
   user (viewer role, 2026-09-04) got the invite email, its "Sign in"
   button sent her to `/login`, which she had no password for yet, and the
