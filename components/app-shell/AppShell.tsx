@@ -11,13 +11,13 @@ import type { ActiveMembership } from "@/lib/tenant";
 export function AppShell({
   active,
   memberships,
-  trialEndsAt,
+  trialLabel,
   userInitials,
   children,
 }: {
   active: ActiveMembership;
   memberships: ActiveMembership[];
-  trialEndsAt: string | null;
+  trialLabel: string | null;
   userInitials: string;
   children: ReactNode;
 }) {
@@ -40,7 +40,7 @@ export function AppShell({
       />
       <div className="flex-1 min-w-0 flex flex-col">
         <Topbar
-          trialEndsAt={trialEndsAt}
+          trialLabel={trialLabel}
           userInitials={userInitials}
           onMenuClick={() => setMobileOpen((v) => !v)}
         />

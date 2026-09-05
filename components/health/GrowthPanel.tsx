@@ -63,9 +63,7 @@ export function WeightChart({ points }: { points: WeightPoint[] }) {
           stroke="var(--surface)"
           strokeWidth="1.5"
         >
-          <title>
-            {p.date} — {p.weightKg} kg
-          </title>
+          <title>{`${p.date} — ${p.weightKg} kg`}</title>
         </circle>
       ))}
     </svg>

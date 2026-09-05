@@ -203,6 +203,36 @@ A Next.js (App Router) build of the marketing site and app shell described in
   function that checks the caller actually belongs to the tenant before
   returning anyone's `last_sign_in_at`). A still-pending invite shows
   "Invite not yet accepted" instead.
+- **Hydration mismatch fixed on `/app/vet-view`'s Growth chart** — a real
+  error reported in dev: React's SSR output for `WeightChart`'s
+  per-point `<title>` (`components/health/GrowthPanel.tsx`) sometimes
+  didn't match what the client re-rendered on hydration. Two distinct
+  causes, both fixed:
+  - `getWeightHistory` (`lib/growth.ts`) queried `visits` with no
+    explicit `ORDER BY` at all, relying on a JS-side `.sort()` of
+    whatever row order Postgres happened to return — not guaranteed
+    stable across repeated identical queries, and two visits sharing the
+    same `visit_date` had nothing to break the tie. Now
+    `.order("visit_date", { ascending: true }).order("created_at", {
+    ascending: true })` (insertion order breaks same-day ties
+    deterministically) — verified against the live database with two
+    same-date visits inserted in a known order, confirming the query
+    returns them in that same order across repeated runs.
+  - `ageLabel()` (`lib/pet-labels.ts`) and `Topbar`'s local `trialLabel()`
+    are both `Date.now()`-based, and were being called directly inside
+    client-rendered components (`VetView.tsx`'s sub-header, the Pet
+    Passport's data page, `Topbar.tsx`'s trial banner) — a `"use client"`
+    component (or one reached from one via a function prop, as `Topbar`
+    is from `AppShell`) re-runs during hydration moments after the
+    server's own render, so a `Date.now()`-based value computed *inside*
+    it can differ between the two passes. Both are now computed exactly
+    once, server-side, and threaded down as an already-computed string:
+    `lib/vet-view.ts`'s `PetVetSummary` gained an `ageLabel` field;
+    `app/app/pets/[petId]/passport/page.tsx` computes its own and passes
+    it into `PetPassport`'s `DataPage`; `trialLabel()` moved from
+    `Topbar.tsx` into `app/app/layout.tsx`, threaded through
+    `AppShell`'s (renamed) `trialLabel` prop instead of the raw
+    `trialEndsAt` string.
 - **Core records** — `pets` and `habitats` tables with RLS, Server Actions
   to add, edit, *and delete* them (`lib/actions/roster.ts` — delete cascades
   every health/shopping/task/media row scoped to that pet or habitat at the

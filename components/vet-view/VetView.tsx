@@ -6,7 +6,7 @@ import { PetSummaryCards } from "@/components/pets/PetSummaryCards";
 import { WeightChart } from "@/components/health/GrowthPanel";
 import { WeightIcon, ShieldIcon, ClipboardIcon, StethoIcon, VialIcon, HeartIcon } from "@/components/icons";
 import { SPECIES_LABEL } from "@/lib/species-labels";
-import { SEX_LABEL, ageLabel, sterilizationLabel } from "@/lib/pet-labels";
+import { SEX_LABEL, sterilizationLabel } from "@/lib/pet-labels";
 import type { PetVetSummary, VetSummaryItem } from "@/lib/vet-view";
 
 const sectionLabel = "text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold mb-2";
@@ -95,7 +95,7 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
           <p className="text-sm font-bold text-muted">
             {[
               [
-                ageLabel(selected.pet.pet.birthDate),
+                selected.ageLabel,
                 SEX_LABEL[selected.pet.pet.sex],
                 `${SPECIES_LABEL[selected.pet.pet.species]} (${selected.pet.pet.breed})`,
               ]

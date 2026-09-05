@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireActiveMembership } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
 import { getVisits, getVaccinations } from "@/lib/health";
+import { ageLabel } from "@/lib/pet-labels";
 import { PetPassport } from "@/components/passport/PetPassport";
 
 export default async function PetPassportPage({ params }: { params: Promise<{ petId: string }> }) {
@@ -24,5 +25,20 @@ export default async function PetPassportPage({ params }: { params: Promise<{ pe
     .filter((v) => v.petId === petId)
     .sort((a, b) => a.dateIso.localeCompare(b.dateIso));
 
-  return <PetPassport tenantName={active.tenantName} pet={pet} visits={petVisits} vaccinations={petVaccinations} />;
+  // Computed here, server-side, and passed down as a plain string —
+  // PetPassport is a client component, and calling this Date.now()-based
+  // helper again during its hydration pass (a few ms after this same
+  // render) is exactly the kind of thing that causes a hydration
+  // mismatch (see the same fix in lib/vet-view.ts).
+  const petAgeLabel = ageLabel(pet.pet?.birthDate ?? null);
+
+  return (
+    <PetPassport
+      tenantName={active.tenantName}
+      pet={pet}
+      ageLabel={petAgeLabel}
+      visits={petVisits}
+      vaccinations={petVaccinations}
+    />
+  );
 }

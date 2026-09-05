@@ -2,24 +2,16 @@ import Link from "next/link";
 import { BellIcon, SearchIcon, MenuIcon } from "@/components/icons";
 import { signOut } from "@/lib/actions/tenant";
 
-function trialLabel(trialEndsAt: string | null): string | null {
-  if (!trialEndsAt) return null;
-  const days = Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86_400_000);
-  if (days <= 0) return "Trial ended";
-  return `Trial ends in ${days} day${days === 1 ? "" : "s"}`;
-}
-
 export function Topbar({
-  trialEndsAt,
+  trialLabel,
   userInitials,
   onMenuClick,
 }: {
-  trialEndsAt: string | null;
+  /** Computed server-side (app/app/layout.tsx) — see that file for why this can't be computed here (Date.now()-based, would mismatch on hydration since this component is part of AppShell's client bundle). */
+  trialLabel: string | null;
   userInitials: string;
   onMenuClick?: () => void;
 }) {
-  const trial = trialLabel(trialEndsAt);
-
   return (
     <div className="h-14 flex-none border-b border-line bg-surface flex items-center justify-between px-4 sm:px-6 gap-4">
       <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -32,12 +24,12 @@ export function Topbar({
         </div>
       </div>
       <div className="flex items-center gap-4">
-        {trial && (
+        {trialLabel && (
           <Link
             href="/app/settings/billing"
             className="hidden sm:flex items-center gap-2 text-[.78rem] font-mono bg-accent/15 text-accent px-3 py-1.5 rounded-full hover:bg-accent/25 transition"
           >
-            {trial}
+            {trialLabel}
             <span className="underline">upgrade</span>
           </Link>
         )}

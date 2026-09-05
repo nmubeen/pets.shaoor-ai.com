@@ -33,7 +33,21 @@ export async function getWeightHistory(
 ): Promise<PetWeightHistory[]> {
   const [{ data: pets }, { data: rows }] = await Promise.all([
     supabase.from("pets").select("id, name").eq("tenant_id", tenantId).order("created_at"),
-    supabase.from("visits").select("pet_id, visit_date, weight_kg").eq("tenant_id", tenantId).not("weight_kg", "is", null),
+    supabase
+      .from("visits")
+      .select("pet_id, visit_date, weight_kg, created_at")
+      .eq("tenant_id", tenantId)
+      .not("weight_kg", "is", null)
+      // Explicit, fully deterministic order, not left to Postgres's
+      // default (unordered) scan — two visits on the same day would
+      // otherwise tie-break on whatever arbitrary order the DB happened
+      // to return them in, which isn't guaranteed stable across repeated
+      // queries and caused a real hydration mismatch on /app/vet-view's
+      // Growth chart (its <title> text differed between the server
+      // render and the client's own fetch of the same "fresh" page).
+      // created_at breaks same-day ties consistently (insertion order).
+      .order("visit_date", { ascending: true })
+      .order("created_at", { ascending: true }),
   ]);
 
   const byPet = new Map<string, WeightPoint[]>();

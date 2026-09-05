@@ -9,9 +9,12 @@ import type { RosterItem } from "@/lib/roster";
 import type { HealthRow, VisitRow } from "@/lib/health";
 import type { MedicationRow } from "@/lib/medications";
 import type { PetWeightHistory } from "@/lib/growth";
+import { ageLabel } from "@/lib/pet-labels";
 
 export type PetVetSummary = {
   pet: RosterItem;
+  /** Computed once, here, server-side — VetView (a client component) must never call ageLabel() itself: it's Date.now()-based, and calling it again during the client's hydration pass (a few ms after the server's own render) is a textbook hydration-mismatch source. */
+  ageLabel: string | null;
   summaryItems: VetSummaryItem[];
   visits: VisitRow[];
   illnesses: HealthRow[];
@@ -108,6 +111,7 @@ export function buildVetSummaries(
 
     return {
       pet,
+      ageLabel: ageLabel(pet.pet?.birthDate ?? null),
       summaryItems: buildSummaryItems(pet, petVisits, petIllnesses, petVaccinations, petMedications, petWeightHistory),
       visits: petVisits,
       illnesses: petIllnesses,

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { BackIcon } from "@/components/icons";
 import { SPECIES_LABEL } from "@/lib/species-labels";
-import { SEX_LABEL, ageLabel, sterilizationLabel } from "@/lib/pet-labels";
+import { SEX_LABEL, sterilizationLabel } from "@/lib/pet-labels";
 import { formatDate } from "@/lib/format";
 import { buildVisitSummaryText, passportTilt } from "@/lib/passport";
 import type { RosterItem } from "@/lib/roster";
@@ -49,7 +49,19 @@ function PassportPageShell({ children }: { children: ReactNode }) {
   );
 }
 
-function DataPage({ pet, tenantName, n, total }: { pet: RosterItem; tenantName: string; n: number; total: number }) {
+function DataPage({
+  pet,
+  tenantName,
+  ageLabel,
+  n,
+  total,
+}: {
+  pet: RosterItem;
+  tenantName: string;
+  ageLabel: string | null;
+  n: number;
+  total: number;
+}) {
   const p = pet.pet;
   return (
     <PassportPageShell>
@@ -92,7 +104,7 @@ function DataPage({ pet, tenantName, n, total }: { pet: RosterItem; tenantName: 
         <div className="mt-4 flex flex-col gap-0.5">
           <Field label="Gender" value={SEX_LABEL[p.sex] ?? "Unknown"} />
           <Field label="Date of birth" value={p.birthDate ? formatDate(new Date(`${p.birthDate}T00:00:00`)) : "Unknown"} />
-          <Field label="Age" value={ageLabel(p.birthDate) ?? "Unknown"} />
+          <Field label="Age" value={ageLabel ?? "Unknown"} />
           <Field label="Colour / markings" value={p.color ?? "—"} />
           <Field label="Passport no." value={p.microchipId ?? "—"} />
           <Field label="Sterilisation" value={sterilizationLabel(p.sex, p.neutered) ?? "Unknown"} />
@@ -180,11 +192,14 @@ function VaccinationsPage({ vaccinations, n, total }: { vaccinations: HealthRow[
 export function PetPassport({
   tenantName,
   pet,
+  ageLabel,
   visits,
   vaccinations,
 }: {
   tenantName: string;
   pet: RosterItem;
+  /** Computed server-side (app/app/pets/[petId]/passport/page.tsx) — see lib/vet-view.ts's own ageLabel field for why this can't be computed here (Date.now()-based, would mismatch on hydration). */
+  ageLabel: string | null;
   visits: VisitRow[];
   vaccinations: HealthRow[];
 }) {
@@ -241,7 +256,7 @@ export function PetPassport({
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
         >
-          {page.kind === "data" && <DataPage pet={pet} tenantName={tenantName} n={index + 1} total={total} />}
+          {page.kind === "data" && <DataPage pet={pet} tenantName={tenantName} ageLabel={ageLabel} n={index + 1} total={total} />}
           {page.kind === "visit" && <VisitPage visit={page.visit} n={index + 1} total={total} />}
           {page.kind === "vaccinations" && <VaccinationsPage vaccinations={vaccinations} n={index + 1} total={total} />}
         </div>
