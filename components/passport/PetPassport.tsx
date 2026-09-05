@@ -6,7 +6,7 @@ import { BackIcon } from "@/components/icons";
 import { SPECIES_LABEL } from "@/lib/species-labels";
 import { SEX_LABEL, sterilizationLabel } from "@/lib/pet-labels";
 import { formatDate } from "@/lib/format";
-import { buildVisitSummaryText, passportTilt, handwritingInk } from "@/lib/passport";
+import { buildVisitSummaryText, randomPlacement, handwritingInk } from "@/lib/passport";
 import type { RosterItem } from "@/lib/roster";
 import type { VisitRow, HealthRow } from "@/lib/health";
 
@@ -119,14 +119,29 @@ function DataPage({
 }
 
 function VisitPage({ visit, n, total }: { visit: VisitRow; n: number; total: number }) {
-  const tilt = passportTilt(visit.id);
   const summary = buildVisitSummaryText(visit);
   const ink = handwritingInk(visit.id);
+  // Independent placements (different seeds off the same visit id) so
+  // the stamp and the note don't move in lockstep — each visit page ends
+  // up with its own, different-from-every-other-page arrangement, like a
+  // real passport where nothing lands in the same spot twice. Ranges are
+  // tuned by feel, not measured against the rendered size: the stamp
+  // stays a wide, dramatic tilt since it's a small fixed-size graphic
+  // that can't overflow the page, while the note's rotation is kept
+  // gentler since a heavily-tilted multi-line paragraph gets hard to
+  // read, and its `left`/`right` (rather than a `width`) bound its box
+  // so long summaries wrap instead of overflowing off the page edge.
+  const stampPos = randomPlacement(visit.id, { top: [3, 44], left: [6, 58], rotate: [-14, 14] });
+  const textPos = randomPlacement(`${visit.id}-text`, { top: [14, 60], left: [4, 22], rotate: [-4, 4] });
   return (
     <PassportPageShell>
       <div
-        className="absolute top-5 left-1/2 w-32 h-32"
-        style={{ transform: `translateX(-50%) rotate(${-4 + tilt}deg)` }}
+        className="absolute w-32 h-32"
+        style={{
+          top: `${stampPos.topPct}%`,
+          left: `${stampPos.leftPct}%`,
+          transform: `rotate(${stampPos.rotateDeg}deg)`,
+        }}
       >
         <div
           className="w-32 h-32 rounded-full border-[3px] flex flex-col items-center justify-center text-center px-3"
@@ -139,8 +154,15 @@ function VisitPage({ visit, n, total }: { visit: VisitRow; n: number; total: num
         </div>
       </div>
       <div
-        className="mt-40 text-[19px] leading-7"
-        style={{ color: ink, fontFamily: "var(--font-hand)", transform: `rotate(${tilt}deg)` }}
+        className="absolute text-[19px] leading-7"
+        style={{
+          top: `${textPos.topPct}%`,
+          left: `${textPos.leftPct}%`,
+          right: "6%",
+          color: ink,
+          fontFamily: "var(--font-hand)",
+          transform: `rotate(${textPos.rotateDeg}deg)`,
+        }}
       >
         {summary}
       </div>
@@ -191,17 +213,19 @@ function VaccinationsPage({ petId, vaccinations, n, total }: { petId: string; va
  * scrolling document): a data page (photo, breed, DOB, passport no. —
  * mirroring a real passport's ID page), then the vaccination record page,
  * then one "visa" page per visit (newest first — visits are handed in
- * already sorted that way), each with a top-center rubber-stamp for date +
- * hospital and the rest of that visit's facts as one loosely-tilted
- * handwritten-style narrative line — lib/passport.ts's
- * buildVisitSummaryText/passportTilt/handwritingInk. The "filled in by
- * hand" bits (visit narrative, and the date/hospital line under each
- * vaccination) render in a handwriting font, each page's own deterministic
- * shade of blue (handwritingInk, keyed by visit/pet id — not
- * Math.random(), which would reroll and mismatch between the server's
- * render and the client's hydration pass). Fixed light/dark colors
- * throughout otherwise (not the app's theme tokens) — a passport looks the
- * same regardless of the viewer's color scheme.
+ * already sorted that way), each with a rubber-stamp for date + hospital
+ * and the rest of that visit's facts as a handwritten-style narrative
+ * line, both scattered to their own random-looking spot and angle on the
+ * page — lib/passport.ts's buildVisitSummaryText/randomPlacement/
+ * handwritingInk. The "filled in by hand" bits (visit narrative, and the
+ * date/hospital line under each vaccination) render in a handwriting
+ * font, each page's own deterministic shade of blue (handwritingInk) and
+ * — the visit pages' stamp/narrative — deterministic placement/rotation
+ * (randomPlacement), both keyed off the visit/pet id, not Math.random(),
+ * which would reroll and mismatch between the server's render and the
+ * client's hydration pass. Fixed light/dark colors throughout otherwise
+ * (not the app's theme tokens) — a passport looks the same regardless of
+ * the viewer's color scheme.
  */
 export function PetPassport({
   tenantName,

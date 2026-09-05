@@ -105,8 +105,8 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
         <p className="text-sm text-muted">{tenantName} · read-only summary</p>
       </div>
 
-      <div className="flex flex-col items-center gap-3">
-        <div className="relative flex items-center justify-center gap-4" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className="w-full flex flex-col items-center gap-3" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        <div className="relative flex items-center justify-center gap-4">
           <button
             type="button"
             onClick={() => goTo(index - 1)}

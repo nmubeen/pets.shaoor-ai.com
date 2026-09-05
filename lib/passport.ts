@@ -1,11 +1,12 @@
 // Builds the loose, narrative summary line shown on a Pet Passport's
 // per-visit "visa" page — a flowing sentence rather than the structured
 // label/value rows Health and Vet View use elsewhere, to match a real
-// passport's handwritten-annotation feel. Also holds passportTilt and
+// passport's handwritten-annotation feel. Also holds randomPlacement and
 // handwritingInk, the two small deterministic-per-seed helpers behind
-// that same handwritten look (rotation, ink color). No server access
-// needed (pure text/formatting over already-fetched data), so this stays
-// import-free of "server-only" and can be used from a client component.
+// that same handwritten look (position + rotation, ink color). No server
+// access needed (pure text/formatting over already-fetched data), so
+// this stays import-free of "server-only" and can be used from a client
+// component.
 import type { VisitRow } from "@/lib/health";
 
 export function buildVisitSummaryText(visit: VisitRow): string {
@@ -38,9 +39,31 @@ function hashSeed(seed: string): number {
   return Math.abs(hash);
 }
 
-/** A small, deterministic per-visit tilt (in degrees) so the summary text on each passport page reads like an organic handwritten annotation rather than perfectly aligned type — stable across renders (keyed by the visit's own id, not Math.random()). */
-export function passportTilt(seed: string): number {
-  return ((hashSeed(seed) % 5) - 2) * 0.6; // -1.2deg .. 1.2deg
+export type Placement = { topPct: number; leftPct: number; rotateDeg: number };
+
+/**
+ * A deterministic pseudo-random spot (top/left, as percentages of the
+ * page) and rotation within the given ranges — so a visit page's stamp
+ * and handwritten note land somewhere different each time, like an
+ * actual passport where nothing lines up twice, without ever calling
+ * Math.random(): that would reroll on every render, including at
+ * hydration, and could mismatch between the server's HTML and the
+ * client's own pass (the same reason handwritingInk below is
+ * hash-seeded, not random). One hash is split across three shifted
+ * ranges (>>> 5, >>> 11) to get three pseudo-independent numbers out of
+ * a single seed instead of hashing three times.
+ */
+export function randomPlacement(
+  seed: string,
+  ranges: { top: [number, number]; left: [number, number]; rotate: [number, number] }
+): Placement {
+  const h = hashSeed(seed);
+  const pick = (n: number, [min, max]: [number, number]) => min + (n % (max - min + 1));
+  return {
+    topPct: pick(h, ranges.top),
+    leftPct: pick(h >>> 5, ranges.left),
+    rotateDeg: pick(h >>> 11, ranges.rotate),
+  };
 }
 
 // A small set of pen-ink blues, none of them the app's own accent/primary

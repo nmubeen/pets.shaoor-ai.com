@@ -80,9 +80,15 @@ A Next.js (App Router) build of the marketing site and app shell described in
     with prev/next arrow buttons, dot indicators, swipe, and left/right
     arrow keys to move between pets — no name, subtitle, or card chrome on
     the photo itself, since the header right below it already names the
-    pet. (Social's own read-only `/app/pets` view still uses the earlier
-    tappable pet-card grid, `components/pets/PetSummaryCards.tsx` —
-    unchanged; Vet View no longer uses that component at all.) Right below
+    pet. The swipe listeners live on the carousel's full-width wrapper
+    (the row of buttons + photo + the dots below it), not just the
+    narrow buttons-and-photo row itself — on a phone-width screen that
+    row is only ~200px of the ~380px+ column, so a real "swipe anywhere
+    across the carousel" gesture was landing outside the listened area
+    more often than not before this. (Social's own read-only `/app/pets`
+    view still uses the earlier tappable pet-card grid,
+    `components/pets/PetSummaryCards.tsx` — unchanged; Vet View no
+    longer uses that component at all.) Right below
     the carousel, a plain header names the selected pet (`<h2>`) with a
     bold sub-header
     reading "Age Gender Species (Breed), Spayed/Neutered status, Weight
@@ -159,20 +165,27 @@ A Next.js (App Router) build of the marketing site and app shell described in
     a real booklet is filled in with the same pen in one sitting.
   - **One page per visit after that, newest first** (matching Health's
     own Visits list — `app/app/pets/[petId]/passport/page.tsx` now sorts
-    descending) — a rotated, double-ringed "rubber stamp" circle in the
-    top-center of the page holds the visit's date and clinic/hospital
-    (plus consulting doctor, if set); below it, the rest of that visit's
-    facts (services minus Consultation, vaccinations given, illnesses
-    treated, medications prescribed, weight, notes) render as one
-    loosely-tilted, larger handwriting-font sentence rather than a
-    structured list — `lib/passport.ts`'s `buildVisitSummaryText` (prose,
-    not literal randomness), `passportTilt` (a small, deterministic
-    per-visit rotation), and new `handwritingInk` (a small palette of pen
-    blues, picked deterministically per page from a hash of the visit's
-    own id — same idea as `passportTilt`, and for the same reason: a true
-    `Math.random()` shade would reroll on every hydration/re-render and
-    risk exactly the kind of server/client mismatch fixed elsewhere this
-    session) give it a handwritten-annotation feel.
+    descending) — a double-ringed "rubber stamp" circle holds the visit's
+    date and clinic/hospital (plus consulting doctor, if set); the rest of
+    that visit's facts (services minus Consultation, vaccinations given,
+    illnesses treated, medications prescribed, weight, notes) render
+    separately as one handwriting-font sentence rather than a structured
+    list — `lib/passport.ts`'s `buildVisitSummaryText` (prose, not
+    literal randomness). Both the stamp and the note land at their own
+    spot and angle on the page, different on every visit — `randomPlacement`
+    (also `lib/passport.ts`) hashes a seed (the visit id for the stamp, the
+    visit id + a suffix for the note, so the two don't move in lockstep)
+    into a `{topPct, leftPct, rotateDeg}` within given ranges: a wide,
+    dramatic tilt for the stamp (a small fixed-size graphic that can't
+    overflow the page) and a gentler one for the note (a heavily-tilted
+    paragraph gets hard to read), the note's box bounded by `left`/`right`
+    rather than a fixed `width` so a long summary wraps instead of running
+    off the page edge. `handwritingInk` (a small palette of pen blues,
+    picked deterministically per page from a hash of the visit's own id)
+    gives the note its color. Same reasoning behind all three hashes, not
+    `Math.random()`: a truly random value would reroll on every
+    hydration/re-render and risk exactly the kind of server/client
+    mismatch fixed elsewhere this session.
   - No schema or query changes — reuses `getVisits`/`getVaccinations`
     exactly as `/app/vet-view` does, filtered to the one pet server-side
     in the new page's own `page.tsx`.
