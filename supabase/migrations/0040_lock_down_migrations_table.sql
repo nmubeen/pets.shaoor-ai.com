@@ -1,0 +1,12 @@
+-- public._migrations is scripts/migrate.mjs's own bookkeeping table (which
+-- migration files have been applied, and when) — created with a plain
+-- `create table if not exists` over a direct Postgres connection
+-- (DIRECT_URL), never through PostgREST. It was left with RLS disabled,
+-- which Security Advisor flags because *any* table in a schema PostgREST
+-- exposes is reachable over the REST API once RLS is off, regardless of
+-- whether the app's own Supabase clients ever query it (ours are all
+-- scoped to the menagerie schema — see lib/supabase/server.ts). Enabling
+-- RLS with no policies denies every anon/authenticated request while
+-- leaving scripts/migrate.mjs's direct connection (which bypasses
+-- PostgREST/RLS entirely as the migration role) unaffected.
+alter table public._migrations enable row level security;
