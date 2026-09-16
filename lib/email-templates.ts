@@ -22,5 +22,9 @@ export function emailShell(preheader: string, bodyHtml: string): string {
 }
 
 export function emailButton(href: string, label: string): string {
-  return `<a href="${href}" style="display:inline-block; background:#DB8F2C; color:#20180A; font-weight:600; text-decoration:none; padding:10px 20px; border-radius:8px; font-size:14px; margin-top:8px;">${label}</a>`;
+  // target="_blank" — mail apps' in-app browsers (Gmail's especially) can
+  // otherwise be the only tab open, so leaving it to check a follow-up
+  // email (e.g. the sign-in code after requesting one) strands the person
+  // with nowhere to come back to. A new tab survives that.
+  return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="display:inline-block; background:#DB8F2C; color:#20180A; font-weight:600; text-decoration:none; padding:10px 20px; border-radius:8px; font-size:14px; margin-top:8px;">${label}</a>`;
 }

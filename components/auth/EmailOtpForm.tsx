@@ -7,10 +7,21 @@ import { getOtpLength, getSupabaseConfig } from "@/lib/supabase/config";
 import { submitAuth } from "@/lib/auth/actions";
 const field = "bg-paper border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary transition w-full";
 const primaryBtn = "w-full inline-flex items-center justify-center gap-2 font-bold text-sm rounded-xl px-5 py-3 bg-(image:--gradient-button-bg) text-white hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed";
+const PENDING_KEY = "pets_pending_otp_email";
+
 export function EmailOtpForm({ trialDays = 14 }: { trialDays?: number | null }) {
   const params = useSearchParams();
   const [email, setEmail] = useState(params.get("email") ?? "");
-  const [destination, setDestination] = useState("");
+  // Survives a reload of this same tab (not a fresh sign-in elsewhere —
+  // sessionStorage, not localStorage) so switching away to read the code
+  // email and back doesn't strand someone back at the email-entry step if
+  // the tab happened to get reloaded in between (some mail apps' in-app
+  // browsers do this under memory pressure; emailButton's target="_blank"
+  // avoids that tab being reused for anything else, but this covers the
+  // reload case on top of that).
+  const [destination, setDestination] = useState(() => {
+    try { return sessionStorage.getItem(PENDING_KEY) ?? ""; } catch { return ""; }
+  });
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [configuration] = useState(() => {
@@ -90,6 +101,7 @@ export function EmailOtpForm({ trialDays = 14 }: { trialDays?: number | null }) 
         // every other hard-navigation-after-auth in this codebase, e.g.
         // components/auth/SessionBoundary.tsx). Never navigate before the
         // action resolves.
+        try { sessionStorage.removeItem(PENDING_KEY); } catch {}
         window.location.replace(result.redirect);
       } else if (!verify) {
         deadline.current = Date.now() + 60_000;
@@ -97,6 +109,7 @@ export function EmailOtpForm({ trialDays = 14 }: { trialDays?: number | null }) 
         setDestination(normalized);
         setEmail(normalized);
         setCode("");
+        try { sessionStorage.setItem(PENDING_KEY, normalized); } catch {}
       }
     } catch {
       if (current === generation.current) setError("Unable to connect. Check your connection and try again.");
@@ -155,7 +168,17 @@ export function EmailOtpForm({ trialDays = 14 }: { trialDays?: number | null }) 
                   <button type="button" disabled={busy || remaining > 0} onClick={() => startTransition(() => request(false))} className="text-sm text-(--color-primary-text) disabled:opacity-50">
                     Resend code{remaining > 0 ? ` (${remaining}s)` : ""}
                   </button>
-                  <button type="button" disabled={busy} onClick={() => { setDestination(""); setCode(""); setError(""); }} className="text-[.68rem] uppercase tracking-[.05em] text-muted">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      setDestination("");
+                      setCode("");
+                      setError("");
+                      try { sessionStorage.removeItem(PENDING_KEY); } catch {}
+                    }}
+                    className="text-[.68rem] uppercase tracking-[.05em] text-muted"
+                  >
                     Use another email
                   </button>
                 </div>
