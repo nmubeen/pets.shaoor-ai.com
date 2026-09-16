@@ -98,7 +98,7 @@ export async function addPet(tenantId: string, formData: FormData) {
 
   try {
     const { count } = await supabase.from("pets").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId);
-    await enforcePetsLimit(supabase, tenantId, "pets", count ?? 0);
+    await enforcePetsLimit(supabase, tenantId, count ?? 0);
   } catch (err) {
     if (err instanceof PlanLimitExceededError) return { error: err.message };
     throw err;

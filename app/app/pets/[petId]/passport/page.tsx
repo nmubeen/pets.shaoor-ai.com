@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireActiveMembership } from "@/lib/tenant";
+import { requireActiveAccount } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
 import { getVisits, getVaccinations } from "@/lib/health";
 import { ageLabel } from "@/lib/pet-labels";
@@ -7,7 +7,7 @@ import { PetPassport } from "@/components/passport/PetPassport";
 
 export default async function PetPassportPage({ params }: { params: Promise<{ petId: string }> }) {
   const { petId } = await params;
-  const { supabase, active } = await requireActiveMembership();
+  const { supabase, active } = await requireActiveAccount();
 
   const [roster, visits, vaccinations] = await Promise.all([
     getRoster(supabase, active.tenantId),

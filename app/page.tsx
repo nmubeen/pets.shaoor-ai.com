@@ -32,7 +32,7 @@ const differentiators = [
   {
     icon: UsersIcon,
     title: "Org-tier workspaces",
-    body: "A shelter or breeder tenant gets the same core record per animal, plus adoption-ready public profiles and multi-seat staff access.",
+    body: "A shelter or breeder tenant gets the same core record per animal, plus adoption-ready public profiles.",
   },
   {
     icon: HomeIcon,
@@ -55,14 +55,14 @@ export default function LandingPage() {
         <section className="max-w-[1200px] mx-auto px-6 md:px-10 pt-16 md:pt-24 pb-16 grid md:grid-cols-[1.1fr_.9fr] gap-14 items-center">
           <div>
             <Eyebrow>Part of the shaoor-ai.com family</Eyebrow>
-            <h1 className="text-[2.4rem] md:text-[3.4rem] leading-[1.05] tracking-[-.01em] mb-5">
+            <h1 className="text-[2.4rem] md:text-[3.4rem] leading-[1.05] tracking-[-.01em] mb-5 text-(--color-primary-text)">
               Every pet. Every habitat.
               <br />
               One record.
             </h1>
             <p className="text-lg text-muted max-w-[52ch] mb-8">
               Cats, dogs, birds, tanks, foster litters — tracked, costed, and
-              remembered in one workspace. Menagerie is the pet-care record
+              remembered in one workspace. Shaoor-AI Pets is the pet-care record
               built for mixed households, not just single-pet apps.
             </p>
             <div className="flex flex-wrap items-center gap-4">
@@ -121,7 +121,7 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-8">
             {principles.map((p) => (
               <div key={p.title} className="flex flex-col gap-3">
-                <div className="w-9 h-9 rounded-lg bg-surface-2 text-primary flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-surface-2 text-(--color-primary-text) flex items-center justify-center">
                   <p.icon className="text-[1.1em]" />
                 </div>
                 <h3 className="text-base font-semibold">{p.title}</h3>
@@ -137,7 +137,7 @@ export default function LandingPage() {
           <h2 className="text-2xl md:text-3xl mt-1 mb-3">Built for mixed households</h2>
           <p className="text-muted max-w-[65ch] mb-10">
             Pet-care software today is built around one species and one
-            animal at a time. Menagerie is one workspace for everything a
+            animal at a time. Shaoor-AI Pets is one workspace for everything a
             household actually keeps.
           </p>
           <div className="grid md:grid-cols-2 gap-6">
@@ -151,7 +151,7 @@ export default function LandingPage() {
               </p>
             </Card>
             <Card className="p-6" style={{ borderColor: "var(--accent)" }}>
-              <h4 className="text-base font-semibold mb-2">What Menagerie gives you</h4>
+              <h4 className="text-base font-semibold mb-2">What Shaoor-AI Pets gives you</h4>
               <p className="text-sm text-muted !max-w-none">
                 One workspace, unlimited species, with costs and care events
                 scoped to a pet, a habitat, or the whole household —
@@ -164,7 +164,7 @@ export default function LandingPage() {
           <div className="mt-12 grid md:grid-cols-3 gap-6">
             {differentiators.map((d) => (
               <div key={d.title} className="border-t border-line pt-5">
-                <div className="w-8 h-8 rounded-lg bg-surface-2 text-primary flex items-center justify-center mb-3">
+                <div className="w-8 h-8 rounded-lg bg-surface-2 text-(--color-primary-text) flex items-center justify-center mb-3">
                   <d.icon className="text-[1em]" />
                 </div>
                 <h4 className="text-sm font-semibold mb-1.5">{d.title}</h4>
@@ -185,7 +185,7 @@ export default function LandingPage() {
           </p>
           <div className="grid md:grid-cols-2 gap-6">
             <div className="grid grid-cols-[34px_1fr] gap-4 border-t border-line pt-5">
-              <div className="w-[34px] h-[34px] rounded-lg bg-surface-2 text-primary flex items-center justify-center">
+              <div className="w-[34px] h-[34px] rounded-lg bg-surface-2 text-(--color-primary-text) flex items-center justify-center">
                 <FishIcon />
               </div>
               <div>
@@ -198,7 +198,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="grid grid-cols-[34px_1fr] gap-4 border-t border-line pt-5">
-              <div className="w-[34px] h-[34px] rounded-lg bg-surface-2 text-primary flex items-center justify-center">
+              <div className="w-[34px] h-[34px] rounded-lg bg-surface-2 text-(--color-primary-text) flex items-center justify-center">
                 <CartIcon />
               </div>
               <div>
@@ -216,8 +216,8 @@ export default function LandingPage() {
         {/* CTA */}
         <section className="max-w-[1200px] mx-auto px-6 md:px-10 py-16 border-t border-line">
           <div
-            className="rounded-[10px] card-shadow p-10 md:p-14 flex flex-col md:flex-row items-start md:items-center justify-between gap-8"
-            style={{ background: "var(--primary)", color: "var(--primary-ink)" }}
+            className="rounded-[10px] card-shadow p-10 md:p-14 flex flex-col md:flex-row items-start md:items-center justify-between gap-8 bg-(image:--gradient-primary-bg)"
+            style={{ color: "var(--primary-ink)" }}
           >
             <div>
               <h2 className="text-2xl md:text-3xl mb-2" style={{ color: "var(--primary-ink)" }}>
@@ -225,11 +225,11 @@ export default function LandingPage() {
               </h2>
               <p className="!max-w-[46ch]" style={{ color: "var(--primary-ink)", opacity: 0.8 }}>
                 No card required today. Add every pet and habitat you keep,
-                invite the people who help care for them, and see the whole
+                keep their care records together, and see the whole
                 cost picture in one place.
               </p>
             </div>
-            <Btn href="/signup" className="!bg-accent !text-accent-ink whitespace-nowrap">
+            <Btn href="/signup" className="!bg-(image:--gradient-button-bg) !text-white whitespace-nowrap">
               Start free trial
             </Btn>
           </div>

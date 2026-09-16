@@ -32,21 +32,16 @@ export async function GET(request: Request) {
   for (const [tenantId, total] of totals) {
     if (total <= 0) continue;
 
-    const [{ data: tenant }, { data: owner }] = await Promise.all([
-      supabase.from("tenants").select("name").eq("id", tenantId).maybeSingle(),
-      supabase
-        .from("memberships")
-        .select("invited_email")
-        .eq("tenant_id", tenantId)
-        .eq("role", "owner")
-        .eq("status", "active")
-        .maybeSingle(),
+    const [{ data: tenant }] = await Promise.all([
+      supabase.from("tenants").select("name, owner_user_id").eq("id", tenantId).maybeSingle(),
     ]);
-    if (!owner?.invited_email) continue;
+    if (!tenant?.owner_user_id) continue;
+    const { data: { user: owner } } = await supabase.auth.admin.getUserById(tenant.owner_user_id);
+    if (!owner?.email) continue;
 
     const { error } = await sendEmail({
-      to: owner.invited_email,
-      subject: `Your week in ${tenant?.name ?? "Menagerie"}: ${formatCurrency(total)} spent`,
+      to: owner.email,
+      subject: `Your week in ${tenant?.name ?? "Shaoor-AI Pets"}: ${formatCurrency(total)} spent`,
       html: emailShell(
         "Weekly expense summary",
         `<p>Over the last 7 days, <strong>${tenant?.name ?? "your workspace"}</strong> spent

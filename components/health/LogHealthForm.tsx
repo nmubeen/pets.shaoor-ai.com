@@ -6,6 +6,7 @@ import { Card } from "@/components/ui";
 import { PetPicker } from "@/components/scope/PetPicker";
 import { ProviderPicker } from "@/components/providers/ProviderPicker";
 import { addIllness, addVaccination, updateIllness, updateVaccination } from "@/lib/actions/health";
+import { openDatePicker } from "@/lib/dom";
 import type { RosterItem } from "@/lib/roster";
 import type { Provider } from "@/lib/providers";
 import type { HealthRow } from "@/lib/health";
@@ -63,7 +64,7 @@ export function LogHealthForm({
   }
 
   return (
-    <Card className="p-5">
+    <Card className="p-5 bg-(image:--gradient-form-bg)">
       <form action={handleSubmit} className="flex flex-col gap-3">
         <PetPicker roster={roster} defaultValue={editing?.petId} />
 
@@ -80,6 +81,7 @@ export function LogHealthForm({
                   type="date"
                   name="diagnosed_date"
                   className={field}
+                  onClick={openDatePicker}
                   defaultValue={editing?.dateIso ?? new Date().toISOString().slice(0, 10)}
                 />
               </label>
@@ -107,6 +109,7 @@ export function LogHealthForm({
                   type="date"
                   name="due_date"
                   className={field}
+                  onClick={openDatePicker}
                   defaultValue={editing?.dueDateIso ?? new Date().toISOString().slice(0, 10)}
                 />
               </label>
@@ -134,7 +137,7 @@ export function LogHealthForm({
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex items-center justify-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-4 py-2.5 rounded-lg hover:brightness-110 transition disabled:opacity-60"
           >
             {pending ? "Saving…" : "Save"}
           </button>

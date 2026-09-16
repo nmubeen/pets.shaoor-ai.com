@@ -6,8 +6,8 @@ import { listAdoptablePets } from "@/lib/adoption";
 import { SPECIES_LABEL } from "@/lib/species-labels";
 
 export const metadata = {
-  title: "Adoptable pets — Menagerie",
-  description: "Pets listed for adoption by Rescue & Shelter workspaces on Menagerie.",
+  title: "Adoptable pets — Shaoor-AI Pets",
+  description: "Pets listed for adoption by Rescue & Shelter workspaces on Shaoor-AI Pets.",
 };
 
 export default async function AdoptDirectoryPage() {
@@ -18,9 +18,9 @@ export default async function AdoptDirectoryPage() {
       <Navbar />
       <main className="flex-1 max-w-[1200px] w-full mx-auto px-6 md:px-10 py-14">
         <Eyebrow>Adoption</Eyebrow>
-        <h1 className="text-3xl mb-2">Pets looking for a home</h1>
+        <h1 className="text-3xl mb-2 text-(--color-primary-text)">Pets looking for a home</h1>
         <p className="text-muted max-w-[60ch] mb-10">
-          Listed by rescues and shelters running their operations on Menagerie.
+          Listed by rescues and shelters running their operations on Shaoor-AI Pets.
         </p>
 
         {pets.length === 0 ? (
@@ -37,7 +37,7 @@ export default async function AdoptDirectoryPage() {
                   {p.adoptionNote && (
                     <p className="text-sm text-muted line-clamp-3 flex-1">{p.adoptionNote}</p>
                   )}
-                  <div className="text-xs text-primary mt-auto">{p.orgName} →</div>
+                  <div className="text-xs text-(--color-primary-text) mt-auto">{p.orgName} →</div>
                 </Card>
               </Link>
             ))}

@@ -2,7 +2,6 @@
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
 import { getProviders } from "@/lib/providers";
-import { formatDate } from "@/lib/format";
 
 export type MedicationRow = {
   id: string;
@@ -14,26 +13,12 @@ export type MedicationRow = {
   who: string;
   frequencyDays: number;
   startDate: string;
-  nextDueDate: string;
-  nextDueLabel: string;
-  overdue: boolean;
   endDate: string | null;
   provider: string | null;
   providerId: string | null;
   notes: string | null;
   status: "active" | "completed" | "discontinued";
 };
-
-function fmtDate(iso: string): string {
-  return formatDate(new Date(iso + "T00:00:00"));
-}
-
-function dueLabelFor(nextDueDate: string): { label: string; overdue: boolean } {
-  const days = Math.ceil((new Date(nextDueDate + "T00:00:00").getTime() - Date.now()) / 86_400_000);
-  if (days < 0) return { label: `${-days}d overdue`, overdue: true };
-  if (days === 0) return { label: "Due today", overdue: true };
-  return { label: `Due in ${days}d (${fmtDate(nextDueDate)})`, overdue: false };
-}
 
 export async function getMedications(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -53,25 +38,19 @@ export async function getMedications(
   const byId = new Map((pets ?? []).map((p) => [p.id, p.name]));
   const providerById = new Map(providers.map((p) => [p.id, p.name]));
 
-  return (data ?? []).map((m) => {
-    const { label, overdue } = dueLabelFor(m.next_due_date);
-    return {
-      id: m.id,
-      petId: m.pet_id,
-      visitId: m.visit_id,
-      name: m.name,
-      dosage: m.dosage,
-      who: byId.get(m.pet_id) ?? "Unknown",
-      frequencyDays: m.frequency_days,
-      startDate: m.start_date,
-      nextDueDate: m.next_due_date,
-      nextDueLabel: label,
-      overdue,
-      endDate: m.end_date,
-      provider: m.provider_id ? (providerById.get(m.provider_id) ?? null) : null,
-      providerId: m.provider_id,
-      notes: m.notes,
-      status: m.status,
-    };
-  });
+  return (data ?? []).map((m) => ({
+    id: m.id,
+    petId: m.pet_id,
+    visitId: m.visit_id,
+    name: m.name,
+    dosage: m.dosage,
+    who: byId.get(m.pet_id) ?? "Unknown",
+    frequencyDays: m.frequency_days,
+    startDate: m.start_date,
+    endDate: m.end_date,
+    provider: m.provider_id ? (providerById.get(m.provider_id) ?? null) : null,
+    providerId: m.provider_id,
+    notes: m.notes,
+    status: m.status,
+  }));
 }

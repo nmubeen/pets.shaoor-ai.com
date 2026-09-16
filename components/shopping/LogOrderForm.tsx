@@ -7,6 +7,7 @@ import { Card } from "@/components/ui";
 import { MultiScopePicker } from "@/components/scope/MultiScopePicker";
 import { ProviderPicker } from "@/components/providers/ProviderPicker";
 import { addShoppingOrder, updateShoppingOrder } from "@/lib/actions/shopping";
+import { openDatePicker } from "@/lib/dom";
 import type { ShoppingCategory } from "@/lib/shopping-categories";
 import type { RosterItem } from "@/lib/roster";
 import type { Provider } from "@/lib/providers";
@@ -129,7 +130,7 @@ export function LogOrderForm({
   }
 
   return (
-    <Card className="p-5">
+    <Card className="p-5 bg-(image:--gradient-form-bg)">
       <form action={handleSubmit} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1.5">
           <span className={label}>Item</span>
@@ -146,7 +147,7 @@ export function LogOrderForm({
               </option>
             ))}
           </select>
-          <Link href="/app/settings/care/categories" className="text-[.7rem] text-primary hover:underline w-fit">
+          <Link href="/app/settings/care/categories" className="text-[.7rem] text-(--color-primary-text) hover:underline w-fit">
             Manage categories
           </Link>
         </label>
@@ -162,6 +163,7 @@ export function LogOrderForm({
               type="date"
               name="order_date"
               className={field}
+              onClick={openDatePicker}
               value={orderDate}
               onChange={(e) => {
                 setOrderDate(e.target.value);
@@ -175,6 +177,7 @@ export function LogOrderForm({
               type="date"
               name="delivered_date"
               className={field}
+              onClick={openDatePicker}
               value={deliveredDate}
               onChange={(e) => {
                 deliveredTouched.current = true;
@@ -258,7 +261,7 @@ export function LogOrderForm({
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex items-center justify-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-4 py-2.5 rounded-lg hover:brightness-110 transition disabled:opacity-60"
           >
             {pending ? "Saving…" : editing ? "Save changes" : "Save"}
           </button>

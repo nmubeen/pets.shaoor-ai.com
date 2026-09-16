@@ -1,7 +1,7 @@
 import { Card, Badge } from "@/components/ui";
 import { RazorpayCheckout } from "@/components/billing/RazorpayCheckout";
 import { CancelSubscriptionButton } from "@/components/billing/CancelSubscriptionButton";
-import { requireMembershipUnchecked } from "@/lib/tenant";
+import { requireAccountUnchecked } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
 import { formatCurrency, formatDate } from "@/lib/format";
 
@@ -10,25 +10,19 @@ function fmtDate(iso: string | null) {
   return formatDate(new Date(iso));
 }
 
-// Deliberately NOT gated by requireActiveMembership() — this is exactly
+// Deliberately NOT gated by requireActiveAccount() — this is exactly
 // the page a blocked owner needs to reach to fix a lapsed/cancelled
 // subscription (see /app/pending's "Manage billing" link). Gating it too
 // would make a blocked workspace unrecoverable through the UI.
 export default async function BillingPage() {
-  const { supabase, user, active } = await requireMembershipUnchecked();
+  const { supabase, user, active } = await requireAccountUnchecked();
 
-  const [{ data: plan }, { data: subscription }, roster, { count: seatCount }] = await Promise.all([
+  const [{ data: plan }, { data: subscription }, roster] = await Promise.all([
     supabase.from("plans").select("*").eq("code", active.planCode).maybeSingle(),
     supabase.from("subscriptions").select("*").eq("tenant_id", active.tenantId).maybeSingle(),
     getRoster(supabase, active.tenantId),
-    supabase
-      .from("memberships")
-      .select("id", { count: "exact", head: true })
-      .eq("tenant_id", active.tenantId)
-      .eq("status", "active"),
   ]);
 
-  const isOwner = active.role === "owner";
   const isTrialing = subscription?.status === "trialing" && active.trialEndsAt;
   const isPaying = subscription?.status === "active" && subscription.razorpay_subscription_id;
   const price = plan?.price_monthly_inr;
@@ -36,9 +30,9 @@ export default async function BillingPage() {
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl mb-1">Billing</h1>
+        <h1 className="text-2xl mb-1 text-(--color-primary-text)">Billing</h1>
         <p className="text-sm text-muted">
-          {active.tenantName} · your role: {active.role}
+          {active.tenantName}
         </p>
       </div>
 
@@ -58,23 +52,22 @@ export default async function BillingPage() {
                   : "Contact sales for pricing"}
             </div>
           </div>
-          {isOwner &&
-            (isPaying ? (
-              <CancelSubscriptionButton
-                tenantId={active.tenantId}
-                className="text-sm text-muted border border-line rounded-lg px-4 py-2.5 hover:text-ink hover:bg-surface-2 transition"
-              />
-            ) : (
-              <RazorpayCheckout
-                tenantId={active.tenantId}
-                planCode={active.planCode === "litter" ? "household" : active.planCode}
-                workspaceName={active.tenantName}
-                userEmail={user.email}
-                className="bg-primary text-primary-ink text-sm font-semibold px-4 py-2.5 rounded-lg hover:brightness-110 transition disabled:opacity-60"
-              >
-                Add card
-              </RazorpayCheckout>
-            ))}
+          {isPaying ? (
+            <CancelSubscriptionButton
+              tenantId={active.tenantId}
+              className="text-sm text-muted border border-line rounded-lg px-4 py-2.5 hover:text-ink hover:bg-surface-2 transition"
+            />
+          ) : (
+            <RazorpayCheckout
+              tenantId={active.tenantId}
+              planCode={active.planCode === "litter" ? "household" : active.planCode}
+              workspaceName={active.tenantName}
+              userEmail={user.email}
+              className="bg-(image:--gradient-button-bg) text-white text-sm font-semibold px-4 py-2.5 rounded-lg hover:brightness-110 transition disabled:opacity-60"
+            >
+              Add card
+            </RazorpayCheckout>
+          )}
         </div>
       </Card>
 
@@ -88,22 +81,14 @@ export default async function BillingPage() {
             </span>
           </div>
           <div className="flex justify-between py-2.5 text-sm">
-            <span className="text-muted">Seats used</span>
-            <span className="font-mono">
-              {seatCount ?? 0} of {plan?.seat_limit ?? "unlimited"}
-            </span>
-          </div>
-          <div className="flex justify-between py-2.5 text-sm">
             <span className="text-muted">Locations</span>
             <span className="font-mono">1 of {plan?.location_limit ?? "unlimited"}</span>
           </div>
         </div>
       </Card>
 
-      {!isOwner && <p className="text-xs text-muted">Only the workspace owner can manage billing.</p>}
-
       <p className="text-xs text-muted">
-        Payments are processed by Razorpay — Menagerie never stores your card
+        Payments are processed by Razorpay — Shaoor-AI Pets never stores your card
         or UPI details directly. Cancelling keeps this plan through the
         period you&rsquo;ve already paid for; after that, the workspace
         moves to the free Litter tier automatically, same as a trial that

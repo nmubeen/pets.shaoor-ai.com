@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
 import { PetPicker } from "@/components/scope/PetPicker";
 import { ProviderPicker } from "@/components/providers/ProviderPicker";
 import { addVisit, updateVisit } from "@/lib/actions/health";
+import { formatDate } from "@/lib/format";
+import { openDatePicker } from "@/lib/dom";
 import type { RosterItem } from "@/lib/roster";
 import type { Provider } from "@/lib/providers";
 import type { ServiceType } from "@/lib/care-services";
@@ -37,6 +39,8 @@ function RowList({
   initialRows,
   minRows = 1,
   focusId,
+  onCountChange,
+  getSecondDefault,
 }: {
   title: string;
   addLabel: string;
@@ -52,6 +56,10 @@ function RowList({
   minRows?: number;
   /** Real record id to scroll into view and focus on mount — set when this visit was opened via another row's "Edit (in visit)" link. */
   focusId?: string | null;
+  /** Reports the current row count up to the popup trigger's badge, whenever a row is added or removed. */
+  onCountChange?: (count: number) => void;
+  /** Looked up whenever a row's name changes and its second field is still blank — e.g. Services prefills the cost last charged for this same service at the currently selected provider. Never overwrites a value the person already typed. */
+  getSecondDefault?: (name: string) => string | undefined;
 }) {
   const seeded = initialRows && initialRows.length > 0;
   const [rows, setRows] = useState<Row[]>(() =>
@@ -72,6 +80,16 @@ function RowList({
     // the target visit or focus row changes, so this never needs to re-run.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const filledCount = rows.filter((r) => r.name.trim() !== "").length;
+
+  useEffect(() => {
+    onCountChange?.(filledCount);
+    // onCountChange is a fresh closure each render (it captures `setCounts`
+    // via the parent's category key) — depending on filledCount alone is
+    // deliberate, re-running it every render would be harmless but pointless.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filledCount]);
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -101,6 +119,16 @@ function RowList({
               name={nameField}
               list={datalistId}
               defaultValue={row.name}
+              onChange={(e) => {
+                const value = e.target.value;
+                setRows((rs) =>
+                  rs.map((r) => {
+                    if (r.key !== row.key) return r;
+                    const auto = r.second.trim() === "" ? getSecondDefault?.(value) : undefined;
+                    return { ...r, name: value, ...(auto !== undefined ? { second: auto } : {}) };
+                  })
+                );
+              }}
               className={`${field} flex-1`}
               placeholder={namePlaceholder}
             />
@@ -110,7 +138,11 @@ function RowList({
                 name={secondField.name}
                 min={secondField.type === "number" ? "0" : undefined}
                 step={secondField.type === "number" ? "0.01" : undefined}
-                defaultValue={row.second}
+                value={row.second}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setRows((rs) => rs.map((r) => (r.key === row.key ? { ...r, second: value } : r)));
+                }}
                 className={`${field} w-28 flex-none`}
                 placeholder={secondField.placeholder}
               />
@@ -132,11 +164,60 @@ function RowList({
           setRows((r) => [...r, { key: nextKey, name: "", second: "" }]);
           setNextKey((k) => k + 1);
         }}
-        className="text-xs text-primary hover:underline self-start"
+        className="text-xs text-(--color-primary-text) hover:underline self-start"
       >
         + {addLabel}
       </button>
     </div>
+  );
+}
+
+/**
+ * Wraps a RowList in a modal overlay, toggled purely by CSS (`hidden` vs.
+ * `flex`) rather than conditional mounting — the RowList's own row state
+ * and its named inputs must stay in the DOM (and thus in the enclosing
+ * form's data) even while its popup is closed.
+ */
+function Popup({
+  open,
+  onClose,
+  title,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={open ? "fixed inset-0 z-50 flex items-center justify-center p-4" : "hidden"}>
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto bg-surface border border-line rounded-2xl shadow-2xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-[.72rem] font-semibold uppercase tracking-[.05em] text-(--color-primary-text)">{title}</h2>
+          <button type="button" onClick={onClose} className="text-muted hover:text-ink text-lg leading-none" aria-label="Close">
+            ✕
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+type Panel = "services" | "vaccinations" | "illnesses" | "medications";
+
+/** A popup trigger with a red notification-style badge showing its current row count. */
+function PanelLink({ label, count, onClick }: { label: string; count: number; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="relative inline-flex text-xs font-semibold uppercase tracking-[.05em] text-(--color-primary-text) hover:underline">
+      {label}
+      {count > 0 && (
+        <span className="absolute -top-2 -right-3.5 min-w-4 h-4 px-1 rounded-full bg-coral text-white text-[.6rem] font-bold leading-4 text-center">
+          {count}
+        </span>
+      )}
+    </button>
   );
 }
 
@@ -146,6 +227,7 @@ export function VisitForm({
   providers,
   serviceTypes,
   dueVaccinationNames,
+  visits,
   onDone,
   editing,
   focusRowId,
@@ -155,6 +237,8 @@ export function VisitForm({
   providers: Provider[];
   serviceTypes: ServiceType[];
   dueVaccinationNames: string[];
+  /** Every visit ever logged — used only to look up "what did this same service cost, last time it was done at this same provider" as services are named. */
+  visits: VisitRow[];
   /** Called with the new visit's id when one was just created, so the list can jump to and highlight it — omitted on edit/cancel. */
   onDone: (createdId?: string) => void;
   /** Present when editing an existing visit instead of logging a new one — every line item below is editable too, not just the visit's own fields. */
@@ -174,6 +258,60 @@ export function VisitForm({
   const serviceSuggestions = serviceTypes
     .filter((s) => s.species === null || s.species === selectedSpecies)
     .map((s) => s.name);
+
+  const [visitDate, setVisitDate] = useState(editing?.dateIso ?? new Date().toISOString().slice(0, 10));
+  const [providerId, setProviderId] = useState(editing?.providerId ?? "");
+
+  // "What did this exact service cost, last time it was done at this exact
+  // provider" — keyed by provider + lower-cased service name, one entry per
+  // pair, newest wins. `visits` already arrives sorted newest-first
+  // (lib/health.ts's getVisits), so the first match seen for a key is kept.
+  const serviceCostByProviderAndName = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const v of visits) {
+      if (!v.providerId) continue;
+      for (const s of v.services) {
+        if (s.costValue === null) continue;
+        const key = `${v.providerId}::${s.name.trim().toLowerCase()}`;
+        if (!map.has(key)) map.set(key, String(s.costValue));
+      }
+    }
+    return map;
+  }, [visits]);
+
+  const getServiceCostDefault = (name: string): string | undefined => {
+    if (!providerId || !name.trim()) return undefined;
+    return serviceCostByProviderAndName.get(`${providerId}::${name.trim().toLowerCase()}`);
+  };
+
+  // Opens straight to whichever popup the deep-linking row belongs to
+  // (see focusRowId's own doc comment) — Vaccinations/Illnesses/Medications
+  // are the only categories reachable that way.
+  const [openPanel, setOpenPanel] = useState<Panel | null>(() => {
+    if (!focusRowId) return null;
+    if (editing?.vaccinations.some((v) => v.id === focusRowId)) return "vaccinations";
+    if (editing?.illnesses.some((i) => i.id === focusRowId)) return "illnesses";
+    if (editing?.medications.some((m) => m.id === focusRowId)) return "medications";
+    return null;
+  });
+
+  const defaultServiceRows = editing
+    ? editing.services.map((s) => ({ id: s.id, name: s.name, second: s.costValue !== null ? String(s.costValue) : "" }))
+    : [
+        { id: "", name: "Consultation", second: "" },
+        { id: "", name: "", second: "" },
+      ];
+
+  // Mirrors each RowList's own *filled* row count (blank placeholder rows
+  // don't count), purely to badge its popup trigger — initialized
+  // synchronously (not just from RowList's mount effect) so the badge is
+  // right on first paint, not a frame late.
+  const [counts, setCounts] = useState<Record<Panel, number>>({
+    services: editing ? editing.services.length : 1, // the seeded "Consultation" row
+    vaccinations: editing?.vaccinations.length ?? 0,
+    illnesses: editing?.illnesses.length ?? 0,
+    medications: editing?.medications.length ?? 0,
+  });
 
   function handleSubmit(formData: FormData) {
     setError(null);
@@ -206,32 +344,26 @@ export function VisitForm({
   }
 
   return (
-    <Card className="p-5">
+    <Card className="p-5 bg-(image:--gradient-form-bg)">
       <form action={handleSubmit} className="flex flex-col gap-3">
         <PetPicker roster={roster} value={petId} onChange={setPetId} />
 
-        <label className="flex flex-col gap-1.5">
-          <span className={label}>Reason</span>
-          <input name="reason" required defaultValue={editing?.reason} className={field} placeholder="Wellness check" />
-        </label>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <ProviderPicker providers={providers} label="Vet / hospital / groomer (optional)" defaultValue={editing?.providerId} />
-          <label className="flex flex-col gap-1.5">
-            <span className={label}>Consulting doctor (optional)</span>
-            <input name="vet_name" defaultValue={editing?.doctor ?? ""} className={field} placeholder="Dr. Mehta" />
-          </label>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <label className="flex flex-col gap-1.5">
             <span className={label}>Date</span>
-            <input
-              type="date"
-              name="visit_date"
-              className={field}
-              defaultValue={editing?.dateIso ?? new Date().toISOString().slice(0, 10)}
-            />
+            <div className="relative">
+              <input
+                type="date"
+                name="visit_date"
+                value={visitDate}
+                onChange={(e) => setVisitDate(e.target.value)}
+                onClick={openDatePicker}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <div className={`${field} flex items-center pointer-events-none`}>
+                {visitDate ? formatDate(new Date(`${visitDate}T00:00:00`)) : <span className="text-muted">dd-mmm-yyyy</span>}
+              </div>
+            </div>
           </label>
           <label className="flex flex-col gap-1.5">
             <span className={label}>Weight, kg (optional)</span>
@@ -239,67 +371,152 @@ export function VisitForm({
               type="number"
               name="weight_kg"
               min="0"
-              step="0.1"
+              step="0.01"
               defaultValue={editing?.weightKg ?? undefined}
               className={field}
-              placeholder="4.2"
+              placeholder="4.20"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className={label}>Temperature, °F (optional)</span>
+            <input
+              type="number"
+              name="temperature_f"
+              min="0"
+              step="0.1"
+              defaultValue={editing?.temperatureF ?? undefined}
+              className={field}
+              placeholder="101.5"
             />
           </label>
         </div>
 
-        <RowList
-          title="Services (optional — cost totals up automatically)"
-          addLabel="Add service"
-          idField="service_id"
-          nameField="service_name"
-          namePlaceholder="Deworming"
-          datalistId="service-suggestions"
-          suggestions={serviceSuggestions}
-          secondField={{ name: "service_cost", type: "number", placeholder: "Cost" }}
-          initialRows={editing?.services.map((s) => ({ id: s.id, name: s.name, second: s.costValue !== null ? String(s.costValue) : "" }))}
-          minRows={1}
-        />
+        <label className="flex flex-col gap-1.5">
+          <span className={label}>Reason</span>
+          <input
+            name="reason"
+            required
+            defaultValue={editing?.reason ?? "Consultation"}
+            className={field}
+            placeholder="Wellness check"
+            // Not when focusRowId is set — that deep-links to a specific
+            // vaccination/illness/medication row inside a popup instead,
+            // and that focus (RowList's own mount effect) should win.
+            autoFocus={!focusRowId}
+          />
+        </label>
 
-        <RowList
-          title="Vaccinations given (optional)"
-          addLabel="Add vaccine"
-          idField="vaccine_id"
-          nameField="vaccine_name"
-          namePlaceholder="DHPP booster"
-          datalistId="vaccine-suggestions"
-          suggestions={dueVaccinationNames}
-          secondField={{ name: "vaccine_cost", type: "number", placeholder: "Cost" }}
-          initialRows={editing?.vaccinations.map((v) => ({ id: v.id, name: v.name, second: v.costValue !== null ? String(v.costValue) : "" }))}
-          minRows={0}
-          focusId={focusRowId}
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <ProviderPicker providers={providers} label="Vet / hospital / groomer (optional)" value={providerId} onChange={setProviderId} />
+          <label className="flex flex-col gap-1.5">
+            <span className={label}>Consulting doctor (optional)</span>
+            <input name="vet_name" defaultValue={editing?.doctor ?? ""} className={field} placeholder="Dr. Mehta" />
+          </label>
+        </div>
 
-        <RowList
-          title="Illnesses diagnosed (optional)"
-          addLabel="Add illness"
-          idField="illness_id"
-          nameField="illness_name"
-          namePlaceholder="Ear infection"
-          initialRows={editing?.illnesses.map((i) => ({ id: i.id, name: i.name, second: null }))}
-          minRows={0}
-          focusId={focusRowId}
-        />
+        <div className="flex flex-col gap-1.5">
+          <span className={label}>Additional details (optional)</span>
+          <div className="flex flex-wrap gap-5">
+            <PanelLink label="Services" count={counts.services} onClick={() => setOpenPanel("services")} />
+            <PanelLink label="Vaccinations" count={counts.vaccinations} onClick={() => setOpenPanel("vaccinations")} />
+            <PanelLink label="Illnesses" count={counts.illnesses} onClick={() => setOpenPanel("illnesses")} />
+            <PanelLink label="Medications" count={counts.medications} onClick={() => setOpenPanel("medications")} />
+          </div>
+        </div>
 
-        <RowList
-          title="Medications prescribed (optional)"
-          addLabel="Add medication"
-          idField="medication_id"
-          nameField="medication_name"
-          namePlaceholder="Amoxicillin"
-          secondField={{ name: "medication_dosage", type: "text", placeholder: "Dosage" }}
-          initialRows={editing?.medications.map((m) => ({ id: m.id, name: m.name, second: m.dosage }))}
-          minRows={0}
-          focusId={focusRowId}
-        />
+        <Popup open={openPanel === "services"} onClose={() => setOpenPanel(null)} title="Services">
+          <RowList
+            title="Services (optional — cost totals up automatically)"
+            addLabel="Add service"
+            idField="service_id"
+            nameField="service_name"
+            namePlaceholder="Deworming"
+            datalistId="service-suggestions"
+            suggestions={serviceSuggestions}
+            secondField={{ name: "service_cost", type: "number", placeholder: "Cost" }}
+            initialRows={defaultServiceRows}
+            onCountChange={(n) => setCounts((c) => ({ ...c, services: n }))}
+            getSecondDefault={getServiceCostDefault}
+          />
+        </Popup>
+
+        <Popup open={openPanel === "vaccinations"} onClose={() => setOpenPanel(null)} title="Vaccinations">
+          <RowList
+            title="Vaccinations given (optional)"
+            addLabel="Add vaccine"
+            idField="vaccine_id"
+            nameField="vaccine_name"
+            namePlaceholder="DHPP booster"
+            datalistId="vaccine-suggestions"
+            suggestions={dueVaccinationNames}
+            secondField={{ name: "vaccine_cost", type: "number", placeholder: "Cost" }}
+            initialRows={editing?.vaccinations.map((v) => ({ id: v.id, name: v.name, second: v.costValue !== null ? String(v.costValue) : "" }))}
+            minRows={1}
+            focusId={focusRowId}
+            onCountChange={(n) => setCounts((c) => ({ ...c, vaccinations: n }))}
+          />
+        </Popup>
+
+        <Popup open={openPanel === "illnesses"} onClose={() => setOpenPanel(null)} title="Illnesses">
+          <RowList
+            title="Illnesses diagnosed (optional)"
+            addLabel="Add illness"
+            idField="illness_id"
+            nameField="illness_name"
+            namePlaceholder="Ear infection"
+            initialRows={editing?.illnesses.map((i) => ({ id: i.id, name: i.name, second: null }))}
+            minRows={1}
+            focusId={focusRowId}
+            onCountChange={(n) => setCounts((c) => ({ ...c, illnesses: n }))}
+          />
+        </Popup>
+
+        <Popup open={openPanel === "medications"} onClose={() => setOpenPanel(null)} title="Medications">
+          <RowList
+            title="Medications prescribed (optional)"
+            addLabel="Add medication"
+            idField="medication_id"
+            nameField="medication_name"
+            namePlaceholder="Amoxicillin"
+            secondField={{ name: "medication_dosage", type: "text", placeholder: "Dosage" }}
+            initialRows={editing?.medications.map((m) => ({ id: m.id, name: m.name, second: m.dosage }))}
+            minRows={1}
+            focusId={focusRowId}
+            onCountChange={(n) => setCounts((c) => ({ ...c, medications: n }))}
+          />
+        </Popup>
 
         <label className="flex flex-col gap-1.5">
           <span className={label}>Notes (optional)</span>
           <input name="notes" defaultValue={editing?.notes ?? ""} className={field} placeholder="" />
+        </label>
+
+        <label className="flex flex-col gap-1.5">
+          <span className={label}>Prescription photo (optional)</span>
+          {editing && <input type="hidden" name="current_prescription_photo_path" value={editing.prescriptionPhotoPath ?? ""} />}
+          <input
+            type="file"
+            name="prescription_photo"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            capture="environment"
+            className={`${field} file:mr-3 file:border-0 file:bg-surface-2 file:text-ink file:rounded-md file:px-2.5 file:py-1 file:text-xs`}
+          />
+          {editing?.prescriptionPhotoUrl && (
+            <div className="mt-2">
+              <label className="flex items-center gap-1.5 text-xs text-muted mb-2">
+                <input type="checkbox" name="remove_prescription_photo" className="accent-coral" />
+                Remove current photo
+              </label>
+              <a href={editing.prescriptionPhotoUrl} target="_blank" rel="noreferrer">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={editing.prescriptionPhotoUrl}
+                  alt="Current prescription"
+                  className="w-full max-h-[70vh] object-contain rounded-lg border border-line bg-paper"
+                />
+              </a>
+            </div>
+          )}
         </label>
 
         {error && <p className="text-xs text-coral">{error}</p>}
@@ -308,7 +525,7 @@ export function VisitForm({
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex items-center justify-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-4 py-2.5 rounded-lg hover:brightness-110 transition disabled:opacity-60"
           >
             {pending ? "Saving…" : editing ? "Save changes" : "Save"}
           </button>

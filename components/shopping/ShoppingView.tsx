@@ -11,7 +11,6 @@ import { summarizeOrders } from "@/lib/shopping-summary";
 import type { ShoppingCategory } from "@/lib/shopping-categories";
 import type { RosterItem } from "@/lib/roster";
 import type { Provider } from "@/lib/providers";
-import type { MembershipRole } from "@/lib/database.types";
 import { formatCurrency } from "@/lib/format";
 
 const SCOPES = [
@@ -62,7 +61,6 @@ function OrderActions({ tenantId, orderId, onEdit }: { tenantId: string; orderId
 
 export function ShoppingView({
   tenantId,
-  role,
   roster,
   providers,
   categories,
@@ -71,7 +69,6 @@ export function ShoppingView({
   nowIso,
 }: {
   tenantId: string;
-  role: MembershipRole;
   roster: RosterItem[];
   providers: Provider[];
   categories: ShoppingCategory[];
@@ -80,7 +77,7 @@ export function ShoppingView({
   /** Today, as a plain date string computed server-side — see lib/shopping-summary.ts's own doc comment for why. */
   nowIso: string;
 }) {
-  const canWrite = role === "owner" || role === "caregiver";
+
   const [scope, setScope] = useState<(typeof SCOPES)[number]["key"]>("all");
   const [year, setYear] = useState(YEAR_ALL);
   const [seller, setSeller] = useState(SELLER_ALL);
@@ -166,21 +163,19 @@ export function ShoppingView({
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl mb-1">Shopping</h1>
+          <h1 className="text-2xl mb-1 text-(--color-primary-text)">Shopping</h1>
           <p className="text-sm text-muted">Orders and expenses — scope to any combination of pets and habitats, or the whole household</p>
         </div>
-        {canWrite && (
-          <button
-            onClick={() => {
-              setShowForm((v) => !v);
-              setEditingOrder(null);
-            }}
-            className="inline-flex items-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition"
-          >
-            <PlusIcon className="w-[.9em] h-[.9em]" />
-            Log an order
-          </button>
-        )}
+        <button
+          onClick={() => {
+            setShowForm((v) => !v);
+            setEditingOrder(null);
+          }}
+          className="inline-flex items-center gap-2 text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-4 py-2.5 rounded-lg hover:brightness-110 transition"
+        >
+          <PlusIcon className="w-[.9em] h-[.9em]" />
+          Log an order
+        </button>
       </div>
 
       <div className="flex gap-1.5 flex-wrap">
@@ -190,7 +185,7 @@ export function ShoppingView({
             onClick={() => changeScope(s.key)}
             className={`text-xs font-medium px-3.5 py-1.5 rounded-lg border transition ${
               scope === s.key
-                ? "bg-primary text-primary-ink border-primary"
+                ? "bg-(image:--gradient-secondary-bg) text-white border-transparent"
                 : "text-muted border-line hover:text-ink"
             }`}
           >
@@ -291,7 +286,7 @@ export function ShoppingView({
                 <th className={th}>Seller</th>
                 <th className={th}>Ordered</th>
                 <th className={th}>Cost</th>
-                {canWrite && <th className={th}></th>}
+                <th className={th}></th>
               </tr>
             </thead>
             <tbody>
@@ -331,18 +326,16 @@ export function ShoppingView({
                   <td className="px-4 py-3 text-muted whitespace-nowrap">{o.provider ?? "—"}</td>
                   <td className="px-4 py-3 text-muted whitespace-nowrap">{o.orderedDate}</td>
                   <td className="px-4 py-3 font-mono whitespace-nowrap">{o.cost ?? "—"}</td>
-                  {canWrite && (
-                    <td className="px-4 py-3">
-                      <OrderActions
-                        tenantId={tenantId}
-                        orderId={o.id}
-                        onEdit={() => {
-                          setEditingOrder(o);
-                          setShowForm(false);
-                        }}
-                      />
-                    </td>
-                  )}
+                  <td className="px-4 py-3">
+                    <OrderActions
+                      tenantId={tenantId}
+                      orderId={o.id}
+                      onEdit={() => {
+                        setEditingOrder(o);
+                        setShowForm(false);
+                      }}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>

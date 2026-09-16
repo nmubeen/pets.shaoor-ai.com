@@ -6,6 +6,7 @@ import { Card } from "@/components/ui";
 import { PlusIcon } from "@/components/icons";
 import { ScopePicker } from "@/components/scope/ScopePicker";
 import { addCareTask, completeCareTask } from "@/lib/actions/tasks";
+import { openDatePicker } from "@/lib/dom";
 import type { CareTaskRow } from "@/lib/tasks";
 import type { RosterItem } from "@/lib/roster";
 
@@ -57,7 +58,7 @@ function AddTaskForm({ tenantId, roster, onDone }: { tenantId: string; roster: R
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <label className="flex flex-col gap-1">
           <span className={label}>Due date</span>
-          <input type="date" name="due_date" className={field} />
+          <input type="date" name="due_date" className={field} onClick={openDatePicker} />
         </label>
         <label className="flex flex-col gap-1">
           <span className={label}>Repeats every (days)</span>
@@ -69,7 +70,7 @@ function AddTaskForm({ tenantId, roster, onDone }: { tenantId: string; roster: R
         <button
           type="submit"
           disabled={pending}
-          className="text-sm font-semibold bg-accent text-accent-ink px-3.5 py-2 rounded-lg hover:brightness-95 transition disabled:opacity-60"
+          className="text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-3.5 py-2 rounded-lg hover:brightness-110 transition disabled:opacity-60"
         >
           {pending ? "Saving…" : "Add task"}
         </button>
@@ -99,7 +100,7 @@ export function TasksCard({
         {roster.length > 0 && (
           <button
             onClick={() => setShowForm((v) => !v)}
-            className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+            className="text-xs text-(--color-primary-text) hover:underline inline-flex items-center gap-1"
           >
             <PlusIcon className="w-[.9em] h-[.9em]" />
             Add task

@@ -41,7 +41,7 @@ function ServiceTypeForm({
   }
 
   return (
-    <Card className="p-5">
+    <Card className="p-5 bg-(image:--gradient-form-bg)">
       <form action={handleSubmit} className="flex flex-col gap-3">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <label className="flex flex-col gap-1.5">
@@ -78,7 +78,7 @@ function ServiceTypeForm({
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex items-center justify-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-4 py-2.5 rounded-lg hover:brightness-110 transition disabled:opacity-60"
           >
             {pending ? "Saving…" : initial ? "Save changes" : "Add"}
           </button>
@@ -142,7 +142,7 @@ export function ServiceTypesView({ tenantId, serviceTypes }: { tenantId: string;
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl mb-1">Care</h1>
+          <h1 className="text-2xl mb-1 text-(--color-primary-text)">Care</h1>
           <p className="text-sm text-muted">
             Deworming, nail clipping, grooming, consultation… give one a frequency to get an automatic reminder each
             time it&rsquo;s logged on a visit. Typing a new one on a visit adds it here too, tagged to that
@@ -154,7 +154,7 @@ export function ServiceTypesView({ tenantId, serviceTypes }: { tenantId: string;
             setShowForm((v) => !v);
             setEditing(null);
           }}
-          className="inline-flex items-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition"
+          className="inline-flex items-center gap-2 text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-4 py-2.5 rounded-lg hover:brightness-110 transition"
         >
           <PlusIcon className="w-[.9em] h-[.9em]" />
           Add service type

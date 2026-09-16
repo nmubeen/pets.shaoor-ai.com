@@ -43,18 +43,13 @@ export async function GET(request: Request) {
     const taskRows = (dueTasks ?? []).filter((t) => t.tenant_id === tenantId);
     if (vaxRows.length === 0 && taskRows.length === 0) continue;
 
-    const [{ data: tenant }, { data: owner }, roster] = await Promise.all([
-      supabase.from("tenants").select("name").eq("id", tenantId).maybeSingle(),
-      supabase
-        .from("memberships")
-        .select("invited_email")
-        .eq("tenant_id", tenantId)
-        .eq("role", "owner")
-        .eq("status", "active")
-        .maybeSingle(),
+    const [{ data: tenant }, roster] = await Promise.all([
+      supabase.from("tenants").select("name, owner_user_id").eq("id", tenantId).maybeSingle(),
       getRoster(supabase, tenantId),
     ]);
-    if (!owner?.invited_email) continue;
+    if (!tenant?.owner_user_id) continue;
+    const { data: { user: owner } } = await supabase.auth.admin.getUserById(tenant.owner_user_id);
+    if (!owner?.email) continue;
 
     const byId = new Map(roster.map((r) => [r.id, r.name]));
     // Vaccinations are pet-only (0017_scope_rework.sql); care_tasks still
@@ -70,13 +65,13 @@ export async function GET(request: Request) {
     const count = vaxRows.length + taskRows.length;
 
     const { error } = await sendEmail({
-      to: owner.invited_email,
+      to: owner.email,
       subject: `${count} thing${count === 1 ? "" : "s"} due soon in ${tenant?.name ?? "your workspace"}`,
       html: emailShell(
         "Upcoming care reminders",
         `<p>Here's what's due in the next 7 days for <strong>${tenant?.name ?? "your workspace"}</strong>:</p>
          <ul style="padding-left:20px; margin:12px 0;">${items}</ul>
-         ${emailButton(`${siteUrl}/app`, "Open Menagerie →")}`
+         ${emailButton(`${siteUrl}/app`, "Open Shaoor-AI Pets →")}`
       ),
     });
     if (!error) sent++;

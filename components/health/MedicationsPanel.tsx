@@ -8,6 +8,7 @@ import { PetPicker } from "@/components/scope/PetPicker";
 import { PetFilterSelect } from "@/components/health/PetFilterSelect";
 import { ProviderPicker } from "@/components/providers/ProviderPicker";
 import { addMedication, updateMedication, logMedicationDose, discontinueMedication, deleteMedication } from "@/lib/actions/medications";
+import { openDatePicker } from "@/lib/dom";
 import type { MedicationRow } from "@/lib/medications";
 import type { RosterItem } from "@/lib/roster";
 import type { Provider } from "@/lib/providers";
@@ -49,7 +50,7 @@ function MedicationForm({
   }
 
   return (
-    <Card className="p-5">
+    <Card className="p-5 bg-(image:--gradient-form-bg)">
       <form action={handleSubmit} className="flex flex-col gap-3">
         <PetPicker roster={roster} defaultValue={editing?.petId} />
         <label className="flex flex-col gap-1.5">
@@ -80,12 +81,13 @@ function MedicationForm({
               type="date"
               name="start_date"
               className={field}
+              onClick={openDatePicker}
               defaultValue={editing?.startDate ?? new Date().toISOString().slice(0, 10)}
             />
           </label>
           <label className="flex flex-col gap-1.5">
             <span className={label}>End date (optional — blank = ongoing)</span>
-            <input type="date" name="end_date" className={field} defaultValue={editing?.endDate ?? ""} />
+            <input type="date" name="end_date" className={field} onClick={openDatePicker} defaultValue={editing?.endDate ?? ""} />
           </label>
         </div>
         <ProviderPicker providers={providers} label="Prescribed by (optional)" defaultValue={editing?.providerId} />
@@ -100,7 +102,7 @@ function MedicationForm({
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex items-center justify-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-4 py-2.5 rounded-lg hover:brightness-110 transition disabled:opacity-60"
           >
             {pending ? "Saving…" : editing ? "Save changes" : "Add medication"}
           </button>
@@ -191,7 +193,6 @@ function MedicationActions({
 
 export function MedicationsPanel({
   tenantId,
-  canWrite,
   roster,
   vetProviders,
   medications,
@@ -199,7 +200,6 @@ export function MedicationsPanel({
   initialPetFilter,
 }: {
   tenantId: string;
-  canWrite: boolean;
   roster: RosterItem[];
   vetProviders: Provider[];
   medications: MedicationRow[];
@@ -216,13 +216,13 @@ export function MedicationsPanel({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
-        {canWrite && hasPets && (
+        {hasPets && (
           <button
             onClick={() => {
               setShowForm((v) => !v);
               setEditingMed(null);
             }}
-            className="inline-flex items-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition"
+            className="inline-flex items-center gap-2 text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-4 py-2.5 rounded-lg hover:brightness-110 transition"
           >
             <PlusIcon className="w-[.9em] h-[.9em]" />
             Add medication
@@ -254,8 +254,7 @@ export function MedicationsPanel({
               <tr className="bg-surface-2">
                 <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line">Who</th>
                 <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line">Medication</th>
-                <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line">Next due</th>
-                {canWrite && <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line"></th>}
+                <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line"></th>
               </tr>
             </thead>
             <tbody>
@@ -267,21 +266,18 @@ export function MedicationsPanel({
                     {m.dosage && <span className="text-muted"> — {m.dosage}</span>}
                     {m.provider && <div className="text-xs text-muted mt-0.5">{m.provider}</div>}
                   </td>
-                  <td className={`px-4 py-3 ${m.overdue ? "text-coral" : "text-muted"}`}>{m.nextDueLabel}</td>
-                  {canWrite && (
-                    <td className="px-4 py-3">
-                      <MedicationActions
-                        tenantId={tenantId}
-                        medicationId={m.id}
-                        visitId={m.visitId}
-                        onEdit={() => {
-                          setEditingMed(m);
-                          setShowForm(false);
-                        }}
-                        onEditViaVisit={onEditViaVisit}
-                      />
-                    </td>
-                  )}
+                  <td className="px-4 py-3">
+                    <MedicationActions
+                      tenantId={tenantId}
+                      medicationId={m.id}
+                      visitId={m.visitId}
+                      onEdit={() => {
+                        setEditingMed(m);
+                        setShowForm(false);
+                      }}
+                      onEditViaVisit={onEditViaVisit}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>

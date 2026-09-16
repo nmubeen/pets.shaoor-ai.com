@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { PawIcon, MenuIcon, CloseIcon } from "@/components/icons";
+import { MenuIcon, CloseIcon } from "@/components/icons";
 import { Btn } from "@/components/ui";
 
 const links = [
   { href: "/pricing", label: "Pricing" },
-  { href: "/#gap", label: "Why Menagerie" },
+  { href: "/#gap", label: "Why Shaoor-AI Pets" },
   { href: "/#faq", label: "FAQ" },
 ];
 
@@ -16,12 +16,13 @@ export function Navbar() {
 
   return (
     <header className="border-b border-line bg-paper/90 backdrop-blur sticky top-0 z-20">
-      <div className="max-w-[1200px] mx-auto px-6 md:px-10 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 font-serif font-semibold text-lg text-ink">
-          <span className="w-7 h-7 rounded-lg bg-primary text-primary-ink flex items-center justify-center">
-            <PawIcon className="text-[.9em]" />
+      <div className="max-w-[1200px] mx-auto px-6 md:px-10 py-2 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-3 font-semibold text-lg text-ink">
+          <span className="w-15 h-15 rounded-2xl bg-white shadow-lg flex items-center justify-center flex-none p-1">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/shaoor-ai-pets.png" alt="Shaoor-AI Pets" className="w-full h-full object-contain" />
           </span>
-          Menagerie
+          Shaoor-AI Pets
         </Link>
         <nav className="hidden md:flex items-center gap-7 text-sm text-muted">
           {links.map((l) => (

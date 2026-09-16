@@ -42,8 +42,8 @@ export function Pill({
 
 export function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-2 font-mono text-[.72rem] tracking-[.12em] uppercase text-primary bg-surface border border-line px-[.8em] py-[.35em] rounded-full mb-5">
-      <span className="w-[6px] h-[6px] rounded-full bg-accent" />
+    <span className="inline-flex items-center gap-2 font-mono text-[.72rem] tracking-[.12em] uppercase text-(--color-secondary-text-icon) bg-surface border border-line px-[.8em] py-[.35em] rounded-full mb-5">
+      <span className="w-[6px] h-[6px] rounded-full bg-(--color-secondary-text-icon)" />
       {children}
     </span>
   );
@@ -58,6 +58,7 @@ export function Btn({
   className = "",
   type,
   onClick,
+  disabled,
 }: {
   href?: string;
   children: ReactNode;
@@ -65,11 +66,12 @@ export function Btn({
   className?: string;
   type?: "button" | "submit";
   onClick?: () => void;
+  disabled?: boolean;
 }) {
   const styles: Record<BtnVariant, string> = {
-    primary: "bg-accent text-accent-ink hover:brightness-95",
+    primary: "bg-(image:--gradient-button-bg) text-white hover:brightness-110",
     ghost: "bg-transparent border border-line text-ink hover:bg-surface-2",
-    dark: "bg-primary text-primary-ink hover:brightness-110",
+    dark: "bg-(image:--gradient-button-bg) text-white hover:brightness-110",
   };
   const cls = `inline-flex items-center gap-2 font-semibold text-sm px-5 py-2.5 rounded-lg transition ${styles[variant]} ${className}`;
   if (href) {
@@ -80,7 +82,7 @@ export function Btn({
     );
   }
   return (
-    <button type={type ?? "button"} onClick={onClick} className={cls}>
+    <button type={type ?? "button"} onClick={onClick} disabled={disabled} className={`${cls} disabled:opacity-50 disabled:cursor-not-allowed`}>
       {children}
     </button>
   );

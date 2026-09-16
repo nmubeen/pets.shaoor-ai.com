@@ -39,7 +39,7 @@ function CategoryForm({
   }
 
   return (
-    <Card className="p-5">
+    <Card className="p-5 bg-(image:--gradient-form-bg)">
       <form action={handleSubmit} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1.5 max-w-sm">
           <span className={label}>Name</span>
@@ -52,7 +52,7 @@ function CategoryForm({
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex items-center justify-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-4 py-2.5 rounded-lg hover:brightness-110 transition disabled:opacity-60"
           >
             {pending ? "Saving…" : initial ? "Save changes" : "Add"}
           </button>
@@ -108,7 +108,7 @@ export function ShoppingCategoriesView({ tenantId, categories }: { tenantId: str
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl mb-1">Care</h1>
+          <h1 className="text-2xl mb-1 text-(--color-primary-text)">Care</h1>
           <p className="text-sm text-muted">
             Food, toys, grooming, accessories… the categories logging an order in Shopping picks from. Add as many as you need.
           </p>
@@ -118,7 +118,7 @@ export function ShoppingCategoriesView({ tenantId, categories }: { tenantId: str
             setShowForm((v) => !v);
             setEditing(null);
           }}
-          className="inline-flex items-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition"
+          className="inline-flex items-center gap-2 text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-4 py-2.5 rounded-lg hover:brightness-110 transition"
         >
           <PlusIcon className="w-[.9em] h-[.9em]" />
           Add category

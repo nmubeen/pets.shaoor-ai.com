@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { PlusIcon } from "@/components/icons";
 import { addCareTask, completeCareTask, deleteCareTask, logHabitatCare } from "@/lib/actions/tasks";
 import { HABITAT_CARE_PRESETS } from "@/lib/habitat-care-shared";
+import { openDatePicker } from "@/lib/dom";
 import type { HabitatCare, HabitatCareRow } from "@/lib/habitat-care-shared";
 
 const field = "bg-paper border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-primary transition";
@@ -59,7 +60,7 @@ function AddCustomForm({ tenantId, habitatId, onDone }: { tenantId: string; habi
       <div className="grid grid-cols-2 gap-2">
         <label className="flex flex-col gap-1">
           <span className={label}>Due date</span>
-          <input type="date" name="due_date" className={field} />
+          <input type="date" name="due_date" className={field} onClick={openDatePicker} />
         </label>
         <label className="flex flex-col gap-1">
           <span className={label}>Repeats every (days)</span>
@@ -71,7 +72,7 @@ function AddCustomForm({ tenantId, habitatId, onDone }: { tenantId: string; habi
         <button
           type="submit"
           disabled={pending}
-          className="text-xs font-semibold bg-accent text-accent-ink px-3 py-1.5 rounded-lg hover:brightness-95 transition disabled:opacity-60"
+          className="text-xs font-semibold bg-(image:--gradient-button-bg) text-white px-3 py-1.5 rounded-lg hover:brightness-110 transition disabled:opacity-60"
         >
           {pending ? "Saving…" : "Add"}
         </button>
@@ -83,7 +84,7 @@ function AddCustomForm({ tenantId, habitatId, onDone }: { tenantId: string; habi
   );
 }
 
-function OpenTaskRow({ tenantId, task, canWrite }: { tenantId: string; task: HabitatCareRow; canWrite: boolean }) {
+function OpenTaskRow({ tenantId, task }: { tenantId: string; task: HabitatCareRow }) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   return (
@@ -92,36 +93,34 @@ function OpenTaskRow({ tenantId, task, canWrite }: { tenantId: string; task: Hab
         <div className="font-medium truncate">{task.title}</div>
         <div className={task.overdue ? "text-coral" : "text-muted"}>{task.dueLabel}</div>
       </div>
-      {canWrite && (
-        <div className="flex items-center gap-1.5 flex-none">
-          <button
-            disabled={pending}
-            onClick={() =>
-              startTransition(async () => {
-                await completeCareTask(tenantId, task.id);
-                router.refresh();
-              })
-            }
-            className="text-xs text-muted hover:text-good border border-line rounded-md px-2 py-1 transition disabled:opacity-60"
-          >
-            {pending ? "…" : "Log now"}
-          </button>
-          <button
-            disabled={pending}
-            onClick={() =>
-              startTransition(async () => {
-                if (!confirm(`Remove "${task.title}"?`)) return;
-                await deleteCareTask(tenantId, task.id);
-                router.refresh();
-              })
-            }
-            className="text-muted hover:text-coral transition disabled:opacity-60 px-0.5"
-            aria-label="Remove"
-          >
-            ✕
-          </button>
-        </div>
-      )}
+      <div className="flex items-center gap-1.5 flex-none">
+        <button
+          disabled={pending}
+          onClick={() =>
+            startTransition(async () => {
+              await completeCareTask(tenantId, task.id);
+              router.refresh();
+            })
+          }
+          className="text-xs text-muted hover:text-good border border-line rounded-md px-2 py-1 transition disabled:opacity-60"
+        >
+          {pending ? "…" : "Log now"}
+        </button>
+        <button
+          disabled={pending}
+          onClick={() =>
+            startTransition(async () => {
+              if (!confirm(`Remove "${task.title}"?`)) return;
+              await deleteCareTask(tenantId, task.id);
+              router.refresh();
+            })
+          }
+          className="text-muted hover:text-coral transition disabled:opacity-60 px-0.5"
+          aria-label="Remove"
+        >
+          ✕
+        </button>
+      </div>
     </div>
   );
 }
@@ -135,47 +134,39 @@ function OpenTaskRow({ tenantId, task, canWrite }: { tenantId: string; task: Hab
 export function HabitatCarePanel({
   tenantId,
   habitatId,
-  canWrite,
   care,
 }: {
   tenantId: string;
   habitatId: string;
-  canWrite: boolean;
   care: HabitatCare;
 }) {
   const [showForm, setShowForm] = useState(false);
-
-  if (!canWrite && care.open.length === 0 && care.history.length === 0) return null;
 
   return (
     <div className="border-t border-line pt-2.5 mt-1 flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <span className="text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold">Care</span>
-        {canWrite && (
-          <button
-            onClick={() => setShowForm((v) => !v)}
-            className="text-xs text-primary hover:underline inline-flex items-center gap-1"
-          >
-            <PlusIcon className="w-[.85em] h-[.85em]" />
-            Custom
-          </button>
-        )}
+        <button
+          onClick={() => setShowForm((v) => !v)}
+          className="text-xs text-(--color-primary-text) hover:underline inline-flex items-center gap-1"
+        >
+          <PlusIcon className="w-[.85em] h-[.85em]" />
+          Custom
+        </button>
       </div>
 
-      {canWrite && (
-        <div className="flex gap-1.5 flex-wrap">
-          {HABITAT_CARE_PRESETS.map((p) => (
-            <PresetButton key={p.title} tenantId={tenantId} habitatId={habitatId} title={p.title} />
-          ))}
-        </div>
-      )}
+      <div className="flex gap-1.5 flex-wrap">
+        {HABITAT_CARE_PRESETS.map((p) => (
+          <PresetButton key={p.title} tenantId={tenantId} habitatId={habitatId} title={p.title} />
+        ))}
+      </div>
 
       {showForm && <AddCustomForm tenantId={tenantId} habitatId={habitatId} onDone={() => setShowForm(false)} />}
 
       {care.open.length > 0 && (
         <div className="flex flex-col divide-y divide-line">
           {care.open.map((t) => (
-            <OpenTaskRow key={t.id} tenantId={tenantId} task={t} canWrite={canWrite} />
+            <OpenTaskRow key={t.id} tenantId={tenantId} task={t} />
           ))}
         </div>
       )}

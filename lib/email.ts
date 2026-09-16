@@ -1,6 +1,6 @@
 // Thin wrapper around Zeptomail's send-email API — used for every email
-// *our own code* sends (team invites, digests). Supabase Auth's own emails
-// (confirmation, password reset) are separate: they go through Supabase's
+// *our own code* sends (reminder and expense digests). Supabase Auth's own emails
+// (email sign-in codes) are separate: they go through Supabase's
 // SMTP relay, configured in the dashboard with Zeptomail's SMTP
 // credentials, not this file.
 import "server-only";
@@ -11,7 +11,7 @@ import "server-only";
 const ZEPTOMAIL_API_URL = "https://api.zeptomail.in/v1.1/email";
 
 const FROM_ADDRESS = process.env.EMAIL_FROM_ADDRESS || "noreply@pets.shaoor-ai.com";
-const FROM_NAME = process.env.EMAIL_FROM_NAME || "Menagerie";
+const FROM_NAME = process.env.EMAIL_FROM_NAME || "Shaoor-AI Pets";
 
 export async function sendEmail({
   to,
@@ -26,7 +26,7 @@ export async function sendEmail({
 }): Promise<{ error: string | null }> {
   if (!process.env.ZEPTOMAIL_API_TOKEN) {
     // Soft-fail rather than throw: the thing that triggered this email
-    // (an invite, a digest run) should still succeed even if email isn't
+    // (a digest run) should still succeed even if email isn't
     // configured yet — same reasoning as lib/razorpay.ts's lazy client,
     // just applied to a fire-and-forget side effect instead of a request
     // that can return an error to the user.

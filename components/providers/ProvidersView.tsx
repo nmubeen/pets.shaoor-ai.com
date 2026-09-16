@@ -23,7 +23,7 @@ function ContactIcon({ href, label, external = true, children }: { href: string;
     <a
       href={href}
       {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
-      className="text-muted hover:text-primary transition"
+      className="text-muted hover:text-(--color-primary-text) transition"
       aria-label={label}
       title={label}
     >
@@ -65,7 +65,7 @@ export function ProvidersView({ tenantId, providers }: { tenantId: string; provi
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl mb-1">Service providers</h1>
+          <h1 className="text-2xl mb-1 text-(--color-primary-text)">Service providers</h1>
           <p className="text-sm text-muted">Vets, groomers, and shops — kept here, selected from elsewhere in the app</p>
         </div>
         <button
@@ -73,7 +73,7 @@ export function ProvidersView({ tenantId, providers }: { tenantId: string; provi
             setEditingId(null);
             setShowAdd((v) => !v);
           }}
-          className="inline-flex items-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition"
+          className="inline-flex items-center gap-2 text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-4 py-2.5 rounded-lg hover:brightness-110 transition"
         >
           <PlusIcon className="w-[.9em] h-[.9em]" />
           Add provider
@@ -178,13 +178,13 @@ export function ProvidersView({ tenantId, providers }: { tenantId: string; provi
                     {!isVet && !isOnlineShop && (p.website || p.locationUrl) && (
                       <span>
                         {p.website && (
-                          <a href={p.website} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                          <a href={p.website} target="_blank" rel="noreferrer" className="text-(--color-primary-text) hover:underline">
                             Website
                           </a>
                         )}
                         {p.website && p.locationUrl && " | "}
                         {p.locationUrl && (
-                          <a href={p.locationUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                          <a href={p.locationUrl} target="_blank" rel="noreferrer" className="text-(--color-primary-text) hover:underline">
                             Location
                           </a>
                         )}
@@ -192,7 +192,7 @@ export function ProvidersView({ tenantId, providers }: { tenantId: string; provi
                     )}
                     {isOnlineShop && p.locationUrl && (
                       <span>
-                        <a href={p.locationUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                        <a href={p.locationUrl} target="_blank" rel="noreferrer" className="text-(--color-primary-text) hover:underline">
                           Location
                         </a>
                       </span>

@@ -8,7 +8,7 @@
 // Unlike Construct, Pets has a permanent free tier ('litter') that must
 // never be blocked — that property is preserved here as one more allowed
 // state, not by skipping gating altogether (which is what happened before
-// this change: requireActiveMembership() had no subscription check at all).
+// this change: requireActiveAccount() had no subscription check at all).
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
@@ -16,7 +16,7 @@ import type { Database } from "@/lib/database.types";
 export type PetsCommercialAccess = { allowed: boolean; reason?: "subscription" };
 
 export async function getPetsCommercialAccess(
-  supabase: SupabaseClient<Database>,
+  supabase: SupabaseClient<Database, "menagerie">,
   tenantId: string
 ): Promise<PetsCommercialAccess> {
   const [{ data: tenant }, { data: subscription }] = await Promise.all([

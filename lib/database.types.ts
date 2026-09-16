@@ -3,8 +3,6 @@
 //   npx supabase gen types typescript --db-url "$DATABASE_URL" --schema menagerie
 
 export type WorkspaceType = "household" | "organization";
-export type MembershipRole = "owner" | "caregiver" | "viewer" | "vet_view" | "social";
-export type MembershipStatus = "invited" | "active" | "removed";
 export type SubscriptionStatus = "trialing" | "active" | "past_due" | "canceled";
 export type RosterKind = "pet" | "habitat";
 export type IllnessStatus = "active" | "resolved";
@@ -33,6 +31,14 @@ type Table<Row, RequiredInsert extends keyof Row> = {
 };
 
 export interface Database {
+  public: {
+    Tables: Record<string, never>;
+    Views: Record<string, never>;
+    Functions: {
+      get_my_app_membership: { Args: { p_app_key: string }; Returns: { status: string; role: string | null }[] };
+      register_app_membership: { Args: { p_app_key: string }; Returns: { status: string; role: string | null }[] };
+    };
+  };
   menagerie: {
     Views: Record<string, never>;
     Tables: {
@@ -44,13 +50,13 @@ export interface Database {
           razorpay_plan_id_annual: string | null;
           price_monthly_inr: number | null;
           pet_limit: number | null;
-          seat_limit: number | null;
           location_limit: number | null;
         },
         "code" | "name"
       >;
       tenants: Table<
         {
+          owner_user_id: string | null;
           id: string;
           name: string;
           workspace_type: WorkspaceType;
@@ -59,18 +65,6 @@ export interface Database {
           created_at: string;
         },
         "name"
-      >;
-      memberships: Table<
-        {
-          id: string;
-          tenant_id: string;
-          user_id: string | null;
-          invited_email: string;
-          role: MembershipRole;
-          status: MembershipStatus;
-          created_at: string;
-        },
-        "tenant_id" | "invited_email"
       >;
       subscriptions: Table<
         {
@@ -173,6 +167,8 @@ export interface Database {
           vet_name: string | null;
           cost: number | null;
           weight_kg: number | null;
+          temperature_f: number | null;
+          prescription_photo_path: string | null;
           notes: string | null;
           created_at: string;
         },
@@ -393,10 +389,7 @@ export interface Database {
       >;
     };
     Functions: {
-      accept_pending_invites: {
-        Args: Record<PropertyKey, never>;
-        Returns: void;
-      };
+      ensure_my_account: { Args: Record<PropertyKey, never>; Returns: Database["menagerie"]["Tables"]["tenants"]["Row"] };
       sync_control_subscription: {
         Args: {
           p_tenant_id: string;
@@ -412,10 +405,6 @@ export interface Database {
           p_correlation_id: string;
         };
         Returns: Record<string, unknown>;
-      };
-      team_last_logins: {
-        Args: { p_tenant_id: string };
-        Returns: { user_id: string; last_sign_in_at: string | null }[];
       };
     };
   };

@@ -114,22 +114,20 @@ export async function getComments(
   tenantId: string,
   mediaId: string
 ): Promise<CommentItem[]> {
-  const [{ data: comments }, { data: members }] = await Promise.all([
+  const [{ data: comments }, { data: { user } }] = await Promise.all([
     supabase
       .from("comments")
       .select("id, body, author_id, created_at")
       .eq("tenant_id", tenantId)
       .eq("media_id", mediaId)
       .order("created_at", { ascending: true }),
-    supabase.from("memberships").select("user_id, invited_email").eq("tenant_id", tenantId),
+    supabase.auth.getUser(),
   ]);
-
-  const emailByUserId = new Map((members ?? []).map((m) => [m.user_id, m.invited_email]));
 
   return (comments ?? []).map((c) => ({
     id: c.id,
     body: c.body,
-    author: (c.author_id && emailByUserId.get(c.author_id)) || "Unknown",
+    author: c.author_id === user?.id ? "You" : "Former contributor",
     createdAt: c.created_at,
   }));
 }

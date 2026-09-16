@@ -113,7 +113,7 @@ export async function addComment(tenantId: string, mediaId: string, formData: Fo
   return { error: null };
 }
 
-/** Toggle-on. RLS (menagerie.can_social_interact_tenant()) is what actually enforces who's allowed — owner/caregiver/social; viewer/vet_view get a policy-violation error, which the UI avoids by not rendering the button for them in the first place. */
+/** Like a photo in the signed-in account; ownership is enforced by RLS. */
 export async function likeMedia(tenantId: string, mediaId: string) {
   const supabase = await createClient();
   const {

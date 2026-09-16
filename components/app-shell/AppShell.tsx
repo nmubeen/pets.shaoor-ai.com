@@ -6,17 +6,15 @@
 import { useState, type ReactNode } from "react";
 import { Sidebar } from "@/components/app-shell/Sidebar";
 import { Topbar } from "@/components/app-shell/Topbar";
-import type { ActiveMembership } from "@/lib/tenant";
+import type { ActiveAccount } from "@/lib/tenant";
 
 export function AppShell({
   active,
-  memberships,
   trialLabel,
   userInitials,
   children,
 }: {
-  active: ActiveMembership;
-  memberships: ActiveMembership[];
+  active: ActiveAccount;
   trialLabel: string | null;
   userInitials: string;
   children: ReactNode;
@@ -34,7 +32,6 @@ export function AppShell({
       )}
       <Sidebar
         active={active}
-        memberships={memberships}
         mobileOpen={mobileOpen}
         onNavigate={() => setMobileOpen(false)}
       />

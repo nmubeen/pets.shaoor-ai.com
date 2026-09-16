@@ -41,7 +41,7 @@ function PlanForm({
   }
 
   return (
-    <Card className="p-5">
+    <Card className="p-5 bg-(image:--gradient-form-bg)">
       <form action={handleSubmit} className="flex flex-col gap-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5">
@@ -98,7 +98,7 @@ function PlanForm({
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex items-center justify-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-4 py-2.5 rounded-lg hover:brightness-110 transition disabled:opacity-60"
           >
             {pending ? "Saving…" : initial ? "Save changes" : "Add"}
           </button>
@@ -149,7 +149,7 @@ export function VaccinationPlansView({ tenantId, plans }: { tenantId: string; pl
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl mb-1">Care</h1>
+          <h1 className="text-2xl mb-1 text-(--color-primary-text)">Care</h1>
           <p className="text-sm text-muted">
             Built-in defaults for dogs and cats, plus your own — useful for a species with no default, or a vaccine
             the defaults miss. &ldquo;Suggest schedule&rdquo; on a pet&rsquo;s card uses whichever plans match its
@@ -161,7 +161,7 @@ export function VaccinationPlansView({ tenantId, plans }: { tenantId: string; pl
             setShowForm((v) => !v);
             setEditing(null);
           }}
-          className="inline-flex items-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition"
+          className="inline-flex items-center gap-2 text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-4 py-2.5 rounded-lg hover:brightness-110 transition"
         >
           <PlusIcon className="w-[.9em] h-[.9em]" />
           Add vaccination plan

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { friendlyErrorMessage } from "@/lib/errors";
 import { getProtocols, dueDateFor } from "@/lib/protocols";
+import { uploadImage, removeImage } from "@/lib/storage";
 import type { Species } from "@/lib/database.types";
 
 type Supa = Awaited<ReturnType<typeof createClient>>;
@@ -29,6 +30,34 @@ function requirePetId(formData: FormData): string | { error: string } {
 function revalidateHealth() {
   revalidatePath("/app");
   revalidatePath("/app/health");
+}
+
+/**
+ * Reads the optional "prescription_photo" file field VisitForm includes,
+ * plus a "remove_prescription_photo" checkbox for edits — same pattern as
+ * lib/actions/roster.ts's resolvePhoto. `currentPath` is the visit's
+ * existing photo (null for a brand-new visit); replacing or removing
+ * cleans up the old Storage object. Returns a partial to spread into the
+ * insert/update payload: {} means "no change to the photo".
+ */
+async function resolvePrescriptionPhoto(
+  supabase: Supa,
+  tenantId: string,
+  formData: FormData,
+  currentPath: string | null
+): Promise<{ prescription_photo_path?: string | null } | { error: string }> {
+  const file = formData.get("prescription_photo");
+  if (file instanceof File && file.size > 0) {
+    const { path, error } = await uploadImage(supabase, tenantId, "prescriptions", file);
+    if (error || !path) return { error: error ?? "Prescription photo upload failed." };
+    await removeImage(supabase, currentPath);
+    return { prescription_photo_path: path };
+  }
+  if (str(formData, "remove_prescription_photo") === "on" && currentPath) {
+    await removeImage(supabase, currentPath);
+    return { prescription_photo_path: null };
+  }
+  return {};
 }
 
 /**
@@ -264,6 +293,9 @@ export async function addVisit(tenantId: string, formData: FormData) {
   const { data: pet } = await supabase.from("pets").select("species").eq("id", petId).eq("tenant_id", tenantId).maybeSingle();
   if (!pet) return { error: "Pet not found." };
 
+  const photo = await resolvePrescriptionPhoto(supabase, tenantId, formData, null);
+  if ("error" in photo) return photo;
+
   const { data: visit, error } = await supabase
     .from("visits")
     .insert({
@@ -274,8 +306,10 @@ export async function addVisit(tenantId: string, formData: FormData) {
       visit_date: visitDate,
       reason,
       weight_kg: num(formData, "weight_kg"),
+      temperature_f: num(formData, "temperature_f"),
       notes: str(formData, "notes"),
       cost: services.length + vaccines.length > 0 ? totalCost : null,
+      ...photo,
     })
     .select("id")
     .single();
@@ -498,6 +532,9 @@ export async function updateVisit(tenantId: string, visitId: string, formData: F
   const { data: pet } = await supabase.from("pets").select("species").eq("id", petId).eq("tenant_id", tenantId).maybeSingle();
   if (!pet) return { error: "Pet not found." };
 
+  const photo = await resolvePrescriptionPhoto(supabase, tenantId, formData, str(formData, "current_prescription_photo_path"));
+  if ("error" in photo) return photo;
+
   const { error } = await supabase
     .from("visits")
     .update({
@@ -507,8 +544,10 @@ export async function updateVisit(tenantId: string, visitId: string, formData: F
       visit_date: visitDate,
       reason,
       weight_kg: num(formData, "weight_kg"),
+      temperature_f: num(formData, "temperature_f"),
       notes: str(formData, "notes"),
       cost: services.length + vaccines.length > 0 ? totalCost : null,
+      ...photo,
     })
     .eq("id", visitId)
     .eq("tenant_id", tenantId);
@@ -617,8 +656,13 @@ export async function updateVisit(tenantId: string, visitId: string, formData: F
 /** Deletes a visit. visit_services cascades away; any vaccination given during it just loses the visit_id link (on delete set null) — its own record (and history) stays intact. */
 export async function deleteVisit(tenantId: string, visitId: string) {
   const supabase = await createClient();
+
+  const { data: visit } = await supabase.from("visits").select("prescription_photo_path").eq("id", visitId).eq("tenant_id", tenantId).maybeSingle();
+
   const { error } = await supabase.from("visits").delete().eq("id", visitId).eq("tenant_id", tenantId);
   if (error) return { error: friendlyErrorMessage(error) };
+
+  await removeImage(supabase, visit?.prescription_photo_path ?? null);
 
   revalidateHealth();
   return { error: null };

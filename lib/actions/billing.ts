@@ -18,16 +18,15 @@ export async function cancelSubscription(tenantId: string) {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in." };
 
-  const { data: membership } = await supabase
-    .from("memberships")
-    .select("role")
-    .eq("tenant_id", tenantId)
-    .eq("user_id", user.id)
-    .eq("status", "active")
+  const { data: account } = await supabase
+    .from("tenants")
+    .select("id")
+    .eq("id", tenantId)
+    .eq("owner_user_id", user.id)
     .maybeSingle();
 
-  if (!membership || membership.role !== "owner") {
-    return { error: "Only the workspace owner can manage billing." };
+  if (!account) {
+    return { error: "Account not found." };
   }
 
   const { data: subscription } = await supabase

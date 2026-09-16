@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Card, StatTile } from "@/components/ui";
 import { PlusIcon, StethoIcon, CartIcon } from "@/components/icons";
-import { requireActiveMembership } from "@/lib/tenant";
+import { requireActiveAccount } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
 import { getVisits, getVaccinations } from "@/lib/health";
 import { getShoppingOrders, getSpendSummary } from "@/lib/shopping";
@@ -10,7 +10,7 @@ import { TasksCard } from "@/components/tasks/TasksCard";
 import { formatCurrency } from "@/lib/format";
 
 export default async function AppHomePage() {
-  const { supabase, active } = await requireActiveMembership();
+  const { supabase, active } = await requireActiveAccount();
   const [roster, visits, vaccinations, orders, summary, tasks] = await Promise.all([
     getRoster(supabase, active.tenantId),
     getVisits(supabase, active.tenantId),
@@ -26,14 +26,14 @@ export default async function AppHomePage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl mb-1">Good evening</h1>
+          <h1 className="text-2xl mb-1 text-(--color-primary-text)">Good evening</h1>
           <p className="text-sm text-muted">
             {active.tenantName} · {roster.length} pet{roster.length === 1 ? "" : "s"} &amp; habitats tracked
           </p>
         </div>
         <Link
           href="/app/pets"
-          className="inline-flex items-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition"
+          className="inline-flex items-center gap-2 text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-4 py-2.5 rounded-lg hover:brightness-110 transition"
         >
           <PlusIcon className="w-[.9em] h-[.9em]" />
           Add pet
@@ -51,17 +51,17 @@ export default async function AppHomePage() {
         <Card className="p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 font-semibold text-sm">
-              <StethoIcon className="text-primary" />
+              <StethoIcon className="text-(--color-primary-text)" />
               Recent health events
             </div>
-            <Link href="/app/health" className="text-xs text-primary hover:underline">
+            <Link href="/app/health" className="text-xs text-(--color-primary-text) hover:underline">
               See all
             </Link>
           </div>
           {visits.length === 0 ? (
             <p className="text-sm text-muted">
               No visits logged yet —{" "}
-              <Link href="/app/health" className="text-primary hover:underline">
+              <Link href="/app/health" className="text-(--color-primary-text) hover:underline">
                 log one
               </Link>
               .
@@ -87,17 +87,17 @@ export default async function AppHomePage() {
         <Card className="p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 font-semibold text-sm">
-              <CartIcon className="text-primary" />
+              <CartIcon className="text-(--color-primary-text)" />
               Recent shopping
             </div>
-            <Link href="/app/shopping" className="text-xs text-primary hover:underline">
+            <Link href="/app/shopping" className="text-xs text-(--color-primary-text) hover:underline">
               See all
             </Link>
           </div>
           {orders.length === 0 ? (
             <p className="text-sm text-muted">
               No orders logged yet —{" "}
-              <Link href="/app/shopping" className="text-primary hover:underline">
+              <Link href="/app/shopping" className="text-(--color-primary-text) hover:underline">
                 log one
               </Link>
               .

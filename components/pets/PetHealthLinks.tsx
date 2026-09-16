@@ -30,7 +30,7 @@ export function PetHealthLinks({ petId, links }: { petId: string; links: PetLink
         <li key={l.tab}>
           <Link
             href={`/app/health?tab=${l.tab}&pet=${petId}`}
-            className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+            className="inline-flex items-center gap-1.5 text-xs text-(--color-primary-text) hover:underline"
           >
             <l.icon className="w-[.9em] h-[.9em] flex-none" />
             {l.label}

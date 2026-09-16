@@ -26,16 +26,15 @@ export async function POST(request: Request) {
     interval: "monthly" | "annual";
   };
 
-  const { data: membership } = await supabase
-    .from("memberships")
-    .select("role")
-    .eq("tenant_id", tenantId)
-    .eq("user_id", user.id)
-    .eq("status", "active")
+  const { data: account } = await supabase
+    .from("tenants")
+    .select("id")
+    .eq("id", tenantId)
+    .eq("owner_user_id", user.id)
     .maybeSingle();
 
-  if (!membership || membership.role !== "owner") {
-    return NextResponse.json({ error: "Only the workspace owner can manage billing." }, { status: 403 });
+  if (!account) {
+    return NextResponse.json({ error: "Account not found." }, { status: 403 });
   }
 
   const { data: plan } = await supabase

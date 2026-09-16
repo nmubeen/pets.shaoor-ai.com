@@ -11,7 +11,7 @@ export default function PricingPage() {
       <main className="flex-1">
         <section className="max-w-[1200px] mx-auto px-6 md:px-10 pt-16 pb-10 text-center">
           <Eyebrow>Simple, workspace-based pricing</Eyebrow>
-          <h1 className="text-3xl md:text-[2.6rem] mb-4">
+          <h1 className="text-3xl md:text-[2.6rem] mb-4 text-(--color-primary-text)">
             One plan for every pet you keep
           </h1>
           <p className="text-muted max-w-[56ch] mx-auto">
@@ -83,11 +83,11 @@ export default function PricingPage() {
               },
               {
                 q: "How is Rescue & Shelter priced?",
-                a: "Seat-based, on an annual contract — it includes staff roles, an audit log, API access, and public adoption-ready pet profiles. Reach out and we'll size a plan to your organization.",
+                a: "Contact us for pricing for larger pet collections and public adoption-ready profiles. Each account is managed by one user.",
               },
               {
-                q: "Can I invite a vet or pet-sitter without giving them a full seat?",
-                a: "Yes — invite anyone as a Viewer for read-only access to health history and schedules, with no seat limit impact on Sanctuary and above.",
+                q: "Can I share health information with my vet?",
+                a: "Use Vet View to show a health summary in person, or print a Pet Passport. Your account remains private to you.",
               },
             ].map((item) => (
               <div key={item.q} className="py-5">

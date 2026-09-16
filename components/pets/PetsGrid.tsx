@@ -40,14 +40,14 @@ export function PetsGrid({
   pets,
   isOrg,
   petLinks,
-  canWrite,
+
 }: {
   tenantId: string;
   pets: RosterItem[];
   isOrg: boolean;
   /** Which Health sub-sections (and how many entries in each) this pet has — keyed by pet id. */
   petLinks: Record<string, PetLinks>;
-  canWrite: boolean;
+
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const router = useRouter();
@@ -93,25 +93,23 @@ export function PetsGrid({
                 <div className="flex items-center gap-3 flex-none">
                   <Link
                     href={`/app/pets/${r.id}/passport`}
-                    className="text-muted hover:text-primary transition"
+                    className="text-muted hover:text-(--color-primary-text) transition"
                     aria-label={`${r.name}'s passport`}
                     title="Passport"
                   >
                     <PassportIcon className="w-4 h-4" />
                   </Link>
-                  {canWrite && (
-                    <>
-                      <button
-                        onClick={() => setEditingId(r.id)}
-                        className="text-muted hover:text-ink transition"
-                        aria-label={`Edit ${r.name}`}
-                        title="Edit"
-                      >
-                        <PencilIcon className="w-4 h-4" />
-                      </button>
-                      <DeleteButton tenantId={tenantId} item={r} />
-                    </>
-                  )}
+                  <>
+                    <button
+                      onClick={() => setEditingId(r.id)}
+                      className="text-muted hover:text-ink transition"
+                      aria-label={`Edit ${r.name}`}
+                      title="Edit"
+                    >
+                      <PencilIcon className="w-4 h-4" />
+                    </button>
+                    <DeleteButton tenantId={tenantId} item={r} />
+                  </>
                 </div>
               </div>
               <div className="text-xs text-muted">{r.subtitle}</div>
@@ -120,15 +118,15 @@ export function PetsGrid({
               )}
               {r.pet?.notes && <div className="text-xs text-muted">{r.pet.notes}</div>}
               <PetHealthLinks petId={r.id} links={petLinks[r.id]} />
-              {canWrite && r.pet?.birthDate && <SuggestScheduleButton tenantId={tenantId} petId={r.id} />}
-              {isOrg && (canWrite || r.pet?.isAdoptable) && (
+              {r.pet?.birthDate && <SuggestScheduleButton tenantId={tenantId} petId={r.id} />}
+              {isOrg && (
                 <div className="border-t border-line pt-2 mt-auto">
                   <AdoptionToggle
                     tenantId={tenantId}
                     petId={r.id}
                     isAdoptable={r.pet?.isAdoptable ?? false}
                     adoptionNote={r.pet?.adoptionNote ?? null}
-                    canWrite={canWrite}
+
                   />
                 </div>
               )}

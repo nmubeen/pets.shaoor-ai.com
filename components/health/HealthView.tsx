@@ -15,8 +15,6 @@ import type { MedicationRow } from "@/lib/medications";
 import type { PetWeightHistory } from "@/lib/growth";
 import type { RosterItem } from "@/lib/roster";
 import type { Provider } from "@/lib/providers";
-import type { ServiceType } from "@/lib/care-services";
-import type { MembershipRole } from "@/lib/database.types";
 
 type TabKey = "visits" | HealthTabKey | "medications" | "growth";
 
@@ -112,23 +110,16 @@ function RowActions({
 
 export function HealthView({
   tenantId,
-  role,
   roster,
-  visitProviders,
   vetProviders,
   visits,
   illnesses,
   vaccinations,
   medications,
   weightHistory,
-  serviceTypes,
-  dueVaccinationNames,
 }: {
   tenantId: string;
-  role: MembershipRole;
   roster: RosterItem[];
-  /** Vet + grooming providers combined — a visit could be to either. */
-  visitProviders: Provider[];
   /** Vet-only — Medications' "Prescribed by" shouldn't offer a groomer. */
   vetProviders: Provider[];
   visits: VisitRow[];
@@ -136,10 +127,7 @@ export function HealthView({
   vaccinations: HealthRow[];
   medications: MedicationRow[];
   weightHistory: PetWeightHistory[];
-  serviceTypes: ServiceType[];
-  dueVaccinationNames: string[];
 }) {
-  const canWrite = role === "owner" || role === "caregiver";
 
   // A pet card's Health quick-links (components/pets/PetHealthLinks.tsx) land
   // here as /app/health?tab=<tab>&pet=<petId> — read once at mount to seed
@@ -151,11 +139,11 @@ export function HealthView({
   const initialTab: TabKey = TABS.some((t) => t.key === tabParam) ? (tabParam as TabKey) : "visits";
   const initialPetFilter = searchParams.get("pet") ?? "all";
 
+  const router = useRouter();
   const [active, setActive] = useState<TabKey>(initialTab);
   const [showForm, setShowForm] = useState(false);
   const [editingRow, setEditingRow] = useState<HealthRow | null>(null);
   const [petFilter, setPetFilter] = useState(initialPetFilter);
-  const [pendingVisitEdit, setPendingVisitEdit] = useState<PendingVisitEdit | null>(null);
   const pets = roster.filter((r) => r.kind === "pet");
 
   const rowsByTab: Record<HealthTabKey, HealthRow[]> = { illnesses, vaccinations };
@@ -167,12 +155,9 @@ export function HealthView({
     setEditingRow(null);
   }
 
-  /** Switches to the Visits tab and opens the given visit's edit form, cursor on the given line item — used when Edit is clicked on a vaccination/illness/medication row that was captured via a visit. */
+  /** Opens the given visit's own edit page, cursor on the given line item — used when Edit is clicked on a vaccination/illness/medication row that was captured via a visit (VisitForm now always lives on its own page, see components/health/VisitFormPage.tsx). */
   function openInVisit(edit: PendingVisitEdit) {
-    setActive("visits");
-    setShowForm(false);
-    setEditingRow(null);
-    setPendingVisitEdit(edit);
+    router.push(`/app/health/visits/${edit.visitId}?focus=${edit.focusId}`);
   }
 
   if (active === "visits") {
@@ -180,18 +165,7 @@ export function HealthView({
       <div className="flex flex-col gap-6">
         <Header />
         <TabRow active={active} onChange={changeTab} />
-        <VisitsPanel
-          tenantId={tenantId}
-          canWrite={canWrite}
-          roster={roster}
-          providers={visitProviders}
-          serviceTypes={serviceTypes}
-          dueVaccinationNames={dueVaccinationNames}
-          visits={visits}
-          pendingEdit={pendingVisitEdit}
-          onPendingEditHandled={() => setPendingVisitEdit(null)}
-          initialPetFilter={initialPetFilter}
-        />
+        <VisitsPanel tenantId={tenantId} roster={roster} visits={visits} initialPetFilter={initialPetFilter} />
       </div>
     );
   }
@@ -203,7 +177,6 @@ export function HealthView({
         <TabRow active={active} onChange={changeTab} />
         <MedicationsPanel
           tenantId={tenantId}
-          canWrite={canWrite}
           roster={roster}
           vetProviders={vetProviders}
           medications={medications}
@@ -230,7 +203,7 @@ export function HealthView({
 
   return (
     <div className="flex flex-col gap-6">
-      <Header roster={canWrite ? pets : undefined} tab={tab} showForm={showForm} setShowForm={(v) => { setShowForm(v); setEditingRow(null); }} />
+      <Header roster={pets} tab={tab} showForm={showForm} setShowForm={(v) => { setShowForm(v); setEditingRow(null); }} />
       <TabRow active={active} onChange={changeTab} />
       <PetFilterSelect roster={roster} value={petFilter} onChange={setPetFilter} />
 
@@ -276,9 +249,7 @@ export function HealthView({
                 <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line">
                   Status
                 </th>
-                {canWrite && (
-                  <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line" />
-                )}
+                <th className="text-left text-[.68rem] uppercase tracking-[.05em] text-muted font-semibold px-4 py-2.5 border-b border-line" />
               </tr>
             </thead>
             <tbody>
@@ -289,16 +260,14 @@ export function HealthView({
                   <td className="px-4 py-3">{r.reason}</td>
                   {isVaccinations && <td className="px-4 py-3 text-muted">{r.provider ?? "—"}</td>}
                   <td className="px-4 py-3 font-mono">{r.status}</td>
-                  {canWrite && (
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        {active === "vaccinations" && r.status !== "Complete" && (
-                          <MarkGivenButton tenantId={tenantId} vaccinationId={r.id} />
-                        )}
-                        <RowActions tenantId={tenantId} tab={active} row={r} onEdit={() => setEditingRow(r)} onEditViaVisit={openInVisit} />
-                      </div>
-                    </td>
-                  )}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {active === "vaccinations" && r.status !== "Complete" && (
+                        <MarkGivenButton tenantId={tenantId} vaccinationId={r.id} />
+                      )}
+                      <RowActions tenantId={tenantId} tab={active} row={r} onEdit={() => setEditingRow(r)} onEditViaVisit={openInVisit} />
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -323,13 +292,13 @@ function Header({
   return (
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-2xl mb-1">Health</h1>
+        <h1 className="text-2xl mb-1 text-(--color-primary-text)">Health</h1>
         <p className="text-sm text-muted">Workspace-wide · every pet</p>
       </div>
       {roster && roster.length > 0 && tab && tab.logLabel && setShowForm && (
         <button
           onClick={() => setShowForm(!showForm)}
-          className="inline-flex items-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition"
+          className="inline-flex items-center gap-2 text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-4 py-2.5 rounded-lg hover:brightness-110 transition"
         >
           <PlusIcon className="w-[.9em] h-[.9em]" />
           {tab.logLabel}

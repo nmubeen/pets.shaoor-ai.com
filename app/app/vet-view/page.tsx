@@ -1,4 +1,4 @@
-import { requireActiveMembership } from "@/lib/tenant";
+import { requireActiveAccount } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
 import { getVisits, getIllnesses, getVaccinations } from "@/lib/health";
 import { getMedications } from "@/lib/medications";
@@ -7,7 +7,7 @@ import { buildVetSummaries } from "@/lib/vet-view";
 import { VetView } from "@/components/vet-view/VetView";
 
 export default async function VetViewPage() {
-  const { supabase, active } = await requireActiveMembership();
+  const { supabase, active } = await requireActiveAccount();
 
   const [roster, visits, illnesses, vaccinations, medications, weightHistory] = await Promise.all([
     getRoster(supabase, active.tenantId),

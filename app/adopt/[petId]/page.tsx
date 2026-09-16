@@ -22,10 +22,10 @@ export default async function AdoptProfilePage({ params }: { params: Promise<{ p
         </Link>
 
         <Card className="p-8">
-          <div className="w-14 h-14 rounded-2xl bg-surface-2 flex items-center justify-center text-primary mb-5">
-            <PawIcon className="text-2xl" />
+          <div className="w-15 h-15 rounded-2xl bg-white shadow-lg flex items-center justify-center flex-none mb-5">
+            <PawIcon className="text-2xl text-(--color-primary-text)" />
           </div>
-          <h1 className="text-3xl mb-1">{pet.name}</h1>
+          <h1 className="text-3xl mb-1 text-(--color-primary-text)">{pet.name}</h1>
           <p className="text-muted mb-6">
             {[pet.breed, SPECIES_LABEL[pet.species], pet.lifeStage].filter(Boolean).join(" · ")}
           </p>
@@ -34,7 +34,7 @@ export default async function AdoptProfilePage({ params }: { params: Promise<{ p
 
           <div className="border-t border-line pt-6">
             <p className="text-sm text-muted mb-4">
-              Listed by <span className="text-ink font-medium">{pet.orgName}</span> on Menagerie.
+              Listed by <span className="text-ink font-medium">{pet.orgName}</span> on Shaoor-AI Pets.
             </p>
             <Btn href="/signup" variant="dark">
               Interested? Start a workspace to get in touch

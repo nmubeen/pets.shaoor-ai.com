@@ -18,7 +18,7 @@ function CardBody({ r, selected, showSubtitle }: { r: RosterItem; selected: bool
           </div>
         )}
         {selected && (
-          <span className="absolute top-1.5 right-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-ink shadow">
+          <span className="absolute top-1.5 right-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-(image:--gradient-secondary-bg) text-white shadow">
             <CheckIcon className="w-3 h-3" strokeWidth={3} />
           </span>
         )}
@@ -31,14 +31,7 @@ function CardBody({ r, selected, showSubtitle }: { r: RosterItem; selected: bool
   );
 }
 
-/**
- * A read-only pet card grid — photo, name, subtitle, nothing else. No
- * Edit/Delete, no Health quick-links, no adoption toggle: used wherever a
- * viewer should see the roster but never manage it (the Social role's own
- * /app/pets, and Vet View's pet chooser). Larger cards and a 2-column
- * floor (rather than PetsGrid's list-like single row) since this is
- * meant to be tapped on a phone, not scanned on a desktop grid.
- */
+/** Compact pet chooser for the health summary. */
 export function PetSummaryCards({
   pets,
   selectedId,

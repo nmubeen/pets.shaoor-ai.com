@@ -53,19 +53,20 @@ export function WeightChart({ points }: { points: WeightPoint[] }) {
         {points[points.length - 1].date}
       </text>
       {points.length > 1 && <path d={linePath} fill="none" stroke="var(--primary)" strokeWidth="2" />}
-      {points.map((p, i) => (
-        <circle
-          key={i}
-          cx={xFor(new Date(p.dateIso + "T00:00:00Z").getTime())}
-          cy={yFor(p.weightKg)}
-          r="4.5"
-          fill="var(--primary)"
-          stroke="var(--surface)"
-          strokeWidth="1.5"
-        >
-          <title>{`${p.date} — ${p.weightKg} kg`}</title>
-        </circle>
-      ))}
+      {points.map((p, i) => {
+        const cx = xFor(new Date(p.dateIso + "T00:00:00Z").getTime());
+        const cy = yFor(p.weightKg);
+        return (
+          <g key={i}>
+            <circle cx={cx} cy={cy} r="4.5" fill="var(--primary)" stroke="var(--surface)" strokeWidth="1.5">
+              <title>{`${p.date} — ${p.weightKg} kg`}</title>
+            </circle>
+            <text x={cx} y={cy - 10} textAnchor="middle" fontSize="10" fontWeight="600" fill="var(--ink)">
+              {p.weightKg}
+            </text>
+          </g>
+        );
+      })}
     </svg>
   );
 }

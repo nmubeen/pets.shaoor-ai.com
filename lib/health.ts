@@ -6,6 +6,9 @@ import "server-only";
 import type { createClient } from "@/lib/supabase/server";
 import { getProviders } from "@/lib/providers";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { ageLabel } from "@/lib/pet-labels";
+
+const SIGNED_URL_TTL_SECONDS = 60 * 60; // 1 hour — same TTL as lib/roster.ts's/lib/providers.ts's own photo/logo URLs
 
 export type HealthRow = {
   id: string;
@@ -39,12 +42,19 @@ export type VisitRow = {
   date: string;
   dateIso: string;
   who: string;
+  /** The pet's age as of this visit's date, not its current age (an old visit shouldn't show how old the pet is today). Null if the pet has no birth date on record. */
+  age: string | null;
   reason: string;
   provider: string | null;
   providerId: string | null;
   /** Consulting doctor — the facility (provider) is fixed, who saw the pet can vary visit to visit. */
   doctor: string | null;
   weightKg: number | null;
+  temperatureF: number | null;
+  /** Raw storage path — for the edit form to replace/remove. */
+  prescriptionPhotoPath: string | null;
+  /** Signed URL — for display. */
+  prescriptionPhotoUrl: string | null;
   notes: string | null;
   services: VisitLineItem[];
   vaccinations: VisitLineItem[];
@@ -64,6 +74,13 @@ async function whoResolver(supabase: Awaited<ReturnType<typeof createClient>>, t
   return (petId: string) => byId.get(petId) ?? "Unknown";
 }
 
+/** The pet's age *as of a given date* (a visit's own date, not today — see ageLabel's own doc comment for why). */
+async function ageResolver(supabase: Awaited<ReturnType<typeof createClient>>, tenantId: string) {
+  const { data: pets } = await supabase.from("pets").select("id, birth_date").eq("tenant_id", tenantId);
+  const byId = new Map((pets ?? []).map((p) => [p.id, p.birth_date]));
+  return (petId: string, atIso: string) => ageLabel(byId.get(petId) ?? null, new Date(atIso + "T00:00:00"));
+}
+
 async function providerResolver(supabase: Awaited<ReturnType<typeof createClient>>, tenantId: string) {
   const providers = await getProviders(supabase, tenantId);
   const byId = new Map(providers.map((p) => [p.id, p.name]));
@@ -81,10 +98,10 @@ export async function getVisits(
   supabase: Awaited<ReturnType<typeof createClient>>,
   tenantId: string
 ): Promise<VisitRow[]> {
-  const [{ data: visits }, { data: serviceRows }, { data: vaxRows }, { data: illnessRows }, { data: medRows }, who, provider] = await Promise.all([
+  const [{ data: visits }, { data: serviceRows }, { data: vaxRows }, { data: illnessRows }, { data: medRows }, who, age, provider] = await Promise.all([
     supabase
       .from("visits")
-      .select("id, pet_id, provider_id, vet_name, visit_date, reason, cost, weight_kg, notes")
+      .select("id, pet_id, provider_id, vet_name, visit_date, reason, cost, weight_kg, temperature_f, prescription_photo_path, notes")
       .eq("tenant_id", tenantId)
       .order("visit_date", { ascending: false }),
     supabase.from("visit_services").select("id, visit_id, name, cost").eq("tenant_id", tenantId),
@@ -92,6 +109,7 @@ export async function getVisits(
     supabase.from("illnesses").select("id, visit_id, reason").eq("tenant_id", tenantId).not("visit_id", "is", null),
     supabase.from("medications").select("id, visit_id, name, dosage").eq("tenant_id", tenantId).not("visit_id", "is", null),
     whoResolver(supabase, tenantId),
+    ageResolver(supabase, tenantId),
     providerResolver(supabase, tenantId),
   ]);
 
@@ -126,17 +144,27 @@ export async function getVisits(
     medicationsByVisit.set(r.visit_id, list);
   }
 
+  const photoPaths = (visits ?? []).map((v) => v.prescription_photo_path).filter((p): p is string => p !== null);
+  const { data: signedPhotos } = photoPaths.length
+    ? await supabase.storage.from("media").createSignedUrls(photoPaths, SIGNED_URL_TTL_SECONDS)
+    : { data: [] as { path: string | null; signedUrl: string | null }[] };
+  const photoUrlByPath = new Map((signedPhotos ?? []).map((s) => [s.path, s.signedUrl]));
+
   return (visits ?? []).map((v) => ({
     id: v.id,
     petId: v.pet_id,
     date: fmtDate(v.visit_date),
     dateIso: v.visit_date,
     who: who(v.pet_id),
+    age: age(v.pet_id, v.visit_date),
     reason: v.reason,
     provider: provider(v.provider_id),
     providerId: v.provider_id,
     doctor: v.vet_name,
     weightKg: v.weight_kg,
+    temperatureF: v.temperature_f,
+    prescriptionPhotoPath: v.prescription_photo_path,
+    prescriptionPhotoUrl: v.prescription_photo_path ? (photoUrlByPath.get(v.prescription_photo_path) ?? null) : null,
     illnesses: illnessesByVisit.get(v.id) ?? [],
     medications: medicationsByVisit.get(v.id) ?? [],
     notes: v.notes,

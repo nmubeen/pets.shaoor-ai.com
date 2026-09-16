@@ -284,7 +284,7 @@ export function PetPassport({
           <BackIcon className="w-[.9em] h-[.9em]" />
           Back to Pets
         </Link>
-        <h1 className="text-sm font-semibold">{pet.name}&rsquo;s Passport</h1>
+        <h1 className="text-sm font-semibold text-(--color-primary-text)">{pet.name}&rsquo;s Passport</h1>
       </div>
 
       <div className="relative w-full max-w-[420px]">

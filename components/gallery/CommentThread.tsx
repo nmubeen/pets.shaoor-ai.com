@@ -8,12 +8,9 @@ import type { CommentItem } from "@/lib/gallery";
 export function CommentThread({
   tenantId,
   mediaId,
-  canPost,
 }: {
   tenantId: string;
   mediaId: string;
-  /** Comments themselves are always visible (RLS already allows any tenant member to read them) — this only gates the "add a comment" form, since viewer/vet_view submitting one would just fail server-side (menagerie.can_social_interact_tenant()). */
-  canPost: boolean;
 }) {
   const [comments, setComments] = useState<CommentItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -62,30 +59,28 @@ export function CommentThread({
         </div>
       )}
 
-      {canPost && (
-        <form
-          action={handleSubmit}
-          className="flex gap-2"
-          onSubmit={(e) => {
-            const form = e.currentTarget;
-            requestAnimationFrame(() => form.reset());
-          }}
+      <form
+        action={handleSubmit}
+        className="flex gap-2"
+        onSubmit={(e) => {
+          const form = e.currentTarget;
+          requestAnimationFrame(() => form.reset());
+        }}
+      >
+        <input
+          name="body"
+          required
+          placeholder="Add a comment…"
+          className="flex-1 bg-paper border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-primary transition"
+        />
+        <button
+          type="submit"
+          disabled={pending}
+          className="text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-3.5 py-2 rounded-lg hover:brightness-110 transition disabled:opacity-60"
         >
-          <input
-            name="body"
-            required
-            placeholder="Add a comment…"
-            className="flex-1 bg-paper border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-primary transition"
-          />
-          <button
-            type="submit"
-            disabled={pending}
-            className="text-sm font-semibold bg-accent text-accent-ink px-3.5 py-2 rounded-lg hover:brightness-95 transition disabled:opacity-60"
-          >
-            {pending ? "…" : "Post"}
-          </button>
-        </form>
-      )}
+          {pending ? "…" : "Post"}
+        </button>
+      </form>
       {error && <p className="text-xs text-coral">{error}</p>}
     </div>
   );

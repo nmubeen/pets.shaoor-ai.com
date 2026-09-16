@@ -1,13 +1,13 @@
 import { AuthShell } from "@/components/marketing/AuthShell";
 import { PetChip } from "@/components/ui";
 import { AddRosterPanel } from "@/components/roster/AddRosterPanel";
-import { requireActiveMembership } from "@/lib/tenant";
+import { requireActiveAccount } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
 import { FinishSetupButton } from "@/components/roster/FinishSetupButton";
 import { syncSubscriptionToControlPlane } from "@/lib/control-sync";
 
 export default async function OnboardingPetsPage() {
-  const { supabase, active } = await requireActiveMembership();
+  const { supabase, active } = await requireActiveAccount();
   const roster = await getRoster(supabase, active.tenantId);
 
   // The first server-rendered page a new workspace always hits — a

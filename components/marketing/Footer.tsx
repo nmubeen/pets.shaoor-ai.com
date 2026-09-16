@@ -1,16 +1,16 @@
 import Link from "next/link";
-import { PawIcon } from "@/components/icons";
 
 export function Footer() {
   return (
     <footer className="border-t border-line mt-20">
       <div className="max-w-[1200px] mx-auto px-6 md:px-10 py-12 flex flex-col md:flex-row gap-8 md:gap-0 md:items-start md:justify-between">
         <div className="max-w-sm">
-          <div className="flex items-center gap-2 font-serif font-semibold text-base text-ink mb-2">
-            <span className="w-6 h-6 rounded-md bg-primary text-primary-ink flex items-center justify-center">
-              <PawIcon className="text-[.85em]" />
+          <div className="flex items-center gap-3 font-semibold text-base text-ink mb-2">
+            <span className="w-15 h-15 rounded-2xl bg-white shadow-lg flex items-center justify-center flex-none p-1">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/brand/shaoor-ai-pets.png" alt="Shaoor-AI Pets" className="w-full h-full object-contain" />
             </span>
-            Menagerie
+            Shaoor-AI Pets
           </div>
           <p className="text-sm text-muted !max-w-none">
             pets.shaoor-ai.com — a Shaoor AI Tech Consultants product, sibling to

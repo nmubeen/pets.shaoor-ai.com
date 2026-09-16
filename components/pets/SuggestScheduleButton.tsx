@@ -31,7 +31,7 @@ export function SuggestScheduleButton({ tenantId, petId }: { tenantId: string; p
             router.refresh();
           })
         }
-        className="text-xs text-primary hover:underline transition disabled:opacity-60 text-left"
+        className="text-xs text-(--color-primary-text) hover:underline transition disabled:opacity-60 text-left"
       >
         {pending ? "Checking…" : "Suggest vaccination schedule"}
       </button>

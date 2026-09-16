@@ -17,6 +17,16 @@
   --trial: #4E7EA8;
   --org: #6E4A82;
   --shadow: 0 1px 2px rgba(30, 51, 43, .06), 0 8px 24px -12px rgba(30, 51, 43, .18);
+
+  /* Diagonal gradients, all top-left to bottom-right */
+  --gradient-primary-bg: linear-gradient(to bottom right, #1F4B3F, #0A1611);
+  --gradient-secondary-bg: linear-gradient(to bottom right, #7D9D76, #1F4B3F);
+  --gradient-button-bg: linear-gradient(to bottom right, #11240A, #1F4B3F);
+  --gradient-form-bg: linear-gradient(to bottom right, #FFFFFF, #7D9D76);
+
+  /* Flat colors */
+  --color-primary-text: #1F4B3F;
+  --color-secondary-text-icon: #7D9D76;
 }
 
 @media (prefers-color-scheme: dark) {

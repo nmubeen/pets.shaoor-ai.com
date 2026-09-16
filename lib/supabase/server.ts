@@ -3,14 +3,16 @@
 // anon key, still subject to RLS — this is what enforces tenant isolation.
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { getSupabaseConfig } from "./config";
 import type { Database } from "@/lib/database.types";
 
 export async function createClient() {
+  const { url, key } = getSupabaseConfig();
   const cookieStore = await cookies();
 
-  return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+  return createServerClient<Database, "menagerie">(
+    url,
+    key,
     {
       db: { schema: "menagerie" },
       cookies: {

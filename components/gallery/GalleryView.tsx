@@ -9,7 +9,6 @@ import { CommentThread } from "@/components/gallery/CommentThread";
 import { deleteMedia, likeMedia, unlikeMedia } from "@/lib/actions/gallery";
 import type { MediaItem } from "@/lib/gallery";
 import type { RosterItem } from "@/lib/roster";
-import type { MembershipRole } from "@/lib/database.types";
 
 const FILTER_ALL = "all";
 const FILTER_HOUSEHOLD = "household";
@@ -17,24 +16,13 @@ const FILTER_HOUSEHOLD = "household";
 function LikeButton({
   tenantId,
   media,
-  canLike,
 }: {
   tenantId: string;
   media: MediaItem;
-  canLike: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const Icon = media.likedByMe ? HeartFillIcon : HeartIcon;
-
-  if (!canLike) {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-xs text-muted">
-        <HeartIcon className="w-[.9em] h-[.9em]" />
-        {media.likeCount}
-      </span>
-    );
-  }
 
   return (
     <button
@@ -57,17 +45,14 @@ function LikeButton({
 
 export function GalleryView({
   tenantId,
-  role,
   roster,
   media,
 }: {
   tenantId: string;
-  role: MembershipRole;
   roster: RosterItem[];
   media: MediaItem[];
 }) {
-  const canManage = role === "owner" || role === "caregiver";
-  const canInteract = canManage || role === "social";
+
   const [showUpload, setShowUpload] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [filter, setFilter] = useState(FILTER_ALL);
@@ -86,13 +71,13 @@ export function GalleryView({
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl mb-1">Gallery</h1>
+          <h1 className="text-2xl mb-1 text-(--color-primary-text)">Gallery</h1>
           <p className="text-sm text-muted">Photos and memories — newest clicked date first</p>
         </div>
-        {canManage && roster.length > 0 && (
+        {roster.length > 0 && (
           <button
             onClick={() => setShowUpload((v) => !v)}
-            className="inline-flex items-center gap-2 text-sm font-semibold bg-accent text-accent-ink px-4 py-2.5 rounded-lg hover:brightness-95 transition"
+            className="inline-flex items-center gap-2 text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-4 py-2.5 rounded-lg hover:brightness-110 transition"
           >
             <PlusIcon className="w-[.9em] h-[.9em]" />
             Upload photo
@@ -173,27 +158,25 @@ export function GalleryView({
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-none">
-                <LikeButton tenantId={tenantId} media={open} canLike={canInteract} />
-                {canManage && (
-                  <button
-                    disabled={pending}
-                    onClick={() =>
-                      startTransition(async () => {
-                        await deleteMedia(tenantId, open.id);
-                        setOpenId(null);
-                        router.refresh();
-                      })
-                    }
-                    className="text-muted hover:text-coral transition disabled:opacity-60"
-                    aria-label="Delete photo"
-                    title="Delete"
-                  >
-                    {pending ? "…" : <TrashIcon className="w-4 h-4" />}
-                  </button>
-                )}
+                <LikeButton tenantId={tenantId} media={open} />
+                <button
+                  disabled={pending}
+                  onClick={() =>
+                    startTransition(async () => {
+                      await deleteMedia(tenantId, open.id);
+                      setOpenId(null);
+                      router.refresh();
+                    })
+                  }
+                  className="text-muted hover:text-coral transition disabled:opacity-60"
+                  aria-label="Delete photo"
+                  title="Delete"
+                >
+                  {pending ? "…" : <TrashIcon className="w-4 h-4" />}
+                </button>
               </div>
             </div>
-            <CommentThread tenantId={tenantId} mediaId={open.id} canPost={canInteract} />
+            <CommentThread tenantId={tenantId} mediaId={open.id} />
           </div>
         </Card>
       )}

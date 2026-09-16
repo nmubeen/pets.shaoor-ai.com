@@ -34,7 +34,7 @@ function mapRow(p: {
     breed: p.breed,
     lifeStage: p.life_stage,
     adoptionNote: p.adoption_note,
-    orgName: tenant?.name ?? "A Menagerie workspace",
+    orgName: tenant?.name ?? "A Shaoor-AI Pets workspace",
   };
 }
 

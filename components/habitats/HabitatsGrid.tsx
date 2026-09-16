@@ -37,12 +37,11 @@ const EMPTY_CARE: HabitatCare = { open: [], history: [] };
 export function HabitatsGrid({
   tenantId,
   habitats,
-  canWrite,
   careByHabitat,
 }: {
   tenantId: string;
   habitats: RosterItem[];
-  canWrite: boolean;
+
   /** Open + recent-history care_tasks for each habitat — keyed by habitat id. */
   careByHabitat: Record<string, HabitatCare>;
 }) {
@@ -88,19 +87,17 @@ export function HabitatsGrid({
               <div className="flex-1 min-w-0 p-4 flex flex-col gap-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="font-semibold text-base truncate">{r.name}</div>
-                  {canWrite && (
-                    <div className="flex items-center gap-3 flex-none">
-                      <button
-                        onClick={() => setEditingId(r.id)}
-                        className="text-muted hover:text-ink transition"
-                        aria-label={`Edit ${r.name}`}
-                        title="Edit"
-                      >
-                        <PencilIcon className="w-4 h-4" />
-                      </button>
-                      <DeleteButton tenantId={tenantId} item={r} />
-                    </div>
-                  )}
+                  <div className="flex items-center gap-3 flex-none">
+                    <button
+                      onClick={() => setEditingId(r.id)}
+                      className="text-muted hover:text-ink transition"
+                      aria-label={`Edit ${r.name}`}
+                      title="Edit"
+                    >
+                      <PencilIcon className="w-4 h-4" />
+                    </button>
+                    <DeleteButton tenantId={tenantId} item={r} />
+                  </div>
                 </div>
                 <div className="text-xs text-muted">{r.subtitle}</div>
               </div>
@@ -109,7 +106,6 @@ export function HabitatsGrid({
               <HabitatCarePanel
                 tenantId={tenantId}
                 habitatId={r.id}
-                canWrite={canWrite}
                 care={careByHabitat[r.id] ?? EMPTY_CARE}
               />
             </div>

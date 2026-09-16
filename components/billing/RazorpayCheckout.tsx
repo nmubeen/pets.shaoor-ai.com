@@ -67,7 +67,7 @@ export function RazorpayCheckout({
       const razorpay = new window.Razorpay({
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         subscription_id: data.subscriptionId,
-        name: "Menagerie",
+        name: "Shaoor-AI Pets",
         description: `${workspaceName} — ${planCode}`,
         prefill: userEmail ? { email: userEmail } : undefined,
         theme: { color: "#1F4B3F" },

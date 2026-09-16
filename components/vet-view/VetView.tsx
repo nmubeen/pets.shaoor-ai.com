@@ -103,7 +103,7 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
   if (summaries.length === 0) {
     return (
       <div className="flex flex-col gap-6">
-        <h1 className="text-2xl">Vet View</h1>
+        <h1 className="text-2xl text-(--color-primary-text)">Vet View</h1>
         <Card className="p-6 text-center text-sm text-muted">No pets yet.</Card>
       </div>
     );
@@ -112,7 +112,7 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
   return (
     <div className="flex flex-col gap-5 max-w-xl mx-auto" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <div>
-        <h1 className="text-2xl mb-1">Vet View</h1>
+        <h1 className="text-2xl mb-1 text-(--color-primary-text)">Vet View</h1>
         <p className="text-sm text-muted">{tenantName} · read-only summary</p>
       </div>
 
@@ -170,7 +170,7 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
 
       {selected && selected.pet.pet && (
         <div>
-          <h2 className="text-xl font-semibold">{selected.pet.name}</h2>
+          <h2 className="text-xl font-semibold text-(--color-primary-text)">{selected.pet.name}</h2>
           <p className="text-sm font-bold text-muted">
             {[
               [
@@ -275,7 +275,7 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
                   <button
                     type="button"
                     onClick={() => setShowAllVisits(true)}
-                    className="text-xs text-primary hover:underline mt-2"
+                    className="text-xs text-(--color-primary-text) hover:underline mt-2"
                   >
                     View all {visits.length} visits
                   </button>

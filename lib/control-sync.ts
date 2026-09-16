@@ -32,12 +32,12 @@ function toControlPlanCode(planCode: string): ControlPlanCode {
 export async function syncSubscriptionToControlPlane(tenantId: string, reason: string) {
   try {
     const supabase = createAdminClient();
-    const [{ data: tenant }, { data: subscription }, { data: owner }] = await Promise.all([
-      supabase.from("tenants").select("id, name, plan_code, trial_ends_at").eq("id", tenantId).maybeSingle(),
+    const [{ data: tenant }, { data: subscription }] = await Promise.all([
+      supabase.from("tenants").select("id, name, plan_code, trial_ends_at, owner_user_id").eq("id", tenantId).maybeSingle(),
       supabase.from("subscriptions").select("status, current_period_end").eq("tenant_id", tenantId).maybeSingle(),
-      supabase.from("memberships").select("user_id, invited_email").eq("tenant_id", tenantId).eq("role", "owner").eq("status", "active").maybeSingle(),
     ]);
-    if (!tenant) return;
+    if (!tenant?.owner_user_id) return;
+    const { data: { user: owner } } = await supabase.auth.admin.getUserById(tenant.owner_user_id);
 
     const trialActive = tenant.trial_ends_at ? new Date(tenant.trial_ends_at).getTime() > Date.now() : false;
 
@@ -51,8 +51,8 @@ export async function syncSubscriptionToControlPlane(tenantId: string, reason: s
     const { error } = await supabase.rpc("sync_control_subscription", {
       p_tenant_id: tenant.id,
       p_tenant_name: tenant.name,
-      p_owner_subject: owner?.user_id ?? null,
-      p_owner_email: owner?.invited_email ?? null,
+      p_owner_subject: tenant.owner_user_id ?? null,
+      p_owner_email: owner?.email ?? null,
       p_plan_code: toControlPlanCode(tenant.plan_code),
       p_status: status,
       p_trial_ends_at: trialActive ? tenant.trial_ends_at : null,

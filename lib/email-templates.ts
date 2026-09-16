@@ -1,4 +1,4 @@
-// Shared shell for every email lib/email.ts sends — keeps invite/reminder/
+// Shared shell for every email lib/email.ts sends — keeps reminder/
 // digest emails visually consistent without a templating framework. Inline
 // styles throughout: most email clients strip <style> blocks.
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://pets.shaoor-ai.com";
@@ -8,7 +8,7 @@ export function emailShell(preheader: string, bodyHtml: string): string {
 <div style="background:#F3F4EC; padding:32px 16px; font-family:-apple-system,'Segoe UI',sans-serif;">
   <div style="max-width:480px; margin:0 auto; background:#FFFFFF; border:1px solid #D9DCCC; border-radius:12px; overflow:hidden;">
     <div style="background:#1F4B3F; color:#F3F4EC; padding:20px 24px; font-weight:700; font-size:16px;">
-      🐾 Menagerie
+      🐾 Shaoor-AI Pets
     </div>
     <div style="padding:24px; color:#1E332B; font-size:14px; line-height:1.6;">
       ${bodyHtml}

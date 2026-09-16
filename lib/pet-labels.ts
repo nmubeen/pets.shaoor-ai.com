@@ -5,10 +5,11 @@ import type { PetSex } from "@/lib/database.types";
 
 export const SEX_LABEL: Record<PetSex, string | null> = { male: "Male", female: "Female", unknown: null };
 
-export function ageLabel(birthDate: string | null): string | null {
+/** `at` defaults to now; pass a specific date (e.g. a visit's own date) to get the pet's age as of that date rather than its current age. */
+export function ageLabel(birthDate: string | null, at: Date = new Date()): string | null {
   if (!birthDate) return null;
   const months = Math.floor(
-    (Date.now() - new Date(birthDate + "T00:00:00").getTime()) / (30.44 * 86_400_000)
+    (at.getTime() - new Date(birthDate + "T00:00:00").getTime()) / (30.44 * 86_400_000)
   );
   if (months < 0) return null;
   if (months < 1) return "<1 mo";
