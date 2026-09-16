@@ -267,6 +267,16 @@ export function VetView({ tenantName, summaries }: { tenantName: string; summari
                             <span className="font-semibold">Comments:</span> {v.notes}
                           </div>
                         )}
+                        {v.prescriptionPhotoUrl && (
+                          <a href={v.prescriptionPhotoUrl} target="_blank" rel="noreferrer" className="inline-block mt-1.5">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={v.prescriptionPhotoUrl}
+                              alt="Prescription"
+                              className="w-14 h-14 rounded-lg object-cover border border-line hover:brightness-95 transition"
+                            />
+                          </a>
+                        )}
                       </div>
                     );
                   })}

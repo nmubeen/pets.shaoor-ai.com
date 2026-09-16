@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { BackIcon } from "@/components/icons";
+import { BackIcon, ForwardIcon } from "@/components/icons";
 import { VisitForm } from "@/components/health/VisitForm";
 import type { RosterItem } from "@/lib/roster";
 import type { Provider } from "@/lib/providers";
@@ -37,6 +37,14 @@ export function VisitFormPage({
 }) {
   const router = useRouter();
 
+  // Steps through `visits` in the same newest-first order the list itself
+  // renders in — "previous" is the one shown above this one, "next" the
+  // one below. Only meaningful when editing; a brand-new visit has no
+  // position in the list yet.
+  const editIndex = editing ? visits.findIndex((v) => v.id === editing.id) : -1;
+  const prevVisit = editIndex > 0 ? visits[editIndex - 1] : null;
+  const nextVisit = editIndex >= 0 && editIndex < visits.length - 1 ? visits[editIndex + 1] : null;
+
   function handleDone(createdId?: string) {
     if (createdId) {
       // A brand-new visit — land back on the list with it highlighted,
@@ -60,9 +68,44 @@ export function VisitFormPage({
           <BackIcon className="w-[.9em] h-[.9em]" />
           Back to visits
         </Link>
-        <h1 className="text-2xl text-(--color-primary-text)">{editing ? "Edit visit" : "Log a visit"}</h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-2xl text-(--color-primary-text)">{editing ? "Edit visit" : "Log a visit"}</h1>
+          {editing && (
+            <div className="flex items-center gap-1.5 flex-none">
+              {prevVisit ? (
+                <Link
+                  href={`/app/health/visits/${prevVisit.id}`}
+                  className="text-muted hover:text-ink border border-line rounded-md p-1.5 transition"
+                  aria-label="Previous visit"
+                  title={`Previous: ${prevVisit.reason} — ${prevVisit.date}`}
+                >
+                  <BackIcon className="w-4 h-4" />
+                </Link>
+              ) : (
+                <span className="text-muted/40 border border-line rounded-md p-1.5" aria-hidden>
+                  <BackIcon className="w-4 h-4" />
+                </span>
+              )}
+              {nextVisit ? (
+                <Link
+                  href={`/app/health/visits/${nextVisit.id}`}
+                  className="text-muted hover:text-ink border border-line rounded-md p-1.5 transition"
+                  aria-label="Next visit"
+                  title={`Next: ${nextVisit.reason} — ${nextVisit.date}`}
+                >
+                  <ForwardIcon className="w-4 h-4" />
+                </Link>
+              ) : (
+                <span className="text-muted/40 border border-line rounded-md p-1.5" aria-hidden>
+                  <ForwardIcon className="w-4 h-4" />
+                </span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
       <VisitForm
+        key={editing?.id ?? "new"}
         tenantId={tenantId}
         roster={roster}
         providers={providers}
