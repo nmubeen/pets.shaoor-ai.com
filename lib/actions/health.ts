@@ -292,8 +292,6 @@ async function recordVaccinationGiven(
 export async function addVisit(tenantId: string, formData: FormData) {
   const petId = requirePetId(formData);
   if (typeof petId !== "string") return petId;
-  const reason = str(formData, "reason");
-  if (!reason) return { error: "Reason is required." };
 
   const visitDate = str(formData, "visit_date") ?? new Date().toISOString().slice(0, 10);
   const providerSelection = requireVisitProvider(formData);
@@ -322,7 +320,6 @@ export async function addVisit(tenantId: string, formData: FormData) {
       at_home: atHome,
       vet_name: str(formData, "vet_name"),
       visit_date: visitDate,
-      reason,
       weight_kg: num(formData, "weight_kg"),
       temperature_f: num(formData, "temperature_f"),
       notes: str(formData, "notes"),
@@ -511,8 +508,8 @@ export async function markVaccinationGiven(tenantId: string, vaccinationId: stri
 }
 
 /**
- * Edits a visit — its own fields (pet, reason, provider, doctor, date,
- * weight, notes) plus every line item, diffed against what's already
+ * Edits a visit — its own fields (pet, provider, doctor, date, weight,
+ * notes) plus every line item, diffed against what's already
  * linked to it rather than blindly deleted-and-reinserted:
  * - unchanged rows (same id, same values) are left alone entirely — no
  *   writes, no side effects;
@@ -534,8 +531,6 @@ export async function markVaccinationGiven(tenantId: string, vaccinationId: stri
 export async function updateVisit(tenantId: string, visitId: string, formData: FormData) {
   const petId = requirePetId(formData);
   if (typeof petId !== "string") return petId;
-  const reason = str(formData, "reason");
-  if (!reason) return { error: "Reason is required." };
 
   const visitDate = str(formData, "visit_date") ?? new Date().toISOString().slice(0, 10);
   const providerSelection = requireVisitProvider(formData);
@@ -563,7 +558,6 @@ export async function updateVisit(tenantId: string, visitId: string, formData: F
       at_home: atHome,
       vet_name: str(formData, "vet_name"),
       visit_date: visitDate,
-      reason,
       weight_kg: num(formData, "weight_kg"),
       temperature_f: num(formData, "temperature_f"),
       notes: str(formData, "notes"),

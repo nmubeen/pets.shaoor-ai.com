@@ -396,21 +396,6 @@ export function VisitForm({
           </label>
         </div>
 
-        <label className="flex flex-col gap-1.5">
-          <span className={label}>Reason</span>
-          <input
-            name="reason"
-            required
-            defaultValue={editing?.reason ?? "Consultation"}
-            className={field}
-            placeholder="Wellness check"
-            // Not when focusRowId is set — that deep-links to a specific
-            // vaccination/illness/medication row inside a popup instead,
-            // and that focus (RowList's own mount effect) should win.
-            autoFocus={!focusRowId}
-          />
-        </label>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <ProviderPicker
             providers={providers}
@@ -419,6 +404,10 @@ export function VisitForm({
             onChange={setProviderId}
             required
             homeOption
+            // Not when focusRowId is set — that deep-links to a specific
+            // vaccination/illness/medication row inside a popup instead,
+            // and that focus (RowList's own mount effect) should win.
+            autoFocus={!focusRowId}
           />
           <label className="flex flex-col gap-1.5">
             <span className={label}>Consulting doctor (optional)</span>

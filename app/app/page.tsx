@@ -72,7 +72,7 @@ export default async function AppHomePage() {
                 <div key={v.id} className="flex items-center justify-between py-2.5 text-sm">
                   <div>
                     <div className="font-medium">{v.who}</div>
-                    <div className="text-xs text-muted">{v.reason}</div>
+                    <div className="text-xs text-muted">{v.provider}</div>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-muted">{v.date}</span>

@@ -180,7 +180,8 @@ export interface Database {
           provider_id: string | null;
           at_home: boolean;
           visit_date: string;
-          reason: string;
+          /** No longer collected by the form (0038_visit_reason_optional.sql) — kept nullable for whatever's already on file. */
+          reason: string | null;
           vet_name: string | null;
           cost: number | null;
           weight_kg: number | null;
@@ -189,7 +190,7 @@ export interface Database {
           notes: string | null;
           created_at: string;
         },
-        "tenant_id" | "pet_id" | "reason"
+        "tenant_id" | "pet_id"
       >;
       care_service_types: Table<
         {

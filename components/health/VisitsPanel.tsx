@@ -126,13 +126,14 @@ export function VisitsPanel({
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="font-medium">{v.reason}</div>
+                  <div className="font-medium">
+                    {v.date}
+                    {v.provider && <> · {v.provider}</>}
+                  </div>
                   <div className="text-xs text-muted mt-0.5">
-                    {v.who}
-                    {v.age && <> · {v.age}</>} · {v.date}
-                    {(v.provider || v.doctor) && (
-                      <> · {[v.provider, v.doctor && `Dr. ${v.doctor}`].filter(Boolean).join(" · ")}</>
-                    )}
+                    <span className="font-semibold text-ink">{v.who}</span>
+                    {v.age && <> · {v.age}</>}
+                    {v.doctor && <> · Dr. {v.doctor}</>}
                     {v.weightKg !== null && <> · {v.weightKg} kg</>}
                     {v.temperatureF !== null && <> · {v.temperatureF}°F</>}
                   </div>

@@ -77,7 +77,7 @@ export function VisitFormPage({
                   href={`/app/health/visits/${prevVisit.id}`}
                   className="text-muted hover:text-ink border border-line rounded-md p-1.5 transition"
                   aria-label="Previous visit"
-                  title={`Previous: ${prevVisit.reason} — ${prevVisit.date}`}
+                  title={`Previous: ${prevVisit.date}${prevVisit.provider ? ` — ${prevVisit.provider}` : ""}`}
                 >
                   <BackIcon className="w-4 h-4" />
                 </Link>
@@ -91,7 +91,7 @@ export function VisitFormPage({
                   href={`/app/health/visits/${nextVisit.id}`}
                   className="text-muted hover:text-ink border border-line rounded-md p-1.5 transition"
                   aria-label="Next visit"
-                  title={`Next: ${nextVisit.reason} — ${nextVisit.date}`}
+                  title={`Next: ${nextVisit.date}${nextVisit.provider ? ` — ${nextVisit.provider}` : ""}`}
                 >
                   <ForwardIcon className="w-4 h-4" />
                 </Link>

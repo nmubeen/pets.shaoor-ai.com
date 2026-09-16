@@ -20,6 +20,7 @@ export function ProviderPicker({
   onChange,
   required = false,
   homeOption = false,
+  autoFocus = false,
 }: {
   providers: Provider[];
   label?: string;
@@ -30,6 +31,7 @@ export function ProviderPicker({
   required?: boolean;
   /** Adds a synthetic "At home" choice (value "home") at the top of the list, above the real providers — VisitForm's own opt-in, for services done without a physical provider (bathing, deworming, nail clipping, ...). "home" isn't a real provider id; lib/actions/health.ts's requireVisitProvider special-cases it into visits.at_home instead (see 0037_visit_at_home.sql). */
   homeOption?: boolean;
+  autoFocus?: boolean;
 }) {
   const categories = [...new Set(providers.map((p) => p.category))];
   const grouped = categories.length > 1;
@@ -50,6 +52,7 @@ export function ProviderPicker({
         <select
           name={name}
           required={required}
+          autoFocus={autoFocus}
           {...(controlled ? { value } : { defaultValue: defaultValue ?? "" })}
           onChange={onChange ? (e) => onChange(e.target.value) : undefined}
           className="bg-paper border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary transition"

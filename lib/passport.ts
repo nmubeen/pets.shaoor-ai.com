@@ -27,10 +27,7 @@ export function buildVisitSummaryText(visit: VisitRow): string {
   if (visit.weightKg !== null) bits.push(`weighed ${visit.weightKg} kg on this visit`);
   if (visit.notes) bits.push(visit.notes);
 
-  const opening = visit.reason ? `${visit.reason}.` : "";
-  const rest = bits.length > 0 ? `${bits.join("; ")}.` : "Routine examination — no further remarks on file.";
-
-  return [opening, rest].filter(Boolean).join(" ");
+  return bits.length > 0 ? `${bits.join("; ")}.` : "Routine examination — no further remarks on file.";
 }
 
 function hashSeed(seed: string): number {
