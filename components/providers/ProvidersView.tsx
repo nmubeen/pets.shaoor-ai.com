@@ -53,6 +53,157 @@ function DeleteButton({ tenantId, providerId }: { tenantId: string; providerId: 
   );
 }
 
+function ProviderCard({
+  tenantId,
+  provider: p,
+  onEdit,
+}: {
+  tenantId: string;
+  provider: Provider;
+  onEdit: () => void;
+}) {
+  const isVet = p.category === "vet";
+  const isOnlineShop = p.category === "online_shop";
+
+  return (
+    <Card className="p-5 flex flex-col gap-4">
+      <div className="flex items-start justify-between">
+        <Avatar label={p.initials} color={p.color} photoUrl={p.logoUrl} />
+        <div className="flex items-center gap-3">
+          {isVet && p.website && (
+            <ContactIcon href={p.website} label="Website">
+              <GlobeIcon className="w-4 h-4" />
+            </ContactIcon>
+          )}
+          {isVet && p.locationUrl && (
+            <ContactIcon href={p.locationUrl} label="Location">
+              <PinIcon className="w-4 h-4" />
+            </ContactIcon>
+          )}
+          {isVet && p.email && (
+            <ContactIcon href={`mailto:${p.email}`} label="Email" external={false}>
+              <MailIcon className="w-4 h-4" />
+            </ContactIcon>
+          )}
+          {isVet && p.phone && (
+            <ContactIcon href={`tel:${p.phone}`} label="Call" external={false}>
+              <PhoneIcon className="w-4 h-4" />
+            </ContactIcon>
+          )}
+          {isVet && p.phone && (
+            <ContactIcon href={whatsAppHref(p.phone)} label="WhatsApp">
+              <WhatsAppIcon className="w-4 h-4" />
+            </ContactIcon>
+          )}
+          {isOnlineShop && p.website && (
+            <ContactIcon href={p.website} label="Website">
+              <GlobeIcon className="w-4 h-4" />
+            </ContactIcon>
+          )}
+          <button onClick={onEdit} className="text-muted hover:text-ink transition" aria-label="Edit provider" title="Edit">
+            <PencilIcon className="w-4 h-4" />
+          </button>
+          <DeleteButton tenantId={tenantId} providerId={p.id} />
+        </div>
+      </div>
+      <div>
+        <div className="font-semibold text-base">{p.name}</div>
+        <div className="text-xs text-muted mt-0.5 flex flex-col gap-0.5">
+          {!isVet && p.phone && <span>{p.phone}</span>}
+          {!isVet && p.email && <span>{p.email}</span>}
+          {p.address && <span>{p.address}</span>}
+          {p.businessHours && <span>🕒 {p.businessHours}</span>}
+          {!isVet && !isOnlineShop && (p.website || p.locationUrl) && (
+            <span>
+              {p.website && (
+                <a href={p.website} target="_blank" rel="noreferrer" className="text-(--color-primary-text) hover:underline">
+                  Website
+                </a>
+              )}
+              {p.website && p.locationUrl && " | "}
+              {p.locationUrl && (
+                <a href={p.locationUrl} target="_blank" rel="noreferrer" className="text-(--color-primary-text) hover:underline">
+                  Location
+                </a>
+              )}
+            </span>
+          )}
+          {isOnlineShop && p.locationUrl && (
+            <span>
+              <a href={p.locationUrl} target="_blank" rel="noreferrer" className="text-(--color-primary-text) hover:underline">
+                Location
+              </a>
+            </span>
+          )}
+        </div>
+        {p.notes && <div className="text-xs text-muted mt-2">{p.notes}</div>}
+      </div>
+    </Card>
+  );
+}
+
+/** One category's worth of providers — its own heading, "Add" trigger, and grid. Stacked one per category on the page (in the order `categories` was given) rather than switched between with tabs, so both are visible at once. */
+function CategorySection({
+  tenantId,
+  category,
+  providers,
+}: {
+  tenantId: string;
+  category: ServiceProviderCategory;
+  providers: Provider[];
+}) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const router = useRouter();
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-lg font-semibold">{CATEGORY_LABEL[category]}</h2>
+        <button
+          onClick={() => {
+            setEditingId(null);
+            setShowAdd((v) => !v);
+          }}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-(--color-primary-text) hover:underline"
+        >
+          <PlusIcon className="w-[.9em] h-[.9em]" />
+          Add
+        </button>
+      </div>
+
+      {showAdd && <ProviderForm tenantId={tenantId} category={category} onDone={() => setShowAdd(false)} />}
+
+      {providers.length === 0 && !showAdd ? (
+        <Card className="p-6 text-center text-sm text-muted">
+          No {CATEGORY_LABEL[category].toLowerCase()} yet.
+        </Card>
+      ) : (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {providers.map((p) =>
+            editingId === p.id ? (
+              <div key={p.id} className="sm:col-span-2 lg:col-span-3">
+                <ProviderForm
+                  tenantId={tenantId}
+                  category={category}
+                  mode="edit"
+                  initial={p}
+                  onDone={() => {
+                    setEditingId(null);
+                    router.refresh();
+                  }}
+                />
+              </div>
+            ) : (
+              <ProviderCard key={p.id} tenantId={tenantId} provider={p} onEdit={() => setEditingId(p.id)} />
+            )
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ProvidersView({
   tenantId,
   providers,
@@ -62,165 +213,22 @@ export function ProvidersView({
 }: {
   tenantId: string;
   providers: Provider[];
-  /** Which categories this page covers — Settings now splits providers into two separate pages/tiles ("Hospitals & Grooming Centers" vs. "Shopping (Online and Offline)") rather than one page with all four. */
+  /** Which categories this page covers, in the order they're shown as sections — Settings splits providers into two pages/tiles ("Hospitals & Grooming Centers" vs. "Shopping (Online and Offline)") rather than one page with all four. */
   categories: ServiceProviderCategory[];
   title: string;
   description: string;
 }) {
-  const [active, setActive] = useState<ServiceProviderCategory>(categories[0]);
-  const [showAdd, setShowAdd] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const router = useRouter();
-
-  const rows = providers.filter((p) => p.category === active);
-
   return (
     <div className="flex flex-col gap-6">
       <SettingsBackLink />
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl mb-1 text-(--color-primary-text)">{title}</h1>
-          <p className="text-sm text-muted">{description}</p>
-        </div>
-        <button
-          onClick={() => {
-            setEditingId(null);
-            setShowAdd((v) => !v);
-          }}
-          className="inline-flex items-center gap-2 text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-4 py-2.5 rounded-lg hover:brightness-110 transition"
-        >
-          <PlusIcon className="w-[.9em] h-[.9em]" />
-          Add provider
-        </button>
+      <div>
+        <h1 className="text-2xl mb-1 text-(--color-primary-text)">{title}</h1>
+        <p className="text-sm text-muted">{description}</p>
       </div>
 
-      {categories.length > 1 && (
-        <div className="flex gap-1.5 flex-wrap">
-          {categories.map((c) => (
-            <button
-              key={c}
-              onClick={() => {
-                setActive(c);
-                setShowAdd(false);
-                setEditingId(null);
-              }}
-              className={`text-sm px-4 py-2 rounded-lg transition ${
-                active === c ? "bg-surface border border-line font-semibold text-ink" : "text-muted hover:text-ink"
-              }`}
-            >
-              {CATEGORY_LABEL[c]}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {showAdd && <ProviderForm tenantId={tenantId} category={active} onDone={() => setShowAdd(false)} />}
-
-      {rows.length === 0 && !showAdd ? (
-        <Card className="p-6 text-center text-sm text-muted">
-          No {CATEGORY_LABEL[active].toLowerCase()} yet.
-        </Card>
-      ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {rows.map((p) => {
-            if (editingId === p.id) {
-              return (
-                <div key={p.id} className="sm:col-span-2 lg:col-span-3">
-                  <ProviderForm
-                    tenantId={tenantId}
-                    category={active}
-                    mode="edit"
-                    initial={p}
-                    onDone={() => {
-                      setEditingId(null);
-                      router.refresh();
-                    }}
-                  />
-                </div>
-              );
-            }
-
-            const isVet = p.category === "vet";
-            const isOnlineShop = p.category === "online_shop";
-
-            return (
-              <Card key={p.id} className="p-5 flex flex-col gap-4">
-                <div className="flex items-start justify-between">
-                  <Avatar label={p.initials} color={p.color} photoUrl={p.logoUrl} />
-                  <div className="flex items-center gap-3">
-                    {isVet && p.website && (
-                      <ContactIcon href={p.website} label="Website">
-                        <GlobeIcon className="w-4 h-4" />
-                      </ContactIcon>
-                    )}
-                    {isVet && p.locationUrl && (
-                      <ContactIcon href={p.locationUrl} label="Location">
-                        <PinIcon className="w-4 h-4" />
-                      </ContactIcon>
-                    )}
-                    {isVet && p.email && (
-                      <ContactIcon href={`mailto:${p.email}`} label="Email" external={false}>
-                        <MailIcon className="w-4 h-4" />
-                      </ContactIcon>
-                    )}
-                    {isVet && p.phone && (
-                      <ContactIcon href={`tel:${p.phone}`} label="Call" external={false}>
-                        <PhoneIcon className="w-4 h-4" />
-                      </ContactIcon>
-                    )}
-                    {isVet && p.phone && (
-                      <ContactIcon href={whatsAppHref(p.phone)} label="WhatsApp">
-                        <WhatsAppIcon className="w-4 h-4" />
-                      </ContactIcon>
-                    )}
-                    {isOnlineShop && p.website && (
-                      <ContactIcon href={p.website} label="Website">
-                        <GlobeIcon className="w-4 h-4" />
-                      </ContactIcon>
-                    )}
-                    <button onClick={() => setEditingId(p.id)} className="text-muted hover:text-ink transition" aria-label="Edit provider" title="Edit">
-                      <PencilIcon className="w-4 h-4" />
-                    </button>
-                    <DeleteButton tenantId={tenantId} providerId={p.id} />
-                  </div>
-                </div>
-                <div>
-                  <div className="font-semibold text-base">{p.name}</div>
-                  <div className="text-xs text-muted mt-0.5 flex flex-col gap-0.5">
-                    {!isVet && p.phone && <span>{p.phone}</span>}
-                    {!isVet && p.email && <span>{p.email}</span>}
-                    {p.address && <span>{p.address}</span>}
-                    {p.businessHours && <span>🕒 {p.businessHours}</span>}
-                    {!isVet && !isOnlineShop && (p.website || p.locationUrl) && (
-                      <span>
-                        {p.website && (
-                          <a href={p.website} target="_blank" rel="noreferrer" className="text-(--color-primary-text) hover:underline">
-                            Website
-                          </a>
-                        )}
-                        {p.website && p.locationUrl && " | "}
-                        {p.locationUrl && (
-                          <a href={p.locationUrl} target="_blank" rel="noreferrer" className="text-(--color-primary-text) hover:underline">
-                            Location
-                          </a>
-                        )}
-                      </span>
-                    )}
-                    {isOnlineShop && p.locationUrl && (
-                      <span>
-                        <a href={p.locationUrl} target="_blank" rel="noreferrer" className="text-(--color-primary-text) hover:underline">
-                          Location
-                        </a>
-                      </span>
-                    )}
-                  </div>
-                  {p.notes && <div className="text-xs text-muted mt-2">{p.notes}</div>}
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+      {categories.map((c) => (
+        <CategorySection key={c} tenantId={tenantId} category={c} providers={providers.filter((p) => p.category === c)} />
+      ))}
     </div>
   );
 }
