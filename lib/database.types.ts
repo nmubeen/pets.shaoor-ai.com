@@ -408,6 +408,7 @@ export interface Database {
     };
     Functions: {
       ensure_my_account: { Args: Record<PropertyKey, never>; Returns: Database["menagerie"]["Tables"]["tenants"]["Row"] };
+      switch_to_household: { Args: { p_invite_id: string }; Returns: Database["menagerie"]["Tables"]["tenants"]["Row"] };
       sync_control_subscription: {
         Args: {
           p_tenant_id: string;

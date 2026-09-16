@@ -15,6 +15,7 @@ import { getOtpLength } from "@/lib/supabase/config";
 import { otpErrorMessage } from "@/lib/supabase/auth-error";
 import { registerAppMembershipOnAuthClient, membershipError } from "./membership";
 import { ensurePetsAccountForCurrentUser } from "./provisioning";
+import { getMyPendingInvite } from "@/lib/household";
 
 export type AuthMode = "email-code" | "verify-code";
 export type AuthResult = { error?: string; codeSent?: boolean; redirect?: string };
@@ -90,12 +91,27 @@ export async function submitAuth(mode: AuthMode, form: FormData): Promise<AuthRe
   // Reads the same session cookies just written above (same request,
   // same Next.js cookies() store). Business logic itself lives entirely
   // in the SQL function — nothing reproduced here.
+  let businessClient: Awaited<ReturnType<typeof createBusinessServerClient>>;
   try {
-    const businessClient = await createBusinessServerClient();
+    businessClient = await createBusinessServerClient();
     const provisioned = await ensurePetsAccountForCurrentUser(businessClient);
     if (!provisioned) return { redirect: "/auth/access-error" };
   } catch {
     return { redirect: "/auth/access-error" };
+  }
+
+  // Still pending here (rather than silently claimed) means ensure_account
+  // found this email already owns a household — see its own comment in
+  // 0039_household_switch.sql for why owning one takes priority over an
+  // invite. Route to the explicit switch-or-keep decision instead of
+  // straight into /app; nothing about their existing household changes
+  // until they choose.
+  try {
+    const invite = await getMyPendingInvite(businessClient, email);
+    if (invite) return { redirect: `/app/switch-household?invite=${invite.id}` };
+  } catch {
+    // A failed lookup here shouldn't block an otherwise-successful
+    // sign-in — falls through to the normal /app redirect below.
   }
 
   return { redirect: "/app" };

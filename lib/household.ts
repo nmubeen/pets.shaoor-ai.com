@@ -12,6 +12,36 @@ export type HouseholdMember = {
   createdAt: string;
 };
 
+export type PendingInvite = {
+  id: string;
+  tenantName: string;
+};
+
+/**
+ * A pending invite for the signed-in user's own email, if any — regardless
+ * of which tenant it's for (the invited_email = auth.email() RLS escape
+ * hatch, 0039_household_switch.sql, is what makes this visible before
+ * they've joined anything). Used to prompt the switch-household decision
+ * when someone who already owns a household gets invited elsewhere.
+ */
+export async function getMyPendingInvite(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  email: string
+): Promise<PendingInvite | null> {
+  const { data: invite } = await supabase
+    .from("household_members")
+    .select("id, tenant_id")
+    .ilike("invited_email", email)
+    .eq("status", "invited")
+    .order("created_at")
+    .limit(1)
+    .maybeSingle();
+  if (!invite) return null;
+
+  const { data: tenant } = await supabase.from("tenants").select("name").eq("id", invite.tenant_id).maybeSingle();
+  return { id: invite.id, tenantName: tenant?.name ?? "a household" };
+}
+
 export async function getHouseholdMembers(
   supabase: Awaited<ReturnType<typeof createClient>>,
   tenantId: string

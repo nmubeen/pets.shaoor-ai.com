@@ -44,3 +44,42 @@ export async function removeImage(
   if (!path) return;
   await supabase.storage.from("media").remove([path]);
 }
+
+/**
+ * Recursively deletes every object under {tenantId}/ — every avatar,
+ * gallery photo, prescription photo, provider logo, product photo, all of
+ * it, regardless of which subfolder convention wrote it. Used when a
+ * tenant's whole household is being abandoned (lib/actions/tenant.ts's
+ * switchToInvitedHousehold) — call this *before* the tenant row itself is
+ * deleted: the delete Storage policy checks my_tenant_ids(), which stops
+ * including this tenant the moment it's gone, and would then block the
+ * cleanup it's meant to do.
+ */
+export async function removeAllTenantMedia(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  tenantId: string
+) {
+  async function collectPaths(prefix: string): Promise<string[]> {
+    const { data } = await supabase.storage.from("media").list(prefix, { limit: 1000 });
+    if (!data) return [];
+    const paths: string[] = [];
+    for (const entry of data) {
+      const fullPath = `${prefix}/${entry.name}`;
+      // A pseudo-folder (no id/metadata of its own) needs recursing into;
+      // a real object is ready to delete as-is.
+      if (entry.id === null) {
+        paths.push(...(await collectPaths(fullPath)));
+      } else {
+        paths.push(fullPath);
+      }
+    }
+    return paths;
+  }
+
+  const paths = await collectPaths(tenantId);
+  if (paths.length === 0) return;
+  // Storage's remove() takes at most 1000 paths per call.
+  for (let i = 0; i < paths.length; i += 1000) {
+    await supabase.storage.from("media").remove(paths.slice(i, i + 1000));
+  }
+}
