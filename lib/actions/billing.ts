@@ -18,12 +18,11 @@ export async function cancelSubscription(tenantId: string) {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in." };
 
-  const { data: account } = await supabase
-    .from("tenants")
-    .select("id")
-    .eq("id", tenantId)
-    .eq("owner_user_id", user.id)
-    .maybeSingle();
+  // No owner_user_id filter — every household member has full access,
+  // including billing (see 0036_household_members.sql), and RLS's
+  // "tenant isolation - select" policy already scopes this to a tenant
+  // this user can actually reach (owner or member).
+  const { data: account } = await supabase.from("tenants").select("id").eq("id", tenantId).maybeSingle();
 
   if (!account) {
     return { error: "Account not found." };
@@ -45,7 +44,7 @@ export async function cancelSubscription(tenantId: string) {
     return { error: (err as Error).message };
   }
 
-  await syncSubscriptionToControlPlane(tenantId, "Owner requested cancellation");
+  await syncSubscriptionToControlPlane(tenantId, "Household member requested cancellation");
 
   revalidatePath("/app/settings/billing");
   return { error: null };

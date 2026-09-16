@@ -5,8 +5,9 @@ import { getRazorpay } from "@/lib/razorpay";
 // Creates a Razorpay Subscription and hands the id back to the browser,
 // which opens Razorpay's Checkout.js modal for it (components/billing/
 // RazorpayCheckout.tsx) — unlike Stripe Checkout there's no hosted page to
-// redirect to. Only the tenant owner may do this — matches §05/§12 of the
-// design doc.
+// redirect to. Any household member may do this, not just the owner —
+// every member has full access, including billing (see
+// 0036_household_members.sql).
 //
 // Razorpay subscriptions require a total_count (number of billing cycles) —
 // there's no "renews forever" option, so this uses a long-but-finite count
@@ -26,12 +27,10 @@ export async function POST(request: Request) {
     interval: "monthly" | "annual";
   };
 
-  const { data: account } = await supabase
-    .from("tenants")
-    .select("id")
-    .eq("id", tenantId)
-    .eq("owner_user_id", user.id)
-    .maybeSingle();
+  // No owner_user_id filter — RLS's "tenant isolation - select" policy
+  // already scopes this to a tenant this user can actually reach (owner
+  // or household member).
+  const { data: account } = await supabase.from("tenants").select("id").eq("id", tenantId).maybeSingle();
 
   if (!account) {
     return NextResponse.json({ error: "Account not found." }, { status: 403 });

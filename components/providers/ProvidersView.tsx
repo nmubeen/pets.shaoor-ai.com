@@ -40,6 +40,7 @@ function DeleteButton({ tenantId, providerId }: { tenantId: string; providerId: 
       disabled={pending}
       onClick={() =>
         startTransition(async () => {
+          if (!confirm("Delete this provider? Past visits/orders that used it keep their record — this only removes it from the list.")) return;
           await deleteProvider(tenantId, providerId);
           router.refresh();
         })

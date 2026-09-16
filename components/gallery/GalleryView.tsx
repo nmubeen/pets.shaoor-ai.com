@@ -163,6 +163,7 @@ export function GalleryView({
                   disabled={pending}
                   onClick={() =>
                     startTransition(async () => {
+                      if (!confirm("Delete this photo? This can't be undone.")) return;
                       await deleteMedia(tenantId, open.id);
                       setOpenId(null);
                       router.refresh();

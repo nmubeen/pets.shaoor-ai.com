@@ -37,9 +37,14 @@ export async function requireUser() {
 /** Billing and the paused-access page must remain accessible without a subscription. */
 export async function requireAccountUnchecked() {
   const { supabase, user } = await requireUser();
+  // No owner_user_id filter — RLS's "tenant isolation - select" policy
+  // (my_tenant_ids()) already scopes this to the one household this user
+  // can see, whether they own it or joined it as a household member (see
+  // 0036_household_members.sql). Filtering by owner_user_id here would
+  // hide a member's own household from them.
   const lookup = () => supabase.from("tenants")
     .select("id, name, workspace_type, plan_code, trial_ends_at")
-    .eq("owner_user_id", user.id).maybeSingle();
+    .maybeSingle();
   let { data: tenant, error } = await lookup();
   if (!error && !tenant && await ensurePetsAccountForCurrentUser(supabase)) {
     ({ data: tenant, error } = await lookup());

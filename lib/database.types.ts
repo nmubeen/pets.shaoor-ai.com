@@ -11,6 +11,7 @@ export type PetSex = "male" | "female" | "unknown";
 export type ServiceProviderCategory = "vet" | "grooming" | "offline_shop" | "online_shop";
 export type Species = "dog" | "cat" | "bird" | "reptile" | "fish" | "small_mammal" | "other";
 export type MedicationStatus = "active" | "completed" | "discontinued";
+export type HouseholdMemberStatus = "invited" | "active";
 
 // The polymorphic pet_id/habitat_id scope — exactly one non-null, enforced
 // by a DB check constraint. Used only by stat_entries (dead/unused) and
@@ -65,6 +66,21 @@ export interface Database {
           created_at: string;
         },
         "name"
+      >;
+      // No role column, deliberately — every member has full access, same
+      // as the owner (see 0036_household_members.sql).
+      household_members: Table<
+        {
+          id: string;
+          tenant_id: string;
+          user_id: string | null;
+          invited_email: string;
+          status: HouseholdMemberStatus;
+          invited_by: string;
+          created_at: string;
+          joined_at: string | null;
+        },
+        "tenant_id" | "invited_email" | "invited_by"
       >;
       subscriptions: Table<
         {
