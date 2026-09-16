@@ -27,6 +27,21 @@ function requirePetId(formData: FormData): string | { error: string } {
   return petId ?? { error: "Choose which pet this is about." };
 }
 
+/**
+ * The visit form's provider field is mandatory — either a real provider,
+ * or the synthetic "home" choice ProviderPicker's `homeOption` adds at the
+ * top of the list for services done without a physical provider (bathing,
+ * deworming, nail clipping, ...). "home" isn't a real provider id, so it
+ * maps to at_home: true / provider_id: null instead (see
+ * 0037_visit_at_home.sql).
+ */
+function requireVisitProvider(formData: FormData): { providerId: string | null; atHome: boolean } | { error: string } {
+  const raw = str(formData, "provider_id");
+  if (!raw) return { error: "Choose a provider, or \"At home\"." };
+  if (raw === "home") return { providerId: null, atHome: true };
+  return { providerId: raw, atHome: false };
+}
+
 function revalidateHealth() {
   revalidatePath("/app");
   revalidatePath("/app/health");
@@ -281,7 +296,9 @@ export async function addVisit(tenantId: string, formData: FormData) {
   if (!reason) return { error: "Reason is required." };
 
   const visitDate = str(formData, "visit_date") ?? new Date().toISOString().slice(0, 10);
-  const providerId = str(formData, "provider_id");
+  const providerSelection = requireVisitProvider(formData);
+  if ("error" in providerSelection) return providerSelection;
+  const { providerId, atHome } = providerSelection;
   const services = readRowsWithId(formData, "service_id", "service_name", "service_cost");
   const vaccines = readRowsWithId(formData, "vaccine_id", "vaccine_name", "vaccine_cost");
   const illnessRows = readRowsWithId(formData, "illness_id", "illness_name");
@@ -302,6 +319,7 @@ export async function addVisit(tenantId: string, formData: FormData) {
       tenant_id: tenantId,
       pet_id: petId,
       provider_id: providerId,
+      at_home: atHome,
       vet_name: str(formData, "vet_name"),
       visit_date: visitDate,
       reason,
@@ -520,7 +538,9 @@ export async function updateVisit(tenantId: string, visitId: string, formData: F
   if (!reason) return { error: "Reason is required." };
 
   const visitDate = str(formData, "visit_date") ?? new Date().toISOString().slice(0, 10);
-  const providerId = str(formData, "provider_id");
+  const providerSelection = requireVisitProvider(formData);
+  if ("error" in providerSelection) return providerSelection;
+  const { providerId, atHome } = providerSelection;
   const services = readRowsWithId(formData, "service_id", "service_name", "service_cost");
   const vaccines = readRowsWithId(formData, "vaccine_id", "vaccine_name", "vaccine_cost");
   const illnessRows = readRowsWithId(formData, "illness_id", "illness_name");
@@ -540,6 +560,7 @@ export async function updateVisit(tenantId: string, visitId: string, formData: F
     .update({
       pet_id: petId,
       provider_id: providerId,
+      at_home: atHome,
       vet_name: str(formData, "vet_name"),
       visit_date: visitDate,
       reason,

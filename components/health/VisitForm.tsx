@@ -260,20 +260,25 @@ export function VisitForm({
     .map((s) => s.name);
 
   const [visitDate, setVisitDate] = useState(editing?.dateIso ?? new Date().toISOString().slice(0, 10));
-  const [providerId, setProviderId] = useState(editing?.providerId ?? "");
+  const [providerId, setProviderId] = useState(editing?.atHome ? "home" : (editing?.providerId ?? ""));
 
   // "What did this exact service cost, last time it was done at this exact
   // provider" — keyed by provider + lower-cased service name, one entry per
   // pair, newest wins. `visits` already arrives sorted newest-first
   // (lib/health.ts's getVisits), so the first match seen for a key is kept.
+  // "home" is a valid key here too — an at-home visit's own providerId is
+  // null, so it's keyed by the same "home" pseudo-id the picker uses,
+  // grouping every at-home service together the same way a real provider's
+  // services are grouped.
   const serviceCostByProviderAndName = useMemo(() => {
     const map = new Map<string, string>();
     for (const v of visits) {
-      if (!v.providerId) continue;
+      const key = v.atHome ? "home" : v.providerId;
+      if (!key) continue;
       for (const s of v.services) {
         if (s.costValue === null) continue;
-        const key = `${v.providerId}::${s.name.trim().toLowerCase()}`;
-        if (!map.has(key)) map.set(key, String(s.costValue));
+        const mapKey = `${key}::${s.name.trim().toLowerCase()}`;
+        if (!map.has(mapKey)) map.set(mapKey, String(s.costValue));
       }
     }
     return map;
@@ -407,7 +412,14 @@ export function VisitForm({
         </label>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <ProviderPicker providers={providers} label="Vet / hospital / groomer (optional)" value={providerId} onChange={setProviderId} />
+          <ProviderPicker
+            providers={providers}
+            label="Vet / hospital / groomer"
+            value={providerId}
+            onChange={setProviderId}
+            required
+            homeOption
+          />
           <label className="flex flex-col gap-1.5">
             <span className={label}>Consulting doctor (optional)</span>
             <input name="vet_name" defaultValue={editing?.doctor ?? ""} className={field} placeholder="Dr. Mehta" />

@@ -178,6 +178,7 @@ export interface Database {
           tenant_id: string;
           pet_id: string;
           provider_id: string | null;
+          at_home: boolean;
           visit_date: string;
           reason: string;
           vet_name: string | null;

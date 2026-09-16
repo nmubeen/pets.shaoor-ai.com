@@ -45,8 +45,11 @@ export type VisitRow = {
   /** The pet's age as of this visit's date, not its current age (an old visit shouldn't show how old the pet is today). Null if the pet has no birth date on record. */
   age: string | null;
   reason: string;
+  /** "At home" when atHome is set (provider_id is null for these — see 0037_visit_at_home.sql), otherwise the resolved provider name. */
   provider: string | null;
   providerId: string | null;
+  /** A service done at home rather than at a physical provider (bathing, deworming, nail clipping, ...) — mutually exclusive with providerId. */
+  atHome: boolean;
   /** Consulting doctor — the facility (provider) is fixed, who saw the pet can vary visit to visit. */
   doctor: string | null;
   weightKg: number | null;
@@ -101,7 +104,7 @@ export async function getVisits(
   const [{ data: visits }, { data: serviceRows }, { data: vaxRows }, { data: illnessRows }, { data: medRows }, who, age, provider] = await Promise.all([
     supabase
       .from("visits")
-      .select("id, pet_id, provider_id, vet_name, visit_date, reason, cost, weight_kg, temperature_f, prescription_photo_path, notes")
+      .select("id, pet_id, provider_id, at_home, vet_name, visit_date, reason, cost, weight_kg, temperature_f, prescription_photo_path, notes")
       .eq("tenant_id", tenantId)
       .order("visit_date", { ascending: false }),
     supabase.from("visit_services").select("id, visit_id, name, cost").eq("tenant_id", tenantId),
@@ -158,8 +161,9 @@ export async function getVisits(
     who: who(v.pet_id),
     age: age(v.pet_id, v.visit_date),
     reason: v.reason,
-    provider: provider(v.provider_id),
+    provider: v.at_home ? "At home" : provider(v.provider_id),
     providerId: v.provider_id,
+    atHome: v.at_home,
     doctor: v.vet_name,
     weightKg: v.weight_kg,
     temperatureF: v.temperature_f,
