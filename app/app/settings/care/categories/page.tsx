@@ -1,10 +1,5 @@
-import { requireActiveAccount } from "@/lib/tenant";
-import { getShoppingCategories } from "@/lib/shopping-categories";
-import { ShoppingCategoriesView } from "@/components/settings/ShoppingCategoriesView";
+import { redirect } from "next/navigation";
 
-export default async function ShoppingCategoriesPage() {
-  const { supabase, active } = await requireActiveAccount();
-  const categories = await getShoppingCategories(supabase, active.tenantId);
-
-  return <ShoppingCategoriesView tenantId={active.tenantId} categories={categories} />;
+export default function ShoppingCategoriesRedirect() {
+  redirect("/app/settings/shopping-categories");
 }

@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
 import { PlusIcon, PencilIcon, TrashIcon } from "@/components/icons";
-import { CareTabs } from "@/components/settings/CareTabs";
+import { SettingsBackLink } from "@/components/settings/SettingsBackLink";
 import { addShoppingCategory, updateShoppingCategory, deleteShoppingCategory } from "@/lib/actions/shopping-categories";
 import type { ShoppingCategory } from "@/lib/shopping-categories";
 
@@ -106,9 +106,10 @@ export function ShoppingCategoriesView({ tenantId, categories }: { tenantId: str
 
   return (
     <div className="flex flex-col gap-6">
+      <SettingsBackLink />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl mb-1 text-(--color-primary-text)">Care</h1>
+          <h1 className="text-2xl mb-1 text-(--color-primary-text)">Shopping Categories</h1>
           <p className="text-sm text-muted">
             Food, toys, grooming, accessories… the categories logging an order in Shopping picks from. Add as many as you need.
           </p>
@@ -124,8 +125,6 @@ export function ShoppingCategoriesView({ tenantId, categories }: { tenantId: str
           Add category
         </button>
       </div>
-
-      <CareTabs active="categories" />
 
       {(showForm || editing) && (
         <CategoryForm

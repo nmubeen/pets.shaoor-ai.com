@@ -1,10 +1,5 @@
-import { requireActiveAccount } from "@/lib/tenant";
-import { getVaccinationPlans } from "@/lib/vaccination-plans";
-import { VaccinationPlansView } from "@/components/settings/VaccinationPlansView";
+import { redirect } from "next/navigation";
 
-export default async function VaccinationPlansPage() {
-  const { supabase, active } = await requireActiveAccount();
-  const plans = await getVaccinationPlans(supabase);
-
-  return <VaccinationPlansView tenantId={active.tenantId} plans={plans} />;
+export default function VaccinationsRedirect() {
+  redirect("/app/settings/vaccinations");
 }

@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
 import { PlusIcon, PencilIcon, TrashIcon } from "@/components/icons";
-import { CareTabs } from "@/components/settings/CareTabs";
+import { SettingsBackLink } from "@/components/settings/SettingsBackLink";
 import { SpeciesFilterSelect } from "@/components/settings/SpeciesFilterSelect";
 import { addServiceType, updateServiceType, deleteServiceType } from "@/lib/actions/care-services";
 import { SPECIES_LIST, SPECIES_LABEL } from "@/lib/species-labels";
@@ -140,9 +140,10 @@ export function ServiceTypesView({ tenantId, serviceTypes }: { tenantId: string;
 
   return (
     <div className="flex flex-col gap-6">
+      <SettingsBackLink />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl mb-1 text-(--color-primary-text)">Care</h1>
+          <h1 className="text-2xl mb-1 text-(--color-primary-text)">Service Types</h1>
           <p className="text-sm text-muted">
             Deworming, nail clipping, grooming, consultation… give one a frequency to get an automatic reminder each
             time it&rsquo;s logged on a visit. Typing a new one on a visit adds it here too, tagged to that
@@ -161,7 +162,6 @@ export function ServiceTypesView({ tenantId, serviceTypes }: { tenantId: string;
         </button>
       </div>
 
-      <CareTabs active="service-types" />
       <SpeciesFilterSelect value={speciesFilter} onChange={setSpeciesFilter} />
 
       {(showForm || editing) && (

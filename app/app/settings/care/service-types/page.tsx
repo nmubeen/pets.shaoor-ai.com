@@ -1,10 +1,5 @@
-import { requireActiveAccount } from "@/lib/tenant";
-import { getServiceTypes } from "@/lib/care-services";
-import { ServiceTypesView } from "@/components/settings/ServiceTypesView";
+import { redirect } from "next/navigation";
 
-export default async function ServiceTypesPage() {
-  const { supabase, active } = await requireActiveAccount();
-  const serviceTypes = await getServiceTypes(supabase, active.tenantId);
-
-  return <ServiceTypesView tenantId={active.tenantId} serviceTypes={serviceTypes} />;
+export default function ServiceTypesRedirect() {
+  redirect("/app/settings/service-types");
 }

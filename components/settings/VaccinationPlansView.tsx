@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
 import { PlusIcon, PencilIcon, TrashIcon } from "@/components/icons";
-import { CareTabs } from "@/components/settings/CareTabs";
+import { SettingsBackLink } from "@/components/settings/SettingsBackLink";
 import { SpeciesFilterSelect } from "@/components/settings/SpeciesFilterSelect";
 import { addVaccinationPlan, updateVaccinationPlan, deleteVaccinationPlan } from "@/lib/actions/vaccination-plans";
 import { SPECIES_LIST, SPECIES_LABEL } from "@/lib/species-labels";
@@ -147,9 +147,10 @@ export function VaccinationPlansView({ tenantId, plans }: { tenantId: string; pl
 
   return (
     <div className="flex flex-col gap-6">
+      <SettingsBackLink />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl mb-1 text-(--color-primary-text)">Care</h1>
+          <h1 className="text-2xl mb-1 text-(--color-primary-text)">Vaccinations</h1>
           <p className="text-sm text-muted">
             Built-in defaults for dogs and cats, plus your own — useful for a species with no default, or a vaccine
             the defaults miss. &ldquo;Suggest schedule&rdquo; on a pet&rsquo;s card uses whichever plans match its
@@ -167,8 +168,6 @@ export function VaccinationPlansView({ tenantId, plans }: { tenantId: string; pl
           Add vaccination plan
         </button>
       </div>
-
-      <CareTabs active="vaccinations" />
       <SpeciesFilterSelect value={speciesFilter} onChange={setSpeciesFilter} />
 
       {(showForm || editing) && (

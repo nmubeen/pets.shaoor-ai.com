@@ -4,14 +4,12 @@ import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Avatar } from "@/components/ui";
 import { PlusIcon, GlobeIcon, PinIcon, MailIcon, PhoneIcon, WhatsAppIcon, PencilIcon, TrashIcon } from "@/components/icons";
-import { CareTabs } from "@/components/settings/CareTabs";
+import { SettingsBackLink } from "@/components/settings/SettingsBackLink";
 import { ProviderForm } from "@/components/providers/ProviderForm";
 import { deleteProvider } from "@/lib/actions/providers";
 import type { Provider } from "@/lib/providers";
 import { CATEGORY_LABEL } from "@/lib/provider-categories";
 import type { ServiceProviderCategory } from "@/lib/database.types";
-
-const CATEGORIES: ServiceProviderCategory[] = ["vet", "grooming", "offline_shop", "online_shop"];
 
 /** wa.me only accepts digits — no "+", spaces, or dashes. */
 function whatsAppHref(phone: string): string {
@@ -55,8 +53,21 @@ function DeleteButton({ tenantId, providerId }: { tenantId: string; providerId: 
   );
 }
 
-export function ProvidersView({ tenantId, providers }: { tenantId: string; providers: Provider[] }) {
-  const [active, setActive] = useState<ServiceProviderCategory>("vet");
+export function ProvidersView({
+  tenantId,
+  providers,
+  categories,
+  title,
+  description,
+}: {
+  tenantId: string;
+  providers: Provider[];
+  /** Which categories this page covers — Settings now splits providers into two separate pages/tiles ("Hospitals & Grooming Centers" vs. "Shopping (Online and Offline)") rather than one page with all four. */
+  categories: ServiceProviderCategory[];
+  title: string;
+  description: string;
+}) {
+  const [active, setActive] = useState<ServiceProviderCategory>(categories[0]);
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const router = useRouter();
@@ -65,10 +76,11 @@ export function ProvidersView({ tenantId, providers }: { tenantId: string; provi
 
   return (
     <div className="flex flex-col gap-6">
+      <SettingsBackLink />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl mb-1 text-(--color-primary-text)">Care</h1>
-          <p className="text-sm text-muted">Vets, groomers, and shops — kept here, selected from elsewhere in the app</p>
+          <h1 className="text-2xl mb-1 text-(--color-primary-text)">{title}</h1>
+          <p className="text-sm text-muted">{description}</p>
         </div>
         <button
           onClick={() => {
@@ -82,25 +94,25 @@ export function ProvidersView({ tenantId, providers }: { tenantId: string; provi
         </button>
       </div>
 
-      <CareTabs active="providers" />
-
-      <div className="flex gap-1.5 flex-wrap">
-        {CATEGORIES.map((c) => (
-          <button
-            key={c}
-            onClick={() => {
-              setActive(c);
-              setShowAdd(false);
-              setEditingId(null);
-            }}
-            className={`text-sm px-4 py-2 rounded-lg transition ${
-              active === c ? "bg-surface border border-line font-semibold text-ink" : "text-muted hover:text-ink"
-            }`}
-          >
-            {CATEGORY_LABEL[c]}
-          </button>
-        ))}
-      </div>
+      {categories.length > 1 && (
+        <div className="flex gap-1.5 flex-wrap">
+          {categories.map((c) => (
+            <button
+              key={c}
+              onClick={() => {
+                setActive(c);
+                setShowAdd(false);
+                setEditingId(null);
+              }}
+              className={`text-sm px-4 py-2 rounded-lg transition ${
+                active === c ? "bg-surface border border-line font-semibold text-ink" : "text-muted hover:text-ink"
+              }`}
+            >
+              {CATEGORY_LABEL[c]}
+            </button>
+          ))}
+        </div>
+      )}
 
       {showAdd && <ProviderForm tenantId={tenantId} category={active} onDone={() => setShowAdd(false)} />}
 

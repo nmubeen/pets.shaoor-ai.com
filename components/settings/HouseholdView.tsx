@@ -4,7 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Badge } from "@/components/ui";
 import { PlusIcon, TrashIcon } from "@/components/icons";
-import { CareTabs } from "@/components/settings/CareTabs";
+import { SettingsBackLink } from "@/components/settings/SettingsBackLink";
 import { updateTenantName, inviteHouseholdMember, removeHouseholdMember } from "@/lib/actions/tenant";
 import { formatDate } from "@/lib/format";
 import type { HouseholdMember } from "@/lib/household";
@@ -152,12 +152,11 @@ export function HouseholdView({
 }) {
   return (
     <div className="flex flex-col gap-6">
+      <SettingsBackLink />
       <div>
-        <h1 className="text-2xl mb-1 text-(--color-primary-text)">Care</h1>
+        <h1 className="text-2xl mb-1 text-(--color-primary-text)">Household</h1>
         <p className="text-sm text-muted">Your household&rsquo;s name and who has access to it.</p>
       </div>
-
-      <CareTabs active="household" />
 
       <div className="flex flex-col gap-1.5">
         <span className={label}>Name</span>

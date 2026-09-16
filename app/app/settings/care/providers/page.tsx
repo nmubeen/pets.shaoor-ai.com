@@ -1,10 +1,7 @@
-import { ProvidersView } from "@/components/providers/ProvidersView";
-import { requireActiveAccount } from "@/lib/tenant";
-import { getProviders } from "@/lib/providers";
+import { redirect } from "next/navigation";
 
-export default async function ProvidersPage() {
-  const { supabase, active } = await requireActiveAccount();
-  const providers = await getProviders(supabase, active.tenantId);
-
-  return <ProvidersView tenantId={active.tenantId} providers={providers} />;
+// Providers split into two pages (Hospitals & Grooming / Shopping) — this
+// lands on the first rather than 404ing for anyone with the old URL.
+export default function ProvidersRedirect() {
+  redirect("/app/settings/hospitals");
 }

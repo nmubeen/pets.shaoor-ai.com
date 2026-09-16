@@ -1,6 +1,7 @@
 import { Card, Badge } from "@/components/ui";
 import { RazorpayCheckout } from "@/components/billing/RazorpayCheckout";
 import { CancelSubscriptionButton } from "@/components/billing/CancelSubscriptionButton";
+import { SettingsBackLink } from "@/components/settings/SettingsBackLink";
 import { requireAccountUnchecked } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -29,6 +30,7 @@ export default async function BillingPage() {
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
+      <SettingsBackLink />
       <div>
         <h1 className="text-2xl mb-1 text-(--color-primary-text)">Billing</h1>
         <p className="text-sm text-muted">

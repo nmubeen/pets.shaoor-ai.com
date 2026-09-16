@@ -9,12 +9,14 @@ import {
   StethoIcon,
   CartIcon,
   ImageIcon,
-  InvoiceIcon,
-  VialIcon,
   ClipboardIcon,
+  SettingsIcon,
 } from "@/components/icons";
 import type { ActiveAccount } from "@/lib/tenant";
 
+// Settings is one entry here now, not its own sub-section — Care and
+// Billing (and everything else Settings covers) moved to tiles on
+// /app/settings itself.
 const nav = [
   { href: "/app", label: "Home", icon: HomeIcon },
   { href: "/app/pets", label: "Pets", icon: PawIcon },
@@ -23,11 +25,7 @@ const nav = [
   { href: "/app/shopping", label: "Shopping", icon: CartIcon },
   { href: "/app/gallery", label: "Gallery", icon: ImageIcon },
   { href: "/app/vet-view", label: "Vet View", icon: ClipboardIcon },
-];
-
-const settingsNav = [
-  { href: "/app/settings/care", label: "Care", icon: VialIcon },
-  { href: "/app/settings/billing", label: "Billing", icon: InvoiceIcon },
+  { href: "/app/settings", label: "Settings", icon: SettingsIcon },
 ];
 
 export function Sidebar({
@@ -61,7 +59,7 @@ export function Sidebar({
         <div className="rounded-lg bg-white/10 px-3 py-2 text-xs truncate">{active.tenantName}</div>
       </div>
 
-      <nav className="flex-1 px-3 flex flex-col gap-0.5">
+      <nav className="flex-1 px-3 pb-4 flex flex-col gap-0.5">
         {nav.map((item) => {
           const isNavActive = isActive(item.href);
           return (
@@ -78,27 +76,6 @@ export function Sidebar({
           );
         })}
       </nav>
-
-      {settingsNav.length > 0 && (
-        <div className="px-3 pb-4 pt-2 border-t border-white/10 flex flex-col gap-0.5">
-          <div className="px-3 pb-1 text-[.62rem] uppercase tracking-[.06em] opacity-55">Settings</div>
-          {settingsNav.map((item) => {
-            const isNavActive = isActive(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onNavigate}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition ${isNavActive ? "bg-white/15 opacity-100" : "opacity-72 hover:opacity-100 hover:bg-white/10"
-                  }`}
-              >
-                <item.icon className="w-4 h-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-      )}
     </aside>
   );
 }

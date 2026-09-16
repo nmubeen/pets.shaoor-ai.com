@@ -1,10 +1,5 @@
-import { requireActiveAccount } from "@/lib/tenant";
-import { getHouseholdMembers } from "@/lib/household";
-import { HouseholdView } from "@/components/settings/HouseholdView";
+import { redirect } from "next/navigation";
 
-export default async function HouseholdSettingsPage() {
-  const { supabase, active } = await requireActiveAccount();
-  const members = await getHouseholdMembers(supabase, active.tenantId);
-
-  return <HouseholdView tenantId={active.tenantId} name={active.tenantName} members={members} />;
+export default function HouseholdRedirect() {
+  redirect("/app/settings/household");
 }

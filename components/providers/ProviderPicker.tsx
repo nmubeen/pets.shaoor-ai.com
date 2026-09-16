@@ -4,7 +4,8 @@ import { CATEGORY_LABEL } from "@/lib/provider-categories";
 
 /**
  * A <select name="provider_id"> of existing providers — maintained at
- * Settings > Care > Providers (/app/settings/care/providers).
+ * Settings > Hospitals & Grooming Centers or Settings > Shopping, per
+ * `manageHref`.
  *
  * Uncontrolled by default (pass `defaultValue` alone, e.g. when editing an
  * existing record); pass `value` + `onChange` instead to make it controlled
@@ -21,6 +22,7 @@ export function ProviderPicker({
   required = false,
   homeOption = false,
   autoFocus = false,
+  manageHref = "/app/settings/hospitals",
 }: {
   providers: Provider[];
   label?: string;
@@ -32,6 +34,8 @@ export function ProviderPicker({
   /** Adds a synthetic "At home" choice (value "home") at the top of the list, above the real providers — VisitForm's own opt-in, for services done without a physical provider (bathing, deworming, nail clipping, ...). "home" isn't a real provider id; lib/actions/health.ts's requireVisitProvider special-cases it into visits.at_home instead (see 0037_visit_at_home.sql). */
   homeOption?: boolean;
   autoFocus?: boolean;
+  /** Where "add one" sends you when there's nothing to pick from yet — the two Settings provider pages cover different categories, so callers pointed at shops (LogOrderForm) pass /app/settings/shops instead of the vet/grooming default. */
+  manageHref?: string;
 }) {
   const categories = [...new Set(providers.map((p) => p.category))];
   const grouped = categories.length > 1;
@@ -43,7 +47,7 @@ export function ProviderPicker({
       {providers.length === 0 && !homeOption ? (
         <p className="text-xs text-muted">
           None added yet —{" "}
-          <Link href="/app/settings/care/providers" className="text-(--color-primary-text) hover:underline">
+          <Link href={manageHref} className="text-(--color-primary-text) hover:underline">
             add one
           </Link>
           .

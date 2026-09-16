@@ -154,7 +154,7 @@ export function LogOrderForm({
 
         <MultiScopePicker roster={roster} initialSelectedIds={editing?.scopeIds} />
 
-        <ProviderPicker providers={providers} label="Seller (optional)" defaultValue={editing?.providerId} />
+        <ProviderPicker providers={providers} label="Seller (optional)" defaultValue={editing?.providerId} manageHref="/app/settings/shops" />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5">
