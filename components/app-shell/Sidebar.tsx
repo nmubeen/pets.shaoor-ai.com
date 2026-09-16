@@ -56,7 +56,7 @@ export function Sidebar({
           </span>
           Shaoor-AI Pets
         </Link>
-        <div className="rounded-lg bg-white/10 px-3 py-2 text-xs truncate">{active.tenantName}</div>
+        <div className="rounded-lg bg-white/10 px-3 py-2 text-sm font-bold text-center truncate">{active.tenantName}</div>
       </div>
 
       <nav className="flex-1 px-3 pb-4 flex flex-col gap-0.5">
