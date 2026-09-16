@@ -27,7 +27,7 @@ function dueLabelFor(dueDate: string | null): { label: string; overdue: boolean 
  * Every care_tasks row scoped to a habitat, split into open/history and
  * grouped per habitat — one query for every habitat card on the page
  * rather than one round trip per card (same pattern as lib/pet-links.ts's
- * getPetLinks).
+ * getPetHealthSummaries).
  */
 export async function getHabitatCareByHabitat(
   supabase: Awaited<ReturnType<typeof createClient>>,

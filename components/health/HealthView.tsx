@@ -21,9 +21,10 @@ type TabKey = "visits" | HealthTabKey | "medications" | "growth";
 /** Which visit (and which of its line items to focus) a row's Edit button should jump to — set from the Illnesses/Vaccinations table or MedicationsPanel when the row came from a visit. */
 export type PendingVisitEdit = { visitId: string; focusId: string };
 
-// Same icon per section as the pet-card quick-links on /app/pets
-// (components/pets/PetHealthLinks.tsx) — one visual vocabulary for "this
-// is the Vaccinations section" wherever it shows up.
+// Same icon per section the pet-card health summary on /app/pets uses for
+// its own Visits/Vaccinations lines (components/pets/PetHealthLinks.tsx) —
+// one visual vocabulary for "this is the Vaccinations section" wherever it
+// shows up.
 const TABS: { key: TabKey; label: string; logLabel: string; icon: typeof StethoIcon }[] = [
   { key: "visits", label: "Visits", logLabel: "", icon: StethoIcon },
   { key: "illnesses", label: "Illnesses", logLabel: "Log an illness", icon: HeartIcon },

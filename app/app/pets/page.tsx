@@ -3,14 +3,14 @@ import { AddRosterPanel } from "@/components/roster/AddRosterPanel";
 import { PetsGrid } from "@/components/pets/PetsGrid";
 import { requireActiveAccount } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
-import { getPetLinks } from "@/lib/pet-links";
+import { getPetHealthSummaries } from "@/lib/pet-links";
 
 export default async function PetsPage() {
   const { supabase, active } = await requireActiveAccount();
   const roster = await getRoster(supabase, active.tenantId);
   const pets = roster.filter((r) => r.kind === "pet");
 
-  const petLinks = await getPetLinks(supabase, active.tenantId);
+  const petHealthSummaries = await getPetHealthSummaries(supabase, active.tenantId);
   const isOrg = active.workspaceType === "organization";
 
   return (
@@ -33,7 +33,7 @@ export default async function PetsPage() {
           {"No pets yet — use “Add pet” above to add your first one."}
         </Card>
       ) : (
-        <PetsGrid tenantId={active.tenantId} pets={pets} isOrg={isOrg} petLinks={Object.fromEntries(petLinks)} />
+        <PetsGrid tenantId={active.tenantId} pets={pets} isOrg={isOrg} petHealthSummaries={Object.fromEntries(petHealthSummaries)} />
       )}
     </div>
   );

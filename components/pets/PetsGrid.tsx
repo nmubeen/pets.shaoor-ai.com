@@ -5,13 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui";
 import { AdoptionToggle } from "@/components/pets/AdoptionToggle";
-import { SuggestScheduleButton } from "@/components/pets/SuggestScheduleButton";
 import { PetHealthLinks } from "@/components/pets/PetHealthLinks";
 import { AddRosterForm } from "@/components/roster/AddRosterForm";
 import { PassportIcon, PencilIcon, TrashIcon } from "@/components/icons";
 import { deletePet } from "@/lib/actions/roster";
 import type { RosterItem } from "@/lib/roster";
-import type { PetLinks } from "@/lib/pet-links";
+import type { PetHealthSummary } from "@/lib/pet-links";
 
 function DeleteButton({ tenantId, item }: { tenantId: string; item: RosterItem }) {
   const [pending, startTransition] = useTransition();
@@ -39,15 +38,13 @@ export function PetsGrid({
   tenantId,
   pets,
   isOrg,
-  petLinks,
-
+  petHealthSummaries,
 }: {
   tenantId: string;
   pets: RosterItem[];
   isOrg: boolean;
-  /** Which Health sub-sections (and how many entries in each) this pet has — keyed by pet id. */
-  petLinks: Record<string, PetLinks>;
-
+  /** Last visit / next due service / next due vaccination — keyed by pet id. */
+  petHealthSummaries: Record<string, PetHealthSummary>;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const router = useRouter();
@@ -117,8 +114,7 @@ export function PetsGrid({
                 <div className="text-[.68rem] text-muted font-mono">Chip: {r.pet.microchipId}</div>
               )}
               {r.pet?.notes && <div className="text-xs text-muted">{r.pet.notes}</div>}
-              <PetHealthLinks petId={r.id} links={petLinks[r.id]} />
-              {r.pet?.birthDate && <SuggestScheduleButton tenantId={tenantId} petId={r.id} />}
+              <PetHealthLinks petId={r.id} summary={petHealthSummaries[r.id]} />
               {isOrg && (
                 <div className="border-t border-line pt-2 mt-auto">
                   <AdoptionToggle
