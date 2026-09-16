@@ -1,20 +1,23 @@
 import Link from "next/link";
-import { ScissorsIcon, DropIcon, CartIcon, HomeIcon } from "@/components/icons";
+import { ScissorsIcon, DropIcon, CartIcon, PinIcon, HomeIcon } from "@/components/icons";
 
 /**
- * Service Types, Vaccinations, Categories, and Household are real pages
- * now (not panels stacked on one /app/settings/care screen) — this is
- * their shared tab row, styled like Health's own TabRow but navigating via
- * real links instead of client-side tab state, since each is its own route.
+ * Service Types, Vaccinations, Categories, Providers, and Household are
+ * real pages now (not panels stacked on one /app/settings/care screen) —
+ * this is their shared tab row, styled like Health's own TabRow but
+ * navigating via real links instead of client-side tab state, since each
+ * is its own route. Providers moved here from its own top-level sidebar
+ * entry — same icon (PinIcon) it used there.
  */
 const TABS = [
   { href: "/app/settings/care/service-types", key: "service-types" as const, label: "Service Types", icon: ScissorsIcon },
   { href: "/app/settings/care/vaccinations", key: "vaccinations" as const, label: "Vaccinations", icon: DropIcon },
   { href: "/app/settings/care/categories", key: "categories" as const, label: "Categories", icon: CartIcon },
+  { href: "/app/settings/care/providers", key: "providers" as const, label: "Providers", icon: PinIcon },
   { href: "/app/settings/care/household", key: "household" as const, label: "Household", icon: HomeIcon },
 ];
 
-export function CareTabs({ active }: { active: "service-types" | "vaccinations" | "categories" | "household" }) {
+export function CareTabs({ active }: { active: "service-types" | "vaccinations" | "categories" | "providers" | "household" }) {
   return (
     <div className="flex gap-1.5 flex-wrap">
       {TABS.map((t) => (

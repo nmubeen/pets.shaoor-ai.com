@@ -4,6 +4,7 @@ import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Avatar } from "@/components/ui";
 import { PlusIcon, GlobeIcon, PinIcon, MailIcon, PhoneIcon, WhatsAppIcon, PencilIcon, TrashIcon } from "@/components/icons";
+import { CareTabs } from "@/components/settings/CareTabs";
 import { ProviderForm } from "@/components/providers/ProviderForm";
 import { deleteProvider } from "@/lib/actions/providers";
 import type { Provider } from "@/lib/providers";
@@ -66,7 +67,7 @@ export function ProvidersView({ tenantId, providers }: { tenantId: string; provi
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl mb-1 text-(--color-primary-text)">Service providers</h1>
+          <h1 className="text-2xl mb-1 text-(--color-primary-text)">Care</h1>
           <p className="text-sm text-muted">Vets, groomers, and shops — kept here, selected from elsewhere in the app</p>
         </div>
         <button
@@ -80,6 +81,8 @@ export function ProvidersView({ tenantId, providers }: { tenantId: string; provi
           Add provider
         </button>
       </div>
+
+      <CareTabs active="providers" />
 
       <div className="flex gap-1.5 flex-wrap">
         {CATEGORIES.map((c) => (

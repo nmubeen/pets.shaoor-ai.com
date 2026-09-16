@@ -10,7 +10,6 @@ import {
   CartIcon,
   ImageIcon,
   InvoiceIcon,
-  PinIcon,
   VialIcon,
   ClipboardIcon,
 } from "@/components/icons";
@@ -23,7 +22,6 @@ const nav = [
   { href: "/app/health", label: "Health", icon: StethoIcon },
   { href: "/app/shopping", label: "Shopping", icon: CartIcon },
   { href: "/app/gallery", label: "Gallery", icon: ImageIcon },
-  { href: "/app/providers", label: "Providers", icon: PinIcon },
   { href: "/app/vet-view", label: "Vet View", icon: ClipboardIcon },
 ];
 
