@@ -27,6 +27,90 @@ function LineItems({ label, items }: { label: string; items: { name: string; cos
   );
 }
 
+/**
+ * Collapsed by default to just the two header lines (date/provider, pet +
+ * its details) — the line items, notes, and prescription photo only
+ * render once expanded, so a long visit history scans quickly instead of
+ * every card sprawling. The prescription photo shows full-size here
+ * (rather than the small thumbnail used elsewhere) since expanding is
+ * already an explicit "show me everything" action.
+ */
+function VisitCard({
+  tenantId,
+  visit,
+  highlighted,
+}: {
+  tenantId: string;
+  visit: VisitRow;
+  highlighted: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const hasDetails =
+    visit.services.length > 0 ||
+    visit.vaccinations.length > 0 ||
+    visit.illnesses.length > 0 ||
+    visit.medications.length > 0 ||
+    Boolean(visit.notes) ||
+    Boolean(visit.prescriptionPhotoUrl);
+
+  return (
+    <Card
+      id={`visit-${visit.id}`}
+      className={`p-4 transition-colors duration-500 ${highlighted ? "bg-accent/15" : ""}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="font-medium">
+            {visit.date}
+            {visit.provider && <> · {visit.provider}</>}
+          </div>
+          <div className="text-xs text-muted mt-0.5">
+            <span className="font-semibold text-ink">{visit.who}</span>
+            {visit.age && <> · {visit.age}</>}
+            {visit.doctor && <> · Dr. {visit.doctor}</>}
+            {visit.weightKg !== null && <> · {visit.weightKg} kg</>}
+            {visit.temperatureF !== null && <> · {visit.temperatureF}°F</>}
+          </div>
+        </div>
+        <div className="flex items-start gap-3 flex-none">
+          {visit.cost && <span className="font-mono text-sm">{visit.cost}</span>}
+          <VisitActions tenantId={tenantId} visitId={visit.id} />
+        </div>
+      </div>
+
+      {hasDetails && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="text-xs text-(--color-primary-text) hover:underline mt-2"
+        >
+          {expanded ? "Show less" : "Show more"}
+        </button>
+      )}
+
+      {expanded && (
+        <>
+          <LineItems label="Services" items={visit.services} />
+          <LineItems label="Vaccinations given" items={visit.vaccinations} />
+          <LineItems label="Illnesses diagnosed" items={visit.illnesses} />
+          <LineItems label="Medications prescribed" items={visit.medications.map((m) => ({ name: m.dosage ? `${m.name} — ${m.dosage}` : m.name }))} />
+          {visit.prescriptionPhotoUrl && (
+            <a href={visit.prescriptionPhotoUrl} target="_blank" rel="noreferrer" className="block mt-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={visit.prescriptionPhotoUrl}
+                alt="Prescription"
+                className="w-full max-h-[70vh] object-contain rounded-lg border border-line bg-paper hover:brightness-95 transition"
+              />
+            </a>
+          )}
+          {visit.notes && <div className="text-xs text-muted mt-2">{visit.notes}</div>}
+        </>
+      )}
+    </Card>
+  );
+}
+
 function VisitActions({ tenantId, visitId }: { tenantId: string; visitId: string }) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -119,42 +203,7 @@ export function VisitsPanel({
       ) : (
         <div className="flex flex-col gap-3">
           {filtered.map((v) => (
-            <Card
-              key={v.id}
-              id={`visit-${v.id}`}
-              className={`p-4 transition-colors duration-500 ${v.id === highlightId ? "bg-accent/15" : ""}`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="font-medium">
-                    {v.date}
-                    {v.provider && <> · {v.provider}</>}
-                  </div>
-                  <div className="text-xs text-muted mt-0.5">
-                    <span className="font-semibold text-ink">{v.who}</span>
-                    {v.age && <> · {v.age}</>}
-                    {v.doctor && <> · Dr. {v.doctor}</>}
-                    {v.weightKg !== null && <> · {v.weightKg} kg</>}
-                    {v.temperatureF !== null && <> · {v.temperatureF}°F</>}
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 flex-none">
-                  {v.cost && <span className="font-mono text-sm">{v.cost}</span>}
-                  <VisitActions tenantId={tenantId} visitId={v.id} />
-                </div>
-              </div>
-              <LineItems label="Services" items={v.services} />
-              <LineItems label="Vaccinations given" items={v.vaccinations} />
-              <LineItems label="Illnesses diagnosed" items={v.illnesses} />
-              <LineItems label="Medications prescribed" items={v.medications.map((m) => ({ name: m.dosage ? `${m.name} — ${m.dosage}` : m.name }))} />
-              {v.prescriptionPhotoUrl && (
-                <a href={v.prescriptionPhotoUrl} target="_blank" rel="noreferrer" className="inline-block mt-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={v.prescriptionPhotoUrl} alt="Prescription" className="w-14 h-14 rounded-lg object-cover border border-line hover:brightness-95 transition" />
-                </a>
-              )}
-              {v.notes && <div className="text-xs text-muted mt-2">{v.notes}</div>}
-            </Card>
+            <VisitCard key={v.id} tenantId={tenantId} visit={v} highlighted={v.id === highlightId} />
           ))}
         </div>
       )}
