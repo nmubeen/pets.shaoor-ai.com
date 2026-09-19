@@ -13,6 +13,7 @@ import {
   SettingsIcon,
 } from "@/components/icons";
 import type { ActiveAccount } from "@/lib/tenant";
+import { BrandLogo } from "@/components/BrandLogo";
 
 // Settings is one entry here now, not its own sub-section — Care and
 // Billing (and everything else Settings covers) moved to tiles on
@@ -50,10 +51,7 @@ export function Sidebar({
     >
       <div className="px-4 pt-5 pb-4 relative">
         <Link href="/app" className="flex items-center gap-3 font-semibold text-base opacity-95 mb-4">
-          <span className="w-15 h-15 rounded-2xl bg-white shadow-lg flex items-center justify-center flex-none p-1">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/shaoor-ai-pets.png" alt="Shaoor-AI Pets" className="w-full h-full object-contain" />
-          </span>
+          <BrandLogo />
           Shaoor-AI Pets
         </Link>
         <div className="rounded-lg bg-white/10 px-3 py-2 text-sm font-bold text-center truncate">{active.tenantName}</div>

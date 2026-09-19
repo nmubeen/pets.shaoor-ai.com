@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Card } from "@/components/ui";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export function AuthShell({
   step,
@@ -17,10 +18,7 @@ export function AuthShell({
     <div className="min-h-screen bg-paper flex flex-col">
       <header className="px-6 md:px-10 py-2 flex items-center border-b border-line">
         <Link href="/" className="flex items-center gap-3 font-semibold text-base text-ink">
-          <span className="w-15 h-15 rounded-2xl bg-white shadow-lg flex items-center justify-center flex-none p-1">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/shaoor-ai-pets.png" alt="Shaoor-AI Pets" className="w-full h-full object-contain" />
-          </span>
+          <BrandLogo />
           Shaoor-AI Pets
         </Link>
       </header>

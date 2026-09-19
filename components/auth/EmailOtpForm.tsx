@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { getOtpLength, getSupabaseConfig } from "@/lib/supabase/config";
 import { submitAuth } from "@/lib/auth/actions";
+import { BrandLogo } from "@/components/BrandLogo";
 const field = "bg-paper border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary transition w-full";
 const primaryBtn = "w-full inline-flex items-center justify-center gap-2 font-bold text-sm rounded-xl px-5 py-3 bg-(image:--gradient-button-bg) text-white hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed";
 const PENDING_KEY = "pets_pending_otp_email";
@@ -122,10 +123,7 @@ export function EmailOtpForm({ trialDays = 14 }: { trialDays?: number | null }) 
     <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-(image:--gradient-primary-bg)">
       <div className="w-full max-w-md rounded-3xl shadow-2xl bg-surface p-7 md:p-9">
         <Link href="/" className="flex items-center gap-3 mb-8">
-          <span className="w-14 h-14 rounded-2xl bg-white shadow-lg flex items-center justify-center flex-none p-1">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/shaoor-ai-pets.png" alt="Shaoor-AI Pets" className="w-full h-full object-contain" />
-          </span>
+          <BrandLogo />
           <span className="flex flex-col leading-tight">
             <span className="font-semibold text-base text-ink">Shaoor-AI Pets</span>
             <span className="text-[.62rem] uppercase tracking-[.1em] text-(--color-secondary-text-icon)">Every pet, organized</span>

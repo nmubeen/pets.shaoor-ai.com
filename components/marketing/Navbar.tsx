@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { MenuIcon, CloseIcon } from "@/components/icons";
 import { Btn } from "@/components/ui";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const links = [
   { href: "/pricing", label: "Pricing" },
@@ -18,10 +19,7 @@ export function Navbar() {
     <header className="border-b border-line bg-paper/90 backdrop-blur sticky top-0 z-20">
       <div className="max-w-[1200px] mx-auto px-6 md:px-10 py-2 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 font-semibold text-lg text-ink">
-          <span className="w-15 h-15 rounded-2xl bg-white shadow-lg flex items-center justify-center flex-none p-1">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/shaoor-ai-pets.png" alt="Shaoor-AI Pets" className="w-full h-full object-contain" />
-          </span>
+          <BrandLogo />
           Shaoor-AI Pets
         </Link>
         <nav className="hidden md:flex items-center gap-7 text-sm text-muted">

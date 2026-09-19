@@ -8,7 +8,8 @@ export function emailShell(preheader: string, bodyHtml: string): string {
 <div style="background:#F3F4EC; padding:32px 16px; font-family:-apple-system,'Segoe UI',sans-serif;">
   <div style="max-width:480px; margin:0 auto; background:#FFFFFF; border:1px solid #D9DCCC; border-radius:12px; overflow:hidden;">
     <div style="background:#1F4B3F; color:#F3F4EC; padding:20px 24px; font-weight:700; font-size:16px;">
-      🐾 Shaoor-AI Pets
+      <img src="${SITE_URL}/brand/shaoor-ai-pets-standard.png" width="60" height="60" alt="" style="display:inline-block; vertical-align:middle; width:60px; height:60px; background:#FFFFFF; border-radius:10px; margin-right:12px;">
+      <span style="vertical-align:middle;">Shaoor-AI Pets</span>
     </div>
     <div style="padding:24px; color:#1E332B; font-size:14px; line-height:1.6;">
       ${bodyHtml}
