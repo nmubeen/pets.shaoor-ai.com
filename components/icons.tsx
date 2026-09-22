@@ -84,6 +84,13 @@ export const HomeIcon = (p: IconProps) => (
   </svg>
 );
 
+export const BowlIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M3 12h18a8 8 0 0 1-8 8h-2a8 8 0 0 1-8-8Z" />
+    <path d="M8 12V8m4 4V6m4 6V8" />
+  </svg>
+);
+
 export const FishIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M3 12s3.5-5 10-5 8 5 8 5-1.5 5-8 5-10-5-10-5Z" />

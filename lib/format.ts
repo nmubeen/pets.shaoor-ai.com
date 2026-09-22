@@ -22,3 +22,30 @@ export function formatDate(date: Date): string {
   const day = String(date.getDate()).padStart(2, "0");
   return `${day}-${MONTHS[date.getMonth()]}-${date.getFullYear()}`;
 }
+
+/** "08:00:00" or "08:00" (24h, as stored) -> "8:00 AM" — no timezone conversion, this is a wall-clock time, not an instant (see 0041_feeding.sql). */
+export function formatTime(time: string): string {
+  const [hStr, mStr] = time.split(":");
+  const h24 = Number(hStr);
+  const suffix = h24 >= 12 ? "PM" : "AM";
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  return `${h12}:${mStr ?? "00"} ${suffix}`;
+}
+
+/**
+ * "8:00 AM" / "8:00am" / "08:00 PM" (free-typed, case-insensitive, space
+ * before AM/PM optional) -> "20:00" (24h, for storage) — the inverse of
+ * formatTime. Returns null for anything that doesn't parse, so the caller
+ * can show a validation error instead of silently storing garbage. Used
+ * for a plain hh:mm am/pm text field instead of a native time input.
+ */
+export function parseTimeInput(raw: string): string | null {
+  const m = raw.trim().match(/^(0?[1-9]|1[0-2]):([0-5]\d)\s*([AaPp])\.?[Mm]\.?$/);
+  if (!m) return null;
+  let hour = Number(m[1]);
+  const minute = m[2];
+  const isPM = m[3].toUpperCase() === "P";
+  if (isPM && hour !== 12) hour += 12;
+  if (!isPM && hour === 12) hour = 0;
+  return `${String(hour).padStart(2, "0")}:${minute}`;
+}

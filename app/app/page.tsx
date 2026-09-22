@@ -1,134 +1,58 @@
-import Link from "next/link";
-import { Card, StatTile } from "@/components/ui";
-import { PlusIcon, StethoIcon, CartIcon } from "@/components/icons";
+import { ServicesTile, VaccinationsTile, FeedingTile, type DueServiceItem } from "@/components/home/HomeTiles";
 import { requireActiveAccount } from "@/lib/tenant";
 import { getRoster } from "@/lib/roster";
-import { getVisits, getVaccinations } from "@/lib/health";
-import { getShoppingOrders, getSpendSummary } from "@/lib/shopping";
-import { getOpenCareTasks } from "@/lib/tasks";
-import { TasksCard } from "@/components/tasks/TasksCard";
-import { formatCurrency } from "@/lib/format";
+import { getVaccinations } from "@/lib/health";
+import { getPetHealthSummaries } from "@/lib/pet-links";
+import { getFeedingSchedules } from "@/lib/feeding";
 
 export default async function AppHomePage() {
   const { supabase, active } = await requireActiveAccount();
-  const [roster, visits, vaccinations, orders, summary, tasks] = await Promise.all([
+  const [roster, vaccinations, petHealthSummaries, feedingSchedules] = await Promise.all([
     getRoster(supabase, active.tenantId),
-    getVisits(supabase, active.tenantId),
     getVaccinations(supabase, active.tenantId),
-    getShoppingOrders(supabase, active.tenantId),
-    getSpendSummary(supabase, active.tenantId),
-    getOpenCareTasks(supabase, active.tenantId),
+    getPetHealthSummaries(supabase, active.tenantId),
+    getFeedingSchedules(supabase, active.tenantId),
   ]);
-  const vaccinesDueSoon = vaccinations.filter((v) => v.status !== "Complete").length;
-  const tasksDue = tasks.filter((t) => t.overdue).length;
+
+  const petNameById = new Map(roster.filter((r) => r.kind === "pet").map((r) => [r.id, r.name]));
+
+  // Same source as each pet card's own summary (lib/pet-links.ts, shown
+  // via PetHealthLinks on /app/pets) — flattened across every pet and
+  // sorted soonest-first, so this tile never disagrees with what the
+  // pets page already shows as due.
+  const dueServices: DueServiceItem[] = [];
+  for (const [petId, summary] of petHealthSummaries) {
+    const who = petNameById.get(petId) ?? "Unknown";
+    summary.nextServices.forEach((s, i) => {
+      dueServices.push({ id: `${petId}-${i}`, petId, who, label: s.label, date: s.date, dateIso: s.dateIso, overdue: s.overdue });
+    });
+  }
+  dueServices.sort((a, b) => a.dateIso.localeCompare(b.dateIso));
+
+  const dueVaccinations = vaccinations
+    .filter((v) => v.statusRaw !== "complete" && v.dueDateIso)
+    .sort((a, b) => a.dueDateIso!.localeCompare(b.dueDateIso!));
+
+  // Just the next unfed meal per pet, not every meal left today — each
+  // pet only needs one line until that one's done (see FeedingTile,
+  // which further combines pets sharing the same meal/time/portion).
+  const nextFeedingByPet = new Map<string, (typeof feedingSchedules)[number]>();
+  for (const s of feedingSchedules) {
+    if (s.todayLog) continue;
+    if (!nextFeedingByPet.has(s.petId)) nextFeedingByPet.set(s.petId, s);
+  }
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl mb-1 text-(--color-primary-text)">Good evening</h1>
-          <p className="text-sm text-muted">
-            {active.tenantName} · {roster.length} pet{roster.length === 1 ? "" : "s"} &amp; habitats tracked
-          </p>
-        </div>
-        <Link
-          href="/app/pets"
-          className="inline-flex items-center gap-2 text-sm font-semibold bg-(image:--gradient-button-bg) text-white px-4 py-2.5 rounded-lg hover:brightness-110 transition"
-        >
-          <PlusIcon className="w-[.9em] h-[.9em]" />
-          Add pet
-        </Link>
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-2xl mb-1 text-(--color-primary-text)">Home</h1>
+        <p className="text-sm text-muted">What needs your attention</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatTile num={formatCurrency(summary.spentLast30d) ?? "—"} label="Spent · 30d" />
-        <StatTile num={String(tasksDue)} label="Tasks due" />
-        <StatTile num={String(vaccinesDueSoon)} label="Vaccines due" />
-        <StatTile num={String(roster.length)} label="Pets & habitats" />
-      </div>
-
-      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-        <Card className="p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2 font-semibold text-sm">
-              <StethoIcon className="text-(--color-primary-text)" />
-              Recent health events
-            </div>
-            <Link href="/app/health" className="text-xs text-(--color-primary-text) hover:underline">
-              See all
-            </Link>
-          </div>
-          {visits.length === 0 ? (
-            <p className="text-sm text-muted">
-              No visits logged yet —{" "}
-              <Link href="/app/health" className="text-(--color-primary-text) hover:underline">
-                log one
-              </Link>
-              .
-            </p>
-          ) : (
-            <div className="flex flex-col divide-y divide-line">
-              {visits.slice(0, 3).map((v) => (
-                <div key={v.id} className="flex items-center justify-between py-2.5 text-sm">
-                  <div>
-                    <div className="font-medium">{v.who}</div>
-                    <div className="text-xs text-muted">{v.provider}</div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted">{v.date}</span>
-                    <span className="font-mono text-xs">{v.cost ?? "—"}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-
-        <Card className="p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2 font-semibold text-sm">
-              <CartIcon className="text-(--color-primary-text)" />
-              Recent shopping
-            </div>
-            <Link href="/app/shopping" className="text-xs text-(--color-primary-text) hover:underline">
-              See all
-            </Link>
-          </div>
-          {orders.length === 0 ? (
-            <p className="text-sm text-muted">
-              No orders logged yet —{" "}
-              <Link href="/app/shopping" className="text-(--color-primary-text) hover:underline">
-                log one
-              </Link>
-              .
-            </p>
-          ) : (
-            <div className="flex flex-col divide-y divide-line">
-              {orders.slice(0, 3).map((o) => (
-                <div key={o.id} className="flex items-center justify-between py-2.5 text-sm">
-                  <div>
-                    <div className="font-medium">
-                      {o.itemUrl ? (
-                        <a href={o.itemUrl} target="_blank" rel="noreferrer" className="hover:underline">
-                          {o.item}
-                        </a>
-                      ) : (
-                        o.item
-                      )}
-                    </div>
-                    <div className="text-xs text-muted">{o.scope}</div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted">{o.orderedDate}</span>
-                    <span className="font-mono text-xs">{o.cost ?? "—"}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-
-        <TasksCard tenantId={active.tenantId} roster={roster} tasks={tasks} />
+      <div className="grid md:grid-cols-3 gap-6">
+        <FeedingTile tenantId={active.tenantId} upcoming={[...nextFeedingByPet.values()]} />
+        <ServicesTile services={dueServices} />
+        <VaccinationsTile tenantId={active.tenantId} vaccinations={dueVaccinations} />
       </div>
     </div>
   );

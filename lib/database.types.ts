@@ -288,6 +288,31 @@ export interface Database {
         },
         "tenant_id" | "pet_id" | "name"
       >;
+      feeding_schedules: Table<
+        {
+          id: string;
+          tenant_id: string;
+          pet_id: string;
+          meal_name: string;
+          scheduled_time: string;
+          portion: string | null;
+          active: boolean;
+          created_at: string;
+        },
+        "tenant_id" | "pet_id" | "meal_name" | "scheduled_time"
+      >;
+      feeding_logs: Table<
+        {
+          id: string;
+          tenant_id: string;
+          schedule_id: string;
+          log_date: string;
+          given_at: string;
+          notes: string | null;
+          created_at: string;
+        },
+        "tenant_id" | "schedule_id" | "given_at"
+      >;
       products: Table<
         {
           id: string;
