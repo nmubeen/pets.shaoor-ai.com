@@ -430,6 +430,18 @@ export interface Database {
         },
         "tenant_id" | "media_id" | "user_id"
       >;
+      vet_share_links: Table<
+        {
+          id: string;
+          tenant_id: string;
+          whatsapp_number: string;
+          token: string;
+          created_at: string;
+          revoked_at: string | null;
+          last_viewed_at: string | null;
+        },
+        "tenant_id" | "whatsapp_number" | "token"
+      >;
     };
     Functions: {
       ensure_my_account: { Args: Record<PropertyKey, never>; Returns: Database["menagerie"]["Tables"]["tenants"]["Row"] };
